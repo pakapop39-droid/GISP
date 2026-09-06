@@ -1,0 +1,2 @@
+import {describe,expect,it} from "vitest";import {sourcingRequestSchema} from "./schema";
+describe("Slice 13 sourcing input",()=>{it("allows requests without a project",()=>{const result=sourcingRequestSchema.safeParse({itemName:"เก้าอี้อ้างอิง",description:"ต้องการรุ่นใกล้เคียงกับภาพ",matchPreference:"SIMILAR_OK",quantity:1,unit:"EA"});expect(result.success).toBe(true);if(result.success)expect(result.data.projectId).toBeNull()})});

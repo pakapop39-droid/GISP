@@ -1,0 +1,21 @@
+[auth]
+allowed_redirect_urls = [
+  "https://m8ugbyak.insforge.site",
+  "https://m8ugbyak.insforge.site/reset-password"
+]
+require_email_verification = true
+verify_email_method = "code"
+reset_password_method = "link"
+disable_signup = false
+
+[auth.password]
+min_length = 10
+
+[storage]
+max_file_size_mb = 10
+
+[realtime]
+retention_days = 7
+
+[schedules]
+retention_days = 7

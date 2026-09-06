@@ -1,0 +1,25 @@
+.next/
+node_modules/
+.git/
+.vercel/
+.next-stale-*/
+.codex-*
+coverage/
+
+# Local working artifacts — not required by the Next.js production runtime.
+outputs/
+output/
+tmp/
+docs/
+scripts/
+migrations/
+functions/
+production-release-a/
+.insforge-audit-production/
+*.xlsx
+slice3-*.png
+tsconfig.tsbuildinfo
+README.md
+AGENTS.md
+skills-lock.json
+insforge*.toml

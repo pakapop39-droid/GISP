@@ -1,0 +1,1 @@
+import{MemberSourcingForm}from"@/components/member-sourcing-form";import{requireAppAccess}from"@/lib/auth/session";export default async function Page(){await requireAppAccess({active:true});return <MemberSourcingForm/>}

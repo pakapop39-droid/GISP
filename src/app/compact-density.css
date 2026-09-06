@@ -1,0 +1,555 @@
+/*
+ * GISP Compact Density A
+ * ใช้กับหน้าทำงาน Admin/Member บน Desktop ที่มีเมาส์เท่านั้น
+ * ไม่ลดขนาดตัวอักษร และไม่กระทบ Demo 1.3/1.4 หรือพื้นที่กดบนมือถือ
+ */
+@media (min-width: 769px) and (pointer: fine) {
+  html[data-density="compact"] .gisp-production {
+    --v14-control-height: 30px;
+    --v14-sidebar-width: 236px;
+    line-height: 1.35;
+  }
+
+  /* Application shell */
+  html[data-density="compact"] .gisp-production .v14-topbar {
+    height: 52px;
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-brand {
+    gap: 9px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-brand > span {
+    width: 32px;
+    height: 32px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-brand small {
+    margin-top: 2px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-icon-button {
+    width: 32px;
+    height: 32px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-sidebar {
+    top: 52px;
+    padding: 10px 10px 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-side-intro {
+    padding: 0 6px 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-side-intro strong {
+    margin-top: 2px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-side-intro small {
+    margin-top: 2px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-sidebar nav {
+    gap: 1px;
+    padding: 5px 0;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-sidebar nav a {
+    min-height: 34px;
+    gap: 8px;
+    padding: 3px 7px;
+    line-height: 1.25;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-sidebar nav a:hover {
+    padding-left: 9px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-side-foot {
+    padding-top: 6px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-content {
+    padding-top: 60px;
+    padding-right: clamp(14px, 2vw, 28px);
+    padding-bottom: 22px;
+    padding-left: clamp(14px, 2vw, 28px);
+  }
+
+  /* Page heading, panels and repeated spacing */
+  html[data-density="compact"] .gisp-production .v14-hero,
+  html[data-density="compact"] .gisp-production.v14-app--member .v14-hero {
+    min-height: 0;
+    margin-bottom: 8px;
+    padding: 2px 0 9px;
+  }
+
+  html[data-density="compact"] .gisp-production.v14-app--member .v14-hero::after {
+    height: 88px;
+    margin-top: 6px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-hero h1 {
+    margin-top: 1px;
+    margin-bottom: 2px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-hero > div > p:last-child {
+    margin-top: 2px;
+    line-height: 1.35;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-panel,
+  html[data-density="compact"] .gisp-production .v14-grid--2 > .v14-panel,
+  html[data-density="compact"] .gisp-production :is(.order-workspace, .order-detail, .quotation-workspace, .quotation-detail) .v14-panel {
+    margin-bottom: 8px;
+    padding: 9px 11px !important;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-panel__head {
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-panel h2 {
+    margin-top: 1px;
+    margin-bottom: 2px;
+    line-height: 1.1;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-panel h3 {
+    margin-top: 2px;
+    margin-bottom: 3px;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.v14-panel, .v14-card, .v14-product) p {
+    margin-top: 3px;
+    margin-bottom: 5px;
+    line-height: 1.35;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.v14-grid, .v14-card-grid) {
+    gap: 7px;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.v14-card, .v14-product) {
+    padding: 9px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-metrics {
+    margin-bottom: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-metric {
+    min-height: 54px;
+    padding: 5px 9px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-actions {
+    gap: 5px;
+    margin-top: 5px;
+  }
+
+  /* Controls: Compact A. Typography intentionally remains unchanged. */
+  html[data-density="compact"] .gisp-production .v14-button {
+    min-height: 30px;
+    padding: 3px 9px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-button--small {
+    min-height: 28px;
+    padding: 2px 7px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-panel label,
+  html[data-density="compact"] .gisp-production .operation-form label,
+  html[data-density="compact"] .gisp-production .order-form label {
+    gap: 2px;
+    margin-bottom: 3px;
+    line-height: 1.25;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.v14-panel, .member-detail__summary, .product-review-form, .catalog-component, .operation-form, .order-form) :is(input:not([type="checkbox"]):not([type="radio"]), select),
+  html[data-density="compact"] .gisp-production :is(.batch-command, .batch-action-card, .member-catalog__toolbar, .member-detail__project-form, .supplier-payment-form) :is(input:not([type="checkbox"]):not([type="radio"]), select) {
+    height: 30px;
+    min-height: 30px;
+    padding: 2px 8px;
+    line-height: 1.25;
+  }
+
+  html[data-density="compact"] .gisp-production input[type="file"] {
+    padding: 2px 5px !important;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.v14-panel, .member-detail__summary, .product-review-form, .operation-form, .order-form, .batch-action-card) textarea {
+    min-height: 52px;
+    padding: 4px 8px;
+    line-height: 1.35;
+  }
+
+  html[data-density="compact"] .gisp-production :is(input[type="checkbox"], input[type="radio"]) {
+    width: 16px;
+    height: 16px;
+    min-height: 16px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-panel .order-list-search,
+  html[data-density="compact"] .gisp-production .order-list-toolbar > .order-list-status {
+    box-sizing: border-box;
+    height: 30px !important;
+    min-height: 30px !important;
+    margin-bottom: 0 !important;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-panel .order-list-search {
+    display: flex !important;
+    align-items: center !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-panel .order-list-search > svg {
+    left: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-panel .order-list-search input,
+  html[data-density="compact"] .gisp-production .v14-panel .order-list-search input:focus {
+    height: 30px !important;
+    min-height: 30px !important;
+    border: 1px solid var(--ui-line) !important;
+    border-radius: var(--ui-radius-sm) !important;
+    padding: 0 8px 0 30px !important;
+    outline: 0 !important;
+    background: var(--ui-surface) !important;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-panel .order-list-search input:focus {
+    border-color: var(--ui-brass) !important;
+    box-shadow: 0 0 0 3px rgba(159, 117, 50, .1) !important;
+  }
+
+  html[data-density="compact"] .gisp-production .claim-toolbar__search,
+  html[data-density="compact"] .gisp-production .v14-panel .claim-toolbar__search > input,
+  html[data-density="compact"] .gisp-production .v14-panel .claim-toolbar__status {
+    height: 30px;
+    min-height: 30px;
+  }
+
+  html[data-density="compact"] .gisp-production .claim-toolbar__search > svg {
+    left: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-panel .claim-toolbar__search > input {
+    padding: 0 8px 0 30px;
+  }
+
+  /* Tables, queues and list rows */
+  html[data-density="compact"] .gisp-production .v14-panel table :is(th, td) {
+    padding: 4px 7px;
+    line-height: 1.3;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-summary-row {
+    min-height: 32px;
+    padding: 3px 0;
+  }
+
+  html[data-density="compact"] .gisp-production .v14-list > div {
+    min-height: 34px;
+    gap: 7px;
+    padding: 3px 7px;
+    line-height: 1.25;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.v14-empty, .v14-lock) {
+    min-height: 58px;
+    padding: 9px;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.v14-alert, .catalog-notice) {
+    gap: 5px 8px;
+    padding: 5px 8px;
+    line-height: 1.3;
+  }
+
+  html[data-density="compact"] .gisp-production .batch-flow > div {
+    min-height: 40px;
+    padding: 4px 8px;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.batch-metric, .member-product-card__body) {
+    padding: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.batch-command, .batch-table-panel, .batch-action-card) {
+    padding: 8px !important;
+  }
+
+  html[data-density="compact"] .gisp-production .batch-command__filter {
+    gap: 6px;
+  }
+
+  html[data-density="compact"] .gisp-production .batch-selection {
+    gap: 8px;
+    margin-top: 6px;
+    padding-top: 5px;
+  }
+
+  html[data-density="compact"] .gisp-production .batch-layout {
+    gap: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .batch-actions {
+    top: 60px;
+  }
+
+  html[data-density="compact"] .gisp-production .batch-table__head {
+    min-height: 28px;
+  }
+
+  html[data-density="compact"] .gisp-production .batch-table__row {
+    min-height: 36px;
+  }
+
+  html[data-density="compact"] .gisp-production .batch-table :is(.batch-table__head, .batch-table__row) > span {
+    padding: 3px 6px;
+  }
+
+  html[data-density="compact"] .gisp-production .batch-history__list > div {
+    min-height: 34px;
+    gap: 6px;
+  }
+
+  html[data-density="compact"] .gisp-production .catalog-table__row {
+    min-height: 36px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+
+  html[data-density="compact"] .gisp-production .member-catalog__toolbar {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .member-catalog__grid {
+    gap: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .member-product-card dl {
+    gap: 3px;
+    margin: 5px 0;
+    padding: 5px 0;
+  }
+
+  html[data-density="compact"] .gisp-production .member-detail__summary {
+    padding: 10px;
+  }
+
+  html[data-density="compact"] .gisp-production .member-detail__facts {
+    margin-bottom: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .member-detail__facts article {
+    min-height: 42px;
+    padding: 6px 8px;
+  }
+
+  /* Quotation and order transaction rows */
+  html[data-density="compact"] .gisp-production :is(.quotation-layout, .quotation-detail__grid, .order-detail__grid) {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .quotation-metrics > div {
+    min-height: 52px;
+    padding: 6px 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .quotation-list > a,
+  html[data-density="compact"] .gisp-production .order-list > a {
+    min-height: 44px;
+    gap: 8px;
+    padding: 4px 2px;
+  }
+
+  html[data-density="compact"] .gisp-production .quotation-form,
+  html[data-density="compact"] .gisp-production .order-form {
+    gap: 5px;
+  }
+
+  html[data-density="compact"] .gisp-production .quotation-document__item > div,
+  html[data-density="compact"] .gisp-production .order-items > div {
+    min-height: 38px;
+    gap: 7px;
+    padding: 4px 2px;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.quotation-totals > div, .quotation-internal dl > div) {
+    padding: 4px 1px;
+  }
+
+  html[data-density="compact"] .gisp-production .quotation-timeline article > div {
+    padding-bottom: 6px;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.order-security-note, .order-cancellation-record, .supplier-lock, .quotation-note) {
+    padding: 6px 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .order-detail__grid > aside {
+    gap: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .payment-schedules > div {
+    padding: 5px 7px;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.order-history > div, .finance-transfer-list > article, .supplier-payment-list > div) {
+    min-height: 38px;
+    gap: 7px;
+    padding: 4px 1px;
+  }
+
+  html[data-density="compact"] .gisp-production .supplier-order-card {
+    margin-top: 8px;
+    padding: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .supplier-order-card > header {
+    gap: 7px;
+    padding-bottom: 6px;
+  }
+
+  html[data-density="compact"] .gisp-production .supplier-schedule-grid {
+    gap: 5px;
+    margin: 6px 0;
+  }
+
+  html[data-density="compact"] .gisp-production .supplier-schedule-grid > div {
+    padding: 5px;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.supplier-payment-form, .project-order-list) {
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+
+  html[data-density="compact"] .gisp-production .project-order-list > label {
+    gap: 7px;
+    padding: 4px 1px;
+  }
+
+  /* Production, QC and audit history */
+  html[data-density="compact"] .gisp-production .operation-panel {
+    margin-top: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .operation-card {
+    padding: 8px 0;
+  }
+
+  html[data-density="compact"] .gisp-production .operation-card > header {
+    margin-bottom: 6px;
+  }
+
+  html[data-density="compact"] .gisp-production .production-timeline {
+    margin: 6px 0 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .production-timeline > div {
+    min-height: 38px;
+    gap: 7px;
+  }
+
+  html[data-density="compact"] .gisp-production .production-timeline section {
+    padding-bottom: 5px;
+  }
+
+  html[data-density="compact"] .gisp-production .operation-form {
+    gap: 5px;
+    padding: 7px;
+  }
+
+  html[data-density="compact"] .gisp-production .operation-form__grid {
+    gap: 5px;
+  }
+
+  html[data-density="compact"] .gisp-production .operation-form__grid > label > :is(input, select) {
+    height: 30px;
+    min-height: 30px;
+  }
+
+  html[data-density="compact"] .gisp-production .qc-check-row {
+    gap: 5px;
+    min-height: 34px;
+  }
+
+  html[data-density="compact"] .gisp-production .qc-history {
+    margin: 8px 0;
+  }
+
+  html[data-density="compact"] .gisp-production .qc-history > article {
+    margin-top: 6px;
+    padding: 7px;
+  }
+
+  html[data-density="compact"] .gisp-production .qc-history > article > header {
+    margin-bottom: 5px;
+  }
+
+  html[data-density="compact"] .gisp-production .qc-result-grid {
+    gap: 4px;
+  }
+
+  html[data-density="compact"] .gisp-production .qc-result-grid > div {
+    gap: 1px 5px;
+    padding: 4px 6px;
+  }
+
+  html[data-density="compact"] .gisp-production :is(.qc-next-action, .member-qc-decision) {
+    gap: 6px;
+    padding: 7px;
+  }
+
+  html[data-density="compact"] .gisp-production .dispatch-gate {
+    margin-bottom: 7px;
+    padding: 6px;
+  }
+
+  html[data-density="compact"] .gisp-production .dispatch-gate header {
+    padding-bottom: 4px;
+  }
+
+  html[data-density="compact"] .gisp-production .dispatch-gate > div {
+    padding-top: 4px;
+  }
+
+  html[data-density="compact"] .gisp-production .member-operation-grid {
+    gap: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .member-qc-item + .member-qc-item {
+    margin-top: 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .member-qc-item__header {
+    padding: 6px 8px;
+  }
+
+  html[data-density="compact"] .gisp-production .member-qc-item > :not(.member-qc-item__header) {
+    margin-right: 6px;
+    margin-left: 6px;
+  }
+
+  html[data-density="compact"] .gisp-production .member-qc-item > .dispatch-gate {
+    margin-top: 6px;
+  }
+}

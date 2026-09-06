@@ -1,0 +1,46 @@
+node_modules/
+.next/
+out/
+coverage/
+.vercel/
+.insforge/project.json
+
+.env
+.env.local
+.env.*.local
+!.env.example
+
+*.log
+.DS_Store
+Thumbs.db
+
+# Local build caches, release copies, and operational artifacts
+.codex-tmp/
+.next-stale-*/
+.insforge-audit-production/
+output/
+outputs/
+tmp/
+production-release-a/
+*.tsbuildinfo
+slice3-*-preview.png
+/*.xlsx
+
+# Keep environment credentials local; only publish the example
+.env.*
+!.env.example
+
+# InsForge & AI agent skills
+.insforge
+.agent
+.agents
+.augment
+.claude
+.cline
+.github/copilot*
+.kilocode
+.qoder
+.qwen
+.roo
+.trae
+.windsurf

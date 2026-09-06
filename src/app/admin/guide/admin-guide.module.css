@@ -1,0 +1,144 @@
+.guide {
+  --guide-ink: #18231d;
+  --guide-forest: #163329;
+  --guide-jade: #237457;
+  --guide-gold: #bd8434;
+  --guide-paper: #fffdf8;
+  --guide-wash: #f2f4ef;
+  --guide-line: #d9ddd5;
+  --guide-muted: #657069;
+  color: var(--guide-ink);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: end;
+  margin-bottom: 1.25rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  color: #fff;
+  background:
+    radial-gradient(circle at 86% 18%, rgba(189, 132, 52, .35), transparent 32%),
+    linear-gradient(135deg, #12271f, #24513f);
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+
+.eyebrow {
+  margin: 0 0 .45rem;
+  color: #ddb56f;
+  font-size: .76rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.hero h1 { margin: 0; max-width: 46rem; font-size: clamp(2rem, 5vw, 4.2rem); line-height: 1.05; }
+.hero p:not(.eyebrow) { max-width: 45rem; margin: 1rem 0 0; color: #dce9e2; }
+.heroActions { display: flex; flex-wrap: wrap; gap: .65rem; }
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.7rem;
+  padding: .65rem 1rem;
+  color: var(--guide-forest);
+  background: #fff;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.buttonSecondary { color: #fff; background: transparent; border-color: rgba(255,255,255,.4); }
+.buttonDark { color: #fff; background: var(--guide-jade); }
+.button:focus-visible, .toc a:focus-visible, .check input:focus-visible, .details summary:focus-visible { outline: 3px solid rgba(189,132,52,.55); outline-offset: 3px; }
+
+.layout { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.toc {
+  position: sticky;
+  top: 5rem;
+  max-height: calc(100vh - 6rem);
+  overflow: auto;
+  padding: 1rem;
+  background: var(--guide-paper);
+  border: 1px solid var(--guide-line);
+  border-radius: 1rem;
+}
+.toc strong { display: block; margin: 0 0 .5rem; }
+.toc a { display: block; padding: .42rem .58rem; color: #3f4d45; border-radius: .55rem; font-size: .88rem; text-decoration: none; }
+.toc a:hover { color: var(--guide-jade); background: #e8f1eb; }
+
+.content { min-width: 0; }
+.section {
+  scroll-margin-top: 5rem;
+  margin-bottom: 1.25rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background: var(--guide-paper);
+  border: 1px solid var(--guide-line);
+  border-radius: 1.15rem;
+  box-shadow: 0 1rem 2.6rem rgba(26, 44, 35, .07);
+}
+.section h2 { margin: 0 0 .4rem; font-size: clamp(1.55rem, 3vw, 2.25rem); line-height: 1.25; }
+.section h3 { margin: 1.6rem 0 .45rem; font-size: 1.18rem; }
+.section p { margin: .35rem 0 .8rem; }
+.muted { color: var(--guide-muted); }
+
+.quickGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: 1rem; }
+.check { display: grid; grid-template-columns: 1.4rem 1fr; gap: .7rem; padding: .9rem; background: #fff; border: 1px solid var(--guide-line); border-radius: .8rem; }
+.check input { width: 1.15rem; height: 1.15rem; margin-top: .2rem; accent-color: var(--guide-jade); }
+.check b, .check small { display: block; }
+.check small { color: var(--guide-muted); }
+
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; margin: 1rem 0; font-weight: 800; }
+.flow span { padding: .35rem .7rem; color: var(--guide-forest); background: #e8f1eb; border-radius: 999px; }
+.flow i { color: var(--guide-gold); font-style: normal; }
+
+.steps { margin: .9rem 0 0; padding: 0; list-style: none; counter-reset: admin-step; }
+.steps > li { position: relative; margin: 0 0 .72rem; padding: .8rem .9rem .8rem 3.25rem; background: #fff; border: 1px solid var(--guide-line); border-radius: .8rem; counter-increment: admin-step; }
+.steps > li::before { content: counter(admin-step); position: absolute; top: .72rem; left: .8rem; display: grid; place-items: center; width: 1.8rem; height: 1.8rem; color: #fff; background: var(--guide-forest); border-radius: 50%; font-size: .85rem; font-weight: 900; }
+
+.callout { margin: 1rem 0; padding: .85rem 1rem; background: #fff5dc; border-left: .25rem solid var(--guide-gold); border-radius: 0 .7rem .7rem 0; }
+.callout strong { display: block; }
+.danger { color: #742d29; background: #fff0ed; border-color: #ac443b; }
+.safe { color: #1a5a41; background: #eaf7ef; border-color: var(--guide-jade); }
+
+.details { margin: .7rem 0; background: #fff; border: 1px solid var(--guide-line); border-radius: .8rem; overflow: hidden; }
+.details summary { padding: .9rem 1rem; cursor: pointer; font-weight: 900; }
+.details[open] summary { color: var(--guide-jade); border-bottom: 1px solid var(--guide-line); }
+.detailsBody { padding: .1rem 1rem 1rem; }
+
+.roleTable { width: 100%; margin-top: 1rem; border-collapse: collapse; font-size: .9rem; }
+.roleTable th, .roleTable td { padding: .7rem; border-bottom: 1px solid var(--guide-line); text-align: left; vertical-align: top; }
+.roleTable th { background: #ebf1ed; }
+
+.linkGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin-top: 1rem; }
+.linkGrid a { display: flex; justify-content: space-between; gap: .7rem; padding: .7rem .8rem; color: var(--guide-forest); background: #eaf1ed; border-radius: .7rem; font-weight: 800; text-decoration: none; }
+.linkGrid a::after { content: "เปิด ↗"; color: var(--guide-jade); }
+.footer { padding: 1rem; color: var(--guide-muted); text-align: center; }
+.mobileToc { display: none; }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; align-items: start; }
+  .layout { display: block; }
+  .toc { display: none; }
+  .mobileToc { display: block; margin-bottom: 1rem; }
+  .quickGrid, .linkGrid { grid-template-columns: 1fr; }
+  .roleTable { display: block; overflow-x: auto; }
+}
+
+@media print {
+  .heroActions, .toc, .mobileToc { display: none !important; }
+  .guide { font-size: 11pt; }
+  .hero { display: block; padding: 1.2rem; color: #000; background: #fff; border: 2px solid #222; }
+  .hero p:not(.eyebrow) { color: #333; }
+  .layout { display: block; }
+  .section { break-inside: avoid; box-shadow: none; }
+  .details > * { display: block !important; }
+}

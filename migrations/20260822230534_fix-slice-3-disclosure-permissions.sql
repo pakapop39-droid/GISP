@@ -1,0 +1,2 @@
+REVOKE ALL ON FUNCTION public.request_supplier_disclosure(UUID,UUID,TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.request_supplier_disclosure(UUID,UUID,TEXT) TO authenticated;

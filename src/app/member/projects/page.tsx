@@ -1,0 +1,1 @@
+import{MemberProjectsWorkspace}from"@/components/member-projects-workspace";import{requireAppAccess}from"@/lib/auth/session";export default async function Page(){await requireAppAccess({active:true});return <MemberProjectsWorkspace/>}

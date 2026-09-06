@@ -1,0 +1,1 @@
+import{AdminSourcingWorkspace}from"@/components/admin-sourcing-workspace";import{requireAppAccess}from"@/lib/auth/session";export default async function Page(){await requireAppAccess({active:true,permissions:["sourcing.manage"]});return <AdminSourcingWorkspace/>}

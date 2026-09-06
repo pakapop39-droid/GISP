@@ -1,0 +1,93 @@
+import { demoCatalog, demoProject, demoStandardProjectItems, demoSuppliers } from "./fixtures";
+import { PROTOTYPE_SCHEMA_VERSION, type PrototypeState } from "./prototype-types";
+
+export function createPrototypeState(): PrototypeState {
+  return {
+    schemaVersion: PROTOTYPE_SCHEMA_VERSION,
+    activeRole: "MEMBER",
+    activeModule: "FOUNDATION",
+    memberApplication: {
+      id: "member-application-demo",
+      email: "nara@atelier-demo.example",
+      registered: false,
+      companyName: "Atelier Nara Design Co., Ltd.",
+      taxId: "0105569000001",
+      status: "NOT_STARTED",
+      reviewNote: null,
+    },
+    organizationUsers: [
+      {
+        id: "org-user-nara",
+        email: "nara@atelier-demo.example",
+        fullName: "นารา วัฒนศิลป์",
+        organizationId: "org-member-atelier-nara",
+        roles: ["MEMBER"],
+        status: "ACTIVE",
+      },
+    ],
+    permissionCases: [
+      { id: "permission-pending", label: "Pending Member เข้า Catalog", result: "NOT_TESTED", detail: "ต้องถูกปฏิเสธจนกว่าจะอนุมัติบริษัท" },
+      { id: "permission-cross-org", label: "เปิด Project ของบริษัทอื่น", result: "NOT_TESTED", detail: "ต้องถูกปฏิเสธทุกกรณี" },
+      { id: "permission-member-safe", label: "Member เปิดข้อมูลภายใน", result: "NOT_TESTED", detail: "ต้องไม่พบต้นทุน การจ่ายโรงงาน หรือ Internal Note" },
+    ],
+    catalog: structuredClone(demoCatalog).map((product) => ({
+      ...product,
+      lifecycleStatus: "PUBLISHED" as const,
+      activeMemberPrice: true,
+      variants: ["Default"],
+      options: [product.specification],
+      media: [],
+      confidentialFiles: [],
+      internalNote: `ข้อมูลภายในสำหรับ ${product.sku}`,
+    })),
+    suppliers: structuredClone(demoSuppliers).map((supplier) => ({
+      ...supplier,
+      status: "ACTIVE" as const,
+      contactName: "Demo Factory Coordinator",
+      documents: [],
+    })),
+    actionItems: [
+      { id: "action-member-foundation", role: "MEMBER", title: "ส่งข้อมูลบริษัท", detail: "กรอกข้อมูลเพื่อขออนุมัติสมาชิก", sourceModule: "FOUNDATION", sourceId: "member-application-demo", dueDate: "2026-08-03", status: "OPEN" },
+      { id: "action-admin-member", role: "GISP_ADMIN", title: "ตรวจคำขอสมาชิก", detail: "อนุมัติหรือปฏิเสธ Atelier Nara", sourceModule: "FOUNDATION", sourceId: "member-application-demo", dueDate: "2026-08-04", status: "OPEN" },
+      { id: "action-admin-product", role: "GISP_ADMIN", title: "ตรวจ Product Draft", detail: "ยืนยันราคาและ Publish สินค้า", sourceModule: "PRODUCT_ADMIN", sourceId: "product-draft-demo", dueDate: "2026-08-05", status: "OPEN" },
+      { id: "action-finance-payment", role: "FINANCE", title: "ตรวจยอดโอน", detail: "รอ Member ส่งหลักฐานการชำระ", sourceModule: "ORDER", sourceId: "schedule-deposit", dueDate: "2026-08-18", status: "OPEN" },
+      { id: "action-qc-inspection", role: "QC", title: "ตรวจสินค้า Custom", detail: "บันทึก Checklist และผลตรวจ", sourceModule: "QC", sourceId: "item-reception-counter", dueDate: "2026-10-20", status: "OPEN" },
+      { id: "action-logistics-shipment", role: "LOGISTICS", title: "เตรียม Partial Shipment", detail: "ดำเนินการเมื่อ Dispatch Gate ผ่าน", sourceModule: "SHIPMENT", sourceId: "order-prototype-1", dueDate: "2026-11-01", status: "OPEN" },
+      { id: "action-executive-review", role: "EXECUTIVE", title: "ตรวจ MVP Summary", detail: "Order, Payment, Delay, Delivery และ Claim", sourceModule: "DASHBOARDS", sourceId: "riverstone-summary", dueDate: "2026-11-30", status: "OPEN" },
+    ],
+    uatResults: [
+      ["uat-foundation", "Foundation / Permission"],
+      ["uat-product", "Product / Supplier"],
+      ["uat-standard", "Standard Order"],
+      ["uat-custom", "Custom RFQ / Quotation"],
+      ["uat-payment", "Payment / PO"],
+      ["uat-qc", "Production / QC"],
+      ["uat-shipment", "Shipment / Delivery"],
+      ["uat-claim", "Claim / Dashboard"],
+    ].map(([id, title]) => ({ id, title, status: "NOT_TESTED" as const, note: "" })),
+    buildReadiness: "IN_UAT",
+    project: structuredClone(demoProject),
+    projectItems: structuredClone(demoStandardProjectItems.slice(0, 2)),
+    rfq: null,
+    quotations: [],
+    order: null,
+    paymentSchedules: [],
+    transfers: [],
+    supplierOrders: [],
+    productionUpdates: [],
+    qcInspections: [],
+    memberApprovedItemIds: [],
+    shipments: [],
+    claim: null,
+    audit: [
+      {
+        id: "audit-1",
+        at: "2026-08-01T02:00:00.000Z",
+        actor: "MEMBER",
+        action: "PROTOTYPE_STARTED",
+        detail: "เริ่มสถานการณ์ Riverstone จากข้อมูลจำลอง",
+      },
+    ],
+    lastError: null,
+  };
+}

@@ -1,0 +1,1 @@
+import{AdminSourcingDetail}from"@/components/admin-sourcing-detail";import{requireAppAccess}from"@/lib/auth/session";export default async function Page({params}:{params:Promise<{id:string}>}){await requireAppAccess({active:true,permissions:["sourcing.manage"]});const{id}=await params;return <AdminSourcingDetail requestId={id}/>}

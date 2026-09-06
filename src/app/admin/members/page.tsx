@@ -1,0 +1,6 @@
+import { AdminMembersPanel, type MemberRow } from "@/components/admin-members-panel";
+import { requireAppAccess } from "@/lib/auth/session";
+import { createInsForgeAdminClient } from "@/lib/insforge/admin";
+
+export default async function AdminMembersPage(){await requireAppAccess({permissions:["members.read"]});const admin=createInsForgeAdminClient();const [applications,profiles,users]=await Promise.all([admin.database.from("member_applications").select("*").order("submitted_at",{ascending:false}),admin.database.from("member_profiles").select("*"),admin.database.from("users").select("id,status,status_reason")]);const profileMap=new Map((profiles.data??[]).map((row:Record<string,unknown>)=>[row.id,row]));const userMap=new Map((users.data??[]).map((row:Record<string,unknown>)=>[row.id,row]));const rows=(applications.data??[]).map((row:Record<string,unknown>)=>({...row,profile:profileMap.get(row.member_profile_id),user:userMap.get(row.user_id)})) as MemberRow[];return <><section className="v14-hero"><div><p className="v14-eyebrow">Member lifecycle</p><h1>อนุมัติและดูแลบัญชีสมาชิก</h1><p>Approve, Reject, Suspend, Reactivate, Reset และ Force Logout ผ่าน Action Function ที่มี Audit</p></div></section><AdminMembersPanel initialRows={rows}/></>}
+

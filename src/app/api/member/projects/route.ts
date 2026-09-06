@@ -1,0 +1,8 @@
+import { NextResponse,type NextRequest } from "next/server";
+import { apiError,invalidInput } from "@/lib/api/response";
+import { AppAccessError,requireAppAccess } from "@/lib/auth/session";
+import { createInsForgeServerClient } from "@/lib/insforge/server";
+import { createProjectSchema } from "@/lib/projects/schema";
+async function member(){const context=await requireAppAccess({active:true});if(!context.roles.includes("MEMBER"))throw new AppAccessError("PERMISSION_DENIED",403,"หน้านี้สำหรับสมาชิก");return context}
+export async function GET(){try{await member();const db=await createInsForgeServerClient();const {data,error}=await db.database.from("projects").select("id,project_number,name,project_type,site_address,status,expected_need_date,note,end_customer_id,created_at,updated_at").order("updated_at",{ascending:false}).limit(100);if(error)throw error;return NextResponse.json({data:data??[]})}catch(error){return apiError(error)}}
+export async function POST(request:NextRequest){try{await member();const parsed=createProjectSchema.safeParse(await request.json());if(!parsed.success)return invalidInput(parsed.error.flatten().fieldErrors);const db=await createInsForgeServerClient();const input=parsed.data;const {data,error}=await db.database.rpc("create_project_v2",{name_input:input.name,project_type_input:input.projectType,end_customer_name_input:input.endCustomerName,end_customer_phone_input:input.endCustomerPhone,end_customer_email_input:input.endCustomerEmail,site_address_input:input.siteAddress,expected_need_date_input:input.expectedNeedDate||null,note_input:input.note});if(error)throw error;return NextResponse.json({data,message:"สร้างโครงการเรียบร้อยแล้ว"},{status:201})}catch(error){return apiError(error)}}

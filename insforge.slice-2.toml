@@ -1,0 +1,18 @@
+[auth]
+allowed_redirect_urls = [
+  "http://localhost:3000",
+  "http://localhost:3000/reset-password",
+  "https://kit6y4pj.insforge.site",
+  "https://kit6y4pj.insforge.site/reset-password",
+  "https://gisp-mvp-development.insforge.site",
+  "https://gisp-mvp-development.insforge.site/reset-password",
+  "https://kit6y4pj-63e.insforge.site",
+  "https://kit6y4pj-63e.insforge.site/reset-password"
+]
+require_email_verification = true
+verify_email_method = "code"
+reset_password_method = "link"
+disable_signup = false
+
+[auth.password]
+min_length = 10

@@ -1,0 +1,1 @@
+import{MemberSourcingWorkspace}from"@/components/member-sourcing-workspace";import{requireAppAccess}from"@/lib/auth/session";export default async function Page(){await requireAppAccess({active:true});return <MemberSourcingWorkspace/>}

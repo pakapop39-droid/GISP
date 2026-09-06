@@ -1,0 +1,3 @@
+import {NextResponse,type NextRequest} from "next/server";import{apiError}from"@/lib/api/response";import{createInsForgeServerClient}from"@/lib/insforge/server";import{requireMember}from"@/lib/sourcing/server";
+export async function POST(_request:NextRequest,{params}:{params:Promise<{id:string}>}){try{await requireMember();const{id}=await params;const db=await createInsForgeServerClient();const{error}=await db.database.rpc("submit_product_sourcing_request",{request_id_input:id});if(error)throw error;return NextResponse.json({message:"ส่งคำขอให้ GISP แล้ว"})}catch(error){return apiError(error)}}
+

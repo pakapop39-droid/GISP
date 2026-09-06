@@ -1,0 +1,3 @@
+import {describe,expect,it} from "vitest";import {canTransitionSourcing} from "./workflow";import {memberSourcingHasForbiddenKey} from "./types";
+describe("Slice 13 sourcing contract",()=>{it("supports review and selection lifecycle",()=>{expect(canTransitionSourcing("SUBMITTED","UNDER_REVIEW")).toBe(true);expect(canTransitionSourcing("OPTIONS_READY","MEMBER_SELECTED")).toBe(true);expect(canTransitionSourcing("COMPLETED","UNDER_REVIEW")).toBe(false)});it("detects internal fields in member payloads",()=>{expect(memberSourcingHasForbiddenKey({candidate:{factoryCost:100}})).toBe(true);expect(memberSourcingHasForbiddenKey({candidate:{member_price_before_vat:125}})).toBe(false)})});
+
