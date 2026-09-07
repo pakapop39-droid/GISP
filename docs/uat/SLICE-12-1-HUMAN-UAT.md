@@ -45,7 +45,7 @@
 `PASS 7/7 · OWNER ACCEPTED · DONE ON DEVELOPMENT`
 
 - เจ้าของระบบยืนยันผลว่า **“ใช้ได้หมด”** เมื่อ 6 กันยายน 2569
-- Development Deployment ล่าสุด: `15cf9ce5-e135-4541-9f78-ccd5059a12db` (`READY`)
+- Development Deployment ล่าสุด: `526c7cf7-1354-42b1-92c6-e25cfad92f09` (`READY`)
 - Post-merge Smoke: 54 Assertions ผ่านครบทั้ง Product, Project, Curated และ Full Catalog
 - Production Release A ไม่ถูกเปลี่ยน
 

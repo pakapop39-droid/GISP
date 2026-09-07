@@ -39,11 +39,14 @@
 ## Development Deployment
 
 - URL: `https://kit6y4pj.insforge.site`
-- Deployment ID ล่าสุด: `15cf9ce5-e135-4541-9f78-ccd5059a12db`
+- Deployment ID ล่าสุด: `526c7cf7-1354-42b1-92c6-e25cfad92f09`
 - Status: `READY`
 - Feature Flag: Shared Catalog เปิด; Product Sourcing และ Post-go-live Feature ปิด
 - หลังรับข้อสังเกตจาก Owner ปรับหน้า Member ให้เห็น “หน้ารวมสินค้าทั้งหมดของฉัน” เป็นการ์ดหลัก
   พร้อม Prefill ชื่อบริษัท/ผู้ติดต่อ และข้อความยืนยันว่าลิงก์ผูกกับ Member ผู้สร้าง
+- แก้กรณีกดสร้างแล้ว API ตอบ 500: PostgREST ยังใช้ Schema Cache เก่าและรายงาน `PGRST202`
+  แม้ Function/ACL อยู่ครบ จึงสั่ง Reload Schema Cache และยืนยันผ่าน PostgREST ด้วย Role Member
+- ปุ่ม “สร้างลิงก์ของฉัน” สร้าง Full Catalog Draft ทันที แสดงสถานะกำลังสร้าง และเปิดหน้าแก้ไขต่อ
 - Browser Verification บัญชี Member จริงผ่าน และ Post-merge Smoke 54 Assertions ผ่านซ้ำหลัง Deploy
 - Production Release A ไม่ถูก Deploy หรือเปลี่ยนค่า
 

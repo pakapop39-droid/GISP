@@ -37,9 +37,13 @@ Owner แจ้งตั้งรหัสผ่านใหม่ครบ พ�
 
 **อัปเดต 6 กันยายน 2569 — Slice 12.1:** Customer Browse Catalog แบบไม่มีราคาและลิงก์
 Product, Project, Curated และ Full Catalog ผ่าน Human UAT 7/7 เจ้าของระบบยืนยันว่า “ใช้ได้หมด”
-รวม Schema/Migration เข้า Development แล้ว Deploy ล่าสุด `15cf9ce5-e135-4541-9f78-ccd5059a12db` เป็น READY
+รวม Schema/Migration เข้า Development แล้ว Deploy ล่าสุด `526c7cf7-1354-42b1-92c6-e25cfad92f09` เป็น READY
 Post-merge Smoke ผ่าน 54 Assertions รวม Full Catalog ที่มีสินค้าพร้อมขาย 635 รายการ
 สถานะ `DONE` คงเหลือ 0 ขั้นตอนเพื่อปิด Slice 12.1 และ Production Release A ไม่เปลี่ยน
+
+**อัปเดต 7 กันยายน 2569 — Development Data Cleanup:** ลบสินค้าทดสอบ UAT 4 รายการแล้ว
+สินค้าในฐานเหลือ 722 รายการและทุก SKU เป็น `CN01-*`; Full Catalog แสดงสินค้าพร้อมขาย 631 รายการ
+และค้นคำว่า `ทดสอบ`, `UAT` หรือ SKU เดิมไม่พบสินค้า Production Release A ไม่เปลี่ยน
 
 GISP Demo Application 1.4 ยังคงเป็น UX/ภาพอ้างอิงที่อนุมัติแล้วและไม่ถูกแก้ไข ส่วน Slice 1
 ของ Application จริงได้รับการพัฒนา ทดสอบ รวมเข้า InsForge Development และ Deploy แล้วเมื่อ
@@ -242,7 +246,7 @@ Account Recovery และ Member Suspension Workflow ถูกปิดช่�
 | Slice 11 Human UAT | Admin/Member ผ่านครบ; Owner แจ้ง “ทำครบแล้ว อนุมัติผล UAT Slice 11” |
 | Slice 11 Development Release | Backup Full Export + SHA-256; Merge `12 added, 2 modified, 0 conflicts`; Deployment `839745fa-08fe-4db2-a021-167b5b53f311` `READY`; Schema และ Authenticated Smoke ผ่าน |
 | Slice 12 Development Release | Backup Full Export SHA-256 `D1E8DA11C3444E13190A9CD207F3503C91F2E6EE1BB55CE65E04164BC1ADE7A6`; 40 Test Files / 160 Tests, Build 118 Pages, Integration 28/28, Human UAT 7/7; Deployment `823d2a68-d5c2-4286-b0ad-0b1247b1b17a` READY และ Post-merge Smoke ผ่าน |
-| Slice 12.1 Development Release | Backup Full Export SHA-256 `210C75A5097E2116A28DF27C1FAA1FBE5D3F211308FB5870697FB2409BAA43C6`; 40 Test Files / 162 Tests, Build 118 Pages, Hosted Integration 69 Assertions, Human UAT 7/7; Deployment ล่าสุด `15cf9ce5-e135-4541-9f78-ccd5059a12db` READY และ Post-merge Smoke 54 Assertions ผ่าน |
+| Slice 12.1 Development Release | Backup Full Export SHA-256 `210C75A5097E2116A28DF27C1FAA1FBE5D3F211308FB5870697FB2409BAA43C6`; 40 Test Files / 162 Tests, Build 118 Pages, Hosted Integration 69 Assertions, Human UAT 7/7; Deployment ล่าสุด `526c7cf7-1354-42b1-92c6-e25cfad92f09` READY และ Post-merge Smoke 54 Assertions ผ่าน |
 | Slice 13 Local Gate | Local Implementation และ Contract Test ผ่าน; รอ Backend Branch, Integration/RLS/File/Workflow Test, Preview และ Human UAT |
 
 Automated Test ครอบคลุม Boundary สำคัญของ Slice 1 และ Human UAT ยืนยัน OTP/Reset Email จริง,
@@ -577,12 +581,17 @@ Human UAT Demo 1.4 ผ่าน 8/8 หมวด, `NEEDS FIX` 0, `NOT TESTED` 0 
 - Hosted Integration/RLS/Security ผ่าน 69 Assertions; Lint, Typecheck, Unit 40 Files / 162 Tests และ Build 118 Pages ผ่าน
 - Responsive Browser Test ผ่านบนมือถือ 390×844 และ Desktop; แก้ Contrast ปุ่ม Public แล้ว Deploy ซ้ำ
 - Human UAT ผ่าน 7/7 และเจ้าของระบบยืนยันว่า “ใช้ได้หมด” เมื่อ 6 กันยายน 2569
-- Development Deployment ล่าสุด `15cf9ce5-e135-4541-9f78-ccd5059a12db` เป็น `READY` ที่ `https://kit6y4pj.insforge.site`
+- Development Deployment ล่าสุด `526c7cf7-1354-42b1-92c6-e25cfad92f09` เป็น `READY` ที่ `https://kit6y4pj.insforge.site`
 - หน้า “Catalog ของฉัน” แสดงการ์ด “หน้ารวมสินค้าทั้งหมดของฉัน” โดยตรง กรอกชื่อบริษัทและผู้ติดต่อจาก Member Profile ให้อัตโนมัติ และแสดงว่าลิงก์ผูกกับ Member ผู้สร้าง
-- Post-merge Smoke 54 Assertions ผ่าน; Full Catalog เปิดได้กับสินค้าพร้อมขาย 635 รายการ
+- แก้ PostgREST Schema Cache เก่าที่ทำให้ Create API ตอบ `PGRST202`; Reload Cache และทดสอบ RPC ด้วย Role Member ผ่าน
+- ปุ่ม “สร้างลิงก์ของฉัน” สร้าง Full Catalog Draft โดยตรงและเปิดหน้าแก้ไขต่อ
+- Post-merge Smoke 54 Assertions ผ่าน; หลังล้างสินค้า UAT 4 รายการ Full Catalog เปิดได้กับสินค้าพร้อมขาย 631 รายการ
+- ลบสินค้าทดสอบ Slice 2/3/6 จาก Development ครบ 4 รายการ เหลือสินค้า 722 รายการและทุก SKU เป็น `CN01-*`;
+  เก็บ Backup ก่อนลบและตรวจ Hosted Full Catalog แล้วไม่พบคำว่า `ทดสอบ`, `UAT` หรือ SKU เดิม
 - หลักฐาน: [Slice 12.1 Customer Browse Catalog](../evidence/2026-09-06-slice-12-1-customer-browse-catalog.md)
   [Human UAT Checklist](../uat/SLICE-12-1-HUMAN-UAT.md) และ
-  [Development Acceptance](../evidence/2026-09-06-slice-12-1-development-acceptance.md)
+  [Development Acceptance](../evidence/2026-09-06-slice-12-1-development-acceptance.md) และ
+  [Test Product Cleanup](../evidence/2026-09-07-development-test-product-cleanup.md)
 - คงเหลือ 0 ขั้นตอนเพื่อปิด Slice 12.1
 - Production Release A ไม่ถูก Deploy หรือเปลี่ยนค่า
 

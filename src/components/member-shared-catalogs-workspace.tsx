@@ -88,15 +88,27 @@ export function MemberSharedCatalogsWorkspace() {
     return null;
   }, [productId, projectId, scopeType]);
 
-  async function create(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function createCatalog(payload: Record<string, unknown>) {
     setBusy(true);
     setError("");
-    const form = new FormData(event.currentTarget);
     const response = await fetch("/api/member/shared-catalogs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      body: JSON.stringify(payload),
+    });
+    const body = await response.json();
+    if (response.ok) {
+      window.location.href = `/member/shared-catalogs/${body.data.id}`;
+      return;
+    }
+    setError(body.message ?? "สร้างไม่สำเร็จ");
+    setBusy(false);
+  }
+
+  async function create(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await createCatalog({
         title: form.get("title"),
         brandName: form.get("brandName"),
         introduction: form.get("introduction"),
@@ -107,15 +119,26 @@ export function MemberSharedCatalogsWorkspace() {
         scopeType,
         sourceId,
         expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-      }),
     });
-    const body = await response.json();
-    if (response.ok) {
-      window.location.href = `/member/shared-catalogs/${body.data.id}`;
-    } else {
-      setError(body.message ?? "สร้างไม่สำเร็จ");
+  }
+
+  async function createFullCatalog() {
+    if (!profile?.company_name) {
+      prepareFullCatalog();
+      return;
     }
-    setBusy(false);
+    await createCatalog({
+      title: `Catalog สินค้าของ ${profile.company_name}`,
+      brandName: profile.company_name,
+      introduction: "เลือกดูสินค้าที่พร้อมขาย ค้นหาตามชื่อหรือหมวด แล้วติดต่อเราเมื่อพบรายการที่สนใจ",
+      contactName: profile.contact_name ?? "",
+      contactPhone: profile.contact_phone ?? "",
+      contactEmail: "",
+      lineUrl: "",
+      scopeType: "FULL_CATALOG",
+      sourceId: null,
+      expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
+    });
   }
 
   const productScopeUnavailable = scopeType === "PRODUCT" && !productId;
@@ -146,10 +169,10 @@ export function MemberSharedCatalogsWorkspace() {
           <p className="mt-2">ลูกค้าเลือกดู ค้นหา และเลือกหมวดสินค้าได้โดยไม่เห็นราคา เมื่อลูกค้าสนใจจะติดต่อกลับมาที่ <b>{profile?.company_name ?? "บริษัทของ Member"}</b></p>
           <p className="mt-1 text-sm font-semibold text-emerald-900">ลิงก์ทุกอันผูกกับบัญชี Member ผู้สร้าง และใช้ชื่อบริษัทกับช่องทางติดต่อของ Member</p>
         </div>
-        {activeFullCatalog ? <Link href={`/member/shared-catalogs/${activeFullCatalog.id}`} className="v14-button v14-button--dark"><CheckCircle2 size={15}/>เปิดลิงก์ของฉัน</Link> : <button type="button" onClick={prepareFullCatalog} className="v14-button v14-button--dark"><Plus size={15}/>สร้างลิงก์ของฉัน</button>}
+        {activeFullCatalog ? <Link href={`/member/shared-catalogs/${activeFullCatalog.id}`} className="v14-button v14-button--dark"><CheckCircle2 size={15}/>เปิดลิงก์ของฉัน</Link> : <button type="button" disabled={busy || loading} onClick={() => void createFullCatalog()} className="v14-button v14-button--dark">{busy ? <LoaderCircle className="animate-spin" size={15}/> : <Plus size={15}/>} {busy ? "กำลังสร้างลิงก์…" : "สร้างลิงก์ของฉัน"}</button>}
       </div>
       <div className="mt-4 border-t border-emerald-900/15 pt-3 text-sm text-emerald-950">
-        {activeFullCatalog ? <>มีลิงก์หน้ารวมสินค้าที่เปิดใช้งานแล้ว: <b>{activeFullCatalog.title}</b></> : <>บัญชีนี้ยังไม่มีลิงก์หน้ารวมสินค้า กด “สร้างลิงก์ของฉัน” แล้วตรวจข้อมูลก่อนเผยแพร่</>}
+        {activeFullCatalog ? <>มีลิงก์หน้ารวมสินค้าที่เปิดใช้งานแล้ว: <b>{activeFullCatalog.title}</b></> : <>บัญชีนี้ยังไม่มีลิงก์หน้ารวมสินค้า กด “สร้างลิงก์ของฉัน” เพื่อสร้างร่างทันที แล้วตรวจข้อมูลก่อนเผยแพร่</>}
       </div>
     </section>
 

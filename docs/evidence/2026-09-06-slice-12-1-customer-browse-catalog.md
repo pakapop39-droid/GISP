@@ -47,7 +47,7 @@
 `DONE ON DEVELOPMENT`
 
 - Human UAT: `PASS 7/7`; เจ้าของระบบยืนยันว่า **“ใช้ได้หมด”** เมื่อ 6 กันยายน 2569
-- Development Deployment ล่าสุด: `15cf9ce5-e135-4541-9f78-ccd5059a12db` (`READY`)
+- Development Deployment ล่าสุด: `526c7cf7-1354-42b1-92c6-e25cfad92f09` (`READY`)
 - UX Follow-up: แสดงการ์ด “หน้ารวมสินค้าทั้งหมดของฉัน” โดยตรงและ Prefill Branding/Contact จาก Member Profile
 - Post-merge Smoke: 54 Assertions ผ่านครบทั้ง 4 Scope
 - Full Catalog ตรวจด้วยสินค้าพร้อมขาย 635 รายการและแก้การอ่านข้อมูลเป็นชุดย่อยแล้ว

@@ -86,7 +86,7 @@
 - Public Payload ไม่มีราคา Supplier Cost Formula Internal Note ข้อมูลลูกค้า Project หรือ Site Address
 - Responsive Browser Test ผ่านบนมือถือ 390×844 และ Desktop
 - Human UAT ผ่าน 7/7 และเจ้าของระบบยืนยันว่า “ใช้ได้หมด” เมื่อ 6 กันยายน 2569
-- Development Deployment ล่าสุด `15cf9ce5-e135-4541-9f78-ccd5059a12db` เป็น `READY`; Post-merge Smoke 54 Assertions ผ่าน
+- Development Deployment ล่าสุด `526c7cf7-1354-42b1-92c6-e25cfad92f09` เป็น `READY`; Post-merge Smoke 54 Assertions ผ่าน
 - หน้า Member แสดง “หน้ารวมสินค้าทั้งหมดของฉัน” โดยตรงและ Prefill Branding/Contact จาก Member Profile
 - สถานะ: `DONE`; คงเหลือ 0 ขั้นตอนเพื่อปิด Slice 12.1
 - หลักฐาน: `evidence/2026-09-06-slice-12-1-customer-browse-catalog.md`

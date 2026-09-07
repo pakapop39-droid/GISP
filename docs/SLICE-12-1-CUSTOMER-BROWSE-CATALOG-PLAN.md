@@ -109,7 +109,7 @@ Member สร้างลิงก์ได้ 4 แบบ:
 2. **Member Flow — ผ่าน:** ปุ่มสร้างลิงก์ 3 จุด, Preview และ Link Management
 3. **Public Browse Flow — ผ่าน:** 4 Layout, Search/Category/Detail, Interest List และ Contact CTA
 4. **Development Acceptance — ผ่าน:** Human UAT 7/7, Owner Sign-off, Schema/Migration Integration,
-   Development Deployment ล่าสุด `15cf9ce5-e135-4541-9f78-ccd5059a12db` และ Post-merge Smoke 54 Assertions ผ่าน
+   Development Deployment ล่าสุด `526c7cf7-1354-42b1-92c6-e25cfad92f09` และ Post-merge Smoke 54 Assertions ผ่าน
 
 **คงเหลือ 0 ขั้นตอนเพื่อปิด Slice 12.1**
 

@@ -223,8 +223,9 @@ Interest List ไม่เขียนข้อมูลลูกค้าลง
 **สถานะ 6 กันยายน 2569:** `DONE` บน Development ตาม DEC-061/DEC-062 หลัง Backend/Security,
 Member Flow, Public Browse Flow, Hosted Integration 69 Assertions, Unit 162 Tests, Production Build,
 Mobile/Desktop Responsive Test และ Human UAT 7/7 ผ่าน เจ้าของระบบยืนยันว่า “ใช้ได้หมด”
-รวม Schema/Migration เข้า Development และ Deploy ล่าสุด `15cf9ce5-e135-4541-9f78-ccd5059a12db`
+รวม Schema/Migration เข้า Development และ Deploy ล่าสุด `526c7cf7-1354-42b1-92c6-e25cfad92f09`
 พร้อม Post-merge Smoke 54 Assertions แล้ว Full Catalog ผ่านกับสินค้าพร้อมขาย 635 รายการ
+หลังล้างสินค้าทดสอบ UAT 4 รายการเมื่อ 7 กันยายน 2569 Full Catalog เหลือสินค้าพร้อมขาย 631 รายการ
 คงเหลือ 0 ขั้นตอนเพื่อปิด Slice 12.1; Production Release A ไม่เปลี่ยน
 
 ### Slice 13 — Visual Product Sourcing

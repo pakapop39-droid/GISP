@@ -15,6 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   try {
     await requireMember();
     const raw = await request.json().catch(() => null);
@@ -32,6 +33,16 @@ export async function POST(request: NextRequest) {
       source_id_input: parsed.data.sourceId, expires_at_input: expiresAt,
     });
     if (error) throw error;
+    console.log(JSON.stringify({ level: "info", message: "shared catalog draft created", route: "/api/member/shared-catalogs", durationMs: Date.now() - startedAt }));
     return NextResponse.json({ data: { id: data }, message: "สร้างลิงก์ Catalog ร่างแล้ว" }, { status: 201 });
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    console.error(JSON.stringify({
+      level: "error",
+      message: "shared catalog draft failed",
+      route: "/api/member/shared-catalogs",
+      error: error && typeof error === "object" && "message" in error ? String(error.message) : String(error),
+      durationMs: Date.now() - startedAt,
+    }));
+    return apiError(error);
+  }
 }
