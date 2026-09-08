@@ -53,6 +53,10 @@ export function isReleaseAEnabled() {
   return process.env.RELEASE_STAGE === "A";
 }
 
+export function isStagedReleaseEnabled() {
+  return process.env.RELEASE_STAGE === "A" || process.env.RELEASE_STAGE === "B";
+}
+
 // A hidden menu alone must not expose features whose database release is pending.
 const SHARED_CATALOG_PREFIXES = [
   "/member/shared-catalogs", "/api/member/shared-catalogs",
@@ -110,4 +114,60 @@ export function isReleaseAPathAllowed(pathname: string, staffOperations = false)
     : RELEASE_A_PAGE_PREFIXES;
 
   return prefixes.some((prefix) => matchesPrefix(pathname, prefix));
+}
+
+const RELEASE_B_PAGE_PREFIXES = [
+  "/dashboard",
+  "/onboarding",
+  "/pending-approval",
+  "/application-rejected",
+  "/member/dashboard",
+  "/member/profile",
+  "/member/catalog",
+  "/member/projects",
+  "/member/shared-catalogs",
+  "/member/sourcing-requests",
+  "/catalog/share",
+  "/admin/showroom-visits",
+  "/admin/sourcing-requests",
+];
+
+const RELEASE_B_API_PREFIXES = [
+  "/api/auth/sign-up",
+  "/api/auth/verify-email",
+  "/api/auth/resend-verification",
+  "/api/member/onboarding",
+  "/api/member/application/resubmit",
+  "/api/member/profile",
+  "/api/member/catalog",
+  "/api/member/projects",
+  "/api/member/shared-catalogs",
+  "/api/member/sourcing-requests",
+  "/api/public/catalogs",
+  "/api/admin/showroom-visits",
+  "/api/admin/sourcing-requests",
+];
+
+const RELEASE_B_PUBLIC_PATHS = new Set(["/register"]);
+
+export function isReleaseBPathAllowed(pathname: string, staffOperations = false) {
+  if (isReleaseAPathAllowed(pathname, staffOperations) || RELEASE_B_PUBLIC_PATHS.has(pathname)) {
+    return true;
+  }
+
+  const prefixes = pathname.startsWith("/api/")
+    ? RELEASE_B_API_PREFIXES
+    : RELEASE_B_PAGE_PREFIXES;
+
+  return prefixes.some((prefix) => matchesPrefix(pathname, prefix));
+}
+
+export function isReleaseStagePathAllowed(
+  pathname: string,
+  stage = process.env.RELEASE_STAGE,
+  staffOperations = process.env.ENABLE_STAFF_OPERATIONS === "true",
+) {
+  if (stage === "A") return isReleaseAPathAllowed(pathname, staffOperations);
+  if (stage === "B") return isReleaseBPathAllowed(pathname, staffOperations);
+  return true;
 }

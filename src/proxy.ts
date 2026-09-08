@@ -2,7 +2,7 @@ import { updateSession } from "@insforge/sdk/ssr/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { secureAuthCookieOptions } from "@/lib/auth/cookies";
 import { APP_SESSION_COOKIE } from "@/lib/auth/cookies";
-import { isPendingProductionFeature, isReleaseAEnabled, isReleaseAPathAllowed } from "@/lib/release-stage";
+import { isPendingProductionFeature, isReleaseStagePathAllowed, isStagedReleaseEnabled } from "@/lib/release-stage";
 
 const publicPaths = [
   "/",
@@ -56,7 +56,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isPendingProductionFeature(request.nextUrl.pathname) ||
-      (isReleaseAEnabled() && !isReleaseAPathAllowed(request.nextUrl.pathname, process.env.ENABLE_STAFF_OPERATIONS === "true"))) {
+      (isStagedReleaseEnabled() && !isReleaseStagePathAllowed(request.nextUrl.pathname))) {
     if (request.nextUrl.pathname.startsWith("/api/")) {
       return NextResponse.json(
         { code: "RELEASE_NOT_ENABLED", message: "ฟังก์ชันนี้ยังไม่เปิดใช้งานใน Production รุ่นปัจจุบัน" },

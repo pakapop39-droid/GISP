@@ -65,6 +65,21 @@ pass((await request("/member/sourcing-requests", memberCookie)).status === 200, 
 pass((await request("/api/member/sourcing-requests", memberCookie)).status === 200, "member sourcing API is enabled");
 pass((await request("/api/admin/members", memberCookie)).status === 403, "member cannot read the admin member queue");
 pass((await request("/api/admin/sourcing-requests", memberCookie)).status === 403, "member cannot read the admin sourcing queue");
+for (const path of [
+  "/member/custom-requests",
+  "/api/member/custom-requests",
+  "/member/custom-quotations",
+  "/api/member/custom-quotations",
+  "/member/orders",
+  "/api/member/orders",
+  "/api/member/payment-transfers",
+  "/member/claims",
+  "/api/member/claims",
+  "/member/reports",
+  "/api/member/reports",
+]) {
+  pass((await request(path, memberCookie)).status === 404, `Release B keeps ${path} closed`);
+}
 pass((await request("/api/public/catalogs/not-a-valid-token")).status === 404, "invalid public catalog token is rejected");
 
 for (const result of results) console.log(result);

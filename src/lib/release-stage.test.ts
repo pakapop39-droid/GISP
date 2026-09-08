@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPendingProductionFeature, isReleaseAPathAllowed } from "./release-stage";
+import { isPendingProductionFeature, isReleaseAPathAllowed, isReleaseBPathAllowed, isReleaseStagePathAllowed } from "./release-stage";
 
 describe("Release A route gate", () => {
   it("allows the internal catalog and administration scope", () => {
@@ -68,6 +68,40 @@ describe("Production MVP publication boundary", () => {
       else process.env.NEXT_PUBLIC_ENABLE_SHARED_CATALOGS = previousCatalog;
       if (previousSourcing === undefined) delete process.env.NEXT_PUBLIC_ENABLE_PRODUCT_SOURCING;
       else process.env.NEXT_PUBLIC_ENABLE_PRODUCT_SOURCING = previousSourcing;
+    }
+  });
+
+  it("limits Release B to member pilot routes", () => {
+    for (const route of [
+      "/register",
+      "/api/auth/sign-up",
+      "/member/dashboard",
+      "/member/profile",
+      "/member/catalog",
+      "/member/projects/123",
+      "/member/shared-catalogs",
+      "/member/sourcing-requests/new",
+      "/catalog/share/token",
+      "/api/public/catalogs/token",
+      "/admin/showroom-visits",
+      "/admin/sourcing-requests",
+    ]) expect(isReleaseBPathAllowed(route, true)).toBe(true);
+
+    for (const route of [
+      "/member/custom-requests",
+      "/api/member/custom-requests",
+      "/member/custom-quotations",
+      "/api/member/custom-quotations",
+      "/member/orders",
+      "/api/member/orders",
+      "/api/member/payment-transfers",
+      "/member/claims",
+      "/api/member/claims",
+      "/member/reports",
+      "/api/member/reports",
+    ]) {
+      expect(isReleaseBPathAllowed(route, true)).toBe(false);
+      expect(isReleaseStagePathAllowed(route, "B", true)).toBe(false);
     }
   });
 });

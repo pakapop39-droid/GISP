@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { staffJobGroupLabelsForRoles } from "@/lib/auth/staff-job-groups";
-import { isReleaseAPathAllowed } from "@/lib/release-stage";
+import { isReleaseStagePathAllowed } from "@/lib/release-stage";
 import type { AppAccessContext } from "@/lib/auth/types";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; permission?: string; permissionsAny?: string[]; superAdminOnly?: boolean; feature?: "sharedCatalog" | "productSourcing" };
@@ -36,7 +36,7 @@ const adminNav: NavItem[]=[
 
 export function ProductionShell({portal,context,children,releaseStage,staffOperations=false}:{staffOperations?:boolean;releaseStage?:string;portal:"member"|"admin";context:AppAccessContext;children:React.ReactNode}){
   const pathname=usePathname();const router=useRouter();const [open,setOpen]=useState(false);const isSuperAdmin=context.roles.includes("SUPER_ADMIN");
-  const nav=(portal==="member"?memberNav:adminNav).filter(item=>(releaseStage!=="A"||isReleaseAPathAllowed(item.href,staffOperations))&&(!item.permission||context.permissions.includes(item.permission))&&(!item.permissionsAny||item.permissionsAny.some(permission=>context.permissions.includes(permission)))&&(!item.superAdminOnly||isSuperAdmin)&&(!item.feature||(item.feature==="sharedCatalog"?sharedCatalogEnabled:productSourcingEnabled)));
+  const nav=(portal==="member"?memberNav:adminNav).filter(item=>isReleaseStagePathAllowed(item.href,releaseStage,staffOperations)&&(!item.permission||context.permissions.includes(item.permission))&&(!item.permissionsAny||item.permissionsAny.some(permission=>context.permissions.includes(permission)))&&(!item.superAdminOnly||isSuperAdmin)&&(!item.feature||(item.feature==="sharedCatalog"?sharedCatalogEnabled:productSourcingEnabled)));
   async function signOut(){await fetch("/api/auth/sign-out",{method:"POST"});router.replace("/login");router.refresh()}
   const roleLabels=portal==="member"?["สมาชิก"]:staffJobGroupLabelsForRoles(context.roles);
   const sidebar=<><div className="v14-side-intro"><span>{portal==="member"?"MEMBER PORTAL":"OPERATIONS PORTAL"}</span><strong>{context.companyName??context.displayName??"GISP"}</strong><small>{roleLabels.join(" · ")}</small></div><nav>{nav.map((item,index)=>{const Icon=item.icon;const active=item.href==="/admin/catalog"?(pathname===item.href||pathname.startsWith("/admin/catalog/products/")):(pathname===item.href||pathname.startsWith(`${item.href}/`));return <Link key={item.href} href={item.href} onClick={()=>setOpen(false)} className={active?"active":""}><Icon size={16}/><span>{item.label}</span><small>{String(index+1).padStart(2,"0")}</small></Link>})}</nav><div className="v14-side-foot"><span>SECURED SESSION</span><strong>{context.displayName??"ผู้ใช้งาน"}</strong><button type="button" onClick={signOut} className={`mt-3 flex items-center gap-2 text-xs ${portal==="member"?"text-ink/65 hover:text-ink":"text-white/70 hover:text-white"}`}><LogOut size={14}/>ออกจากระบบ</button></div></>;
