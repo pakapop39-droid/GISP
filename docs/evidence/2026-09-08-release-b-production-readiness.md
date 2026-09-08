@@ -30,11 +30,13 @@ Post-deploy Smoke Test เท่านั้น
 | Rehearsal Backend | `https://m8ugbyak-p4a.ap-southeast.insforge.app` |
 | Rehearsal Web | `https://gisp-release-b-rehearsal.vercel.app` |
 | Rehearsal Deployment | `dpl_GvBAk4gPEWmCDZAqx5xFwQ5NRukf` (`READY`) |
+| Source Branch / Commit | `codex/release-b-readiness` / `609059a` |
 | Migration Bundle | `20260908150000_release-b-shared-catalog-sourcing.sql` |
 | Bundle SHA-256 | `F3889A61057C2DD7AD84F3E4ECFA88FFA97DD872664284A721267848F4E0FC72` |
 
 Bundle รวม Migration Slice 12, Slice 12.1, Slice 13 และ Migration ซ่อน Draft จาก Member
 จำนวน 5 ไฟล์ตาม Manifest ใน `output/release-b-20260908/manifest.json`
+ตรวจ SHA-256 ของ Runtime Source ระหว่าง Commit กับ Source ที่ Deploy ซ้อมแล้ว พบความต่าง 0 ไฟล์
 
 ## Merge Rehearsal บนฐาน Production ปัจจุบัน
 
@@ -125,6 +127,8 @@ Trusted RPC/API ที่ตรวจสิทธิ์ ส่วน `next_recor
 - Technical Production Rehearsal: ผ่าน
 - Production Release B Deployment: `AWAITING OWNER APPROVAL`
 - Production ณ เวลาปิดรายงาน: ยังเป็น Release A และไม่ถูกเปลี่ยน
+- Final untouched check: `/api/health` ตอบ 200 ส่วน `/register`, Member Shared Catalog API และ
+  Admin Sourcing API ยังตอบ 404; ตารางเป้าหมายและ `sourcing.manage` ยังไม่มีใน Production
 
 คงเหลือ **2 ขั้นตอนเพื่อเปิด Release B**: Owner อนุมัติ Production Deployment และดำเนินการ
 Cutover/Post-deploy Smoke Test ตามรายการด้านบน
