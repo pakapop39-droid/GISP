@@ -29,8 +29,8 @@ Post-deploy Smoke Test เท่านั้น
 | Current-production Rehearsal Branch | `release-b-rehearsal-20260908` / `f0f9a36b-ec7d-4ceb-ae28-b2d5feef85f9` |
 | Rehearsal Backend | `https://m8ugbyak-p4a.ap-southeast.insforge.app` |
 | Rehearsal Web | `https://gisp-release-b-rehearsal.vercel.app` |
-| Rehearsal Deployment | `dpl_GvBAk4gPEWmCDZAqx5xFwQ5NRukf` (`READY`) |
-| Source Branch / Commit | `codex/release-b-readiness` / `609059a` |
+| Rehearsal Deployment | `dpl_9J8o6uNNL5w4nbzmeduk3xWYhiKo` (`READY`) |
+| Source Branch / Commit | `codex/release-b-readiness` / `7b88c43` |
 | Migration Bundle | `20260908150000_release-b-shared-catalog-sourcing.sql` |
 | Bundle SHA-256 | `F3889A61057C2DD7AD84F3E4ECFA88FFA97DD872664284A721267848F4E0FC72` |
 
@@ -61,16 +61,18 @@ Preflight บน Production Parent ยืนยันว่ามี Role `PRODU
 | --- | --- |
 | Type Check | ผ่าน |
 | ESLint | ผ่าน |
-| Unit Test | ผ่าน 42 Test Files / 171 Tests |
+| Unit Test | ผ่าน 42 Test Files / 172 Tests |
 | Production Build | ผ่าน 118 Pages/Routes |
 | Slice 12.1 Integration/RLS | ผ่าน 19 Assertions บน Current-production Rehearsal |
 | Slice 13 Integration/RLS/File/Workflow | ผ่าน 20 Assertions บน Current-production Rehearsal |
-| Hosted Smoke | ผ่าน 16 Assertions |
+| Hosted Smoke | ผ่าน 27 Assertions |
 | Responsive Browser | ผ่านที่ 390×844; ไม่มี Horizontal Overflow |
 | Admin Members | หน้าและ API เปิดให้ Admin; Anonymous 401/Login; Member 403 |
 | Shared Catalog | Member page/API เปิด; ปุ่มสร้างลิงก์พร้อมใช้งาน |
 | Visual Sourcing | Member/Admin page/API เปิด; หน้าแนบภาพพร้อมใช้งาน |
 | Public Catalog | Invalid Token ตอบ 404; Public-safe Serializer และ No-price Contract ผ่าน Integration |
+| Release B Boundary | ปิด Member Custom RFQ, Quotation, Order, Payment, Claim และ Report รวม 11 Page/API Checks |
+| Member Pilot Dashboard | แสดงเฉพาะ Catalog, Project, Shared Catalog, Product Sourcing และ Profile; ไม่มีลิงก์ไป Workflow ที่ปิด |
 
 หลักฐาน Runtime อยู่ใน `output/release-b-20260908/` และไม่ถูก Commit เพราะมีข้อมูลเชื่อมระบบซ้อม
 ไฟล์ที่ใช้อ้างอิงหลัก ได้แก่ `current-production-rehearsal-slice12-test.log`,

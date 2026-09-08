@@ -32,7 +32,7 @@ Owner แจ้งตั้งรหัสผ่านใหม่ครบ พ�
 **อัปเดต 8 กันยายน 2569 — Release B readiness:** แก้เงื่อนไขหน้า Member Requests ตาม DEC-055
 และซ้อม Release B ใหม่บน Schema-only Branch ที่สร้างจาก Production ปัจจุบันโดยตรง Migration
 Bundle ผ่านโดยไม่มี Conflict, Integration/RLS ของ Slice 12.1 และ 13 ผ่านรวม 39 Assertions,
-Hosted Smoke ผ่าน 16 Assertions, Unit Test 171 Tests และ Build 118 Pages ผ่าน หน้า Admin/Member
+Hosted Smoke ผ่าน 27 Assertions, Unit Test 172 Tests และ Build 118 Pages ผ่าน หน้า Admin/Member
 บนมือถือ 390×844 ไม่มี Horizontal Overflow Security Advisor ก่อนและหลังมี 213 Findings เท่ากัน
 โดยไม่มี Finding ใหม่จาก Shared Catalog หรือ Product Sourcing Production ยังเป็น Release A
 คงเหลือ 2 ขั้นตอนเพื่อเปิด Release B: Owner Approval และ Cutover/Post-deploy Smoke Test
@@ -190,7 +190,7 @@ Security Advisor พบ 98 Critical, 126 Warning และ 40 Info รวมถ�
 | Application API | Slice 12 DONE | Member Shared Catalog API, Public-safe API, Signed URL และ Lifecycle Actions | Public Snapshot/Invalid Token/Auth Gate Smoke ผ่าน |
 | Application UI | Slice 12 DONE | Member Catalog Editor/Preview และ Public Mobile-first Catalog | Human UAT และ Owner Sign-off ผ่าน |
 | Quality & UAT | Slice 12 DONE | 40 Test Files / 160 Tests, Integration 28/28, Typecheck/Lint/Build, Browser QA, Human UAT และ Development Release ผ่าน | เหลือ 0 ขั้นตอนเพื่อปิด Slice 12 |
-| Deployment | Release B Technical Rehearsal ผ่าน / Production Release A Live | Current-production Rehearsal `dpl_GvBAk4gPEWmCDZAqx5xFwQ5NRukf` READY ที่ `https://gisp-release-b-rehearsal.vercel.app`; Hosted Smoke 16 Assertions และ Responsive Gate ผ่าน | Production ยังไม่เปลี่ยน; รอ Owner Approval แยก |
+| Deployment | Release B Technical Rehearsal ผ่าน / Production Release A Live | Current-production Rehearsal `dpl_9J8o6uNNL5w4nbzmeduk3xWYhiKo` READY ที่ `https://gisp-release-b-rehearsal.vercel.app`; Hosted Smoke 27 Assertions และ Responsive Gate ผ่าน | Production ยังไม่เปลี่ยน; รอ Owner Approval แยก |
 | Production Strategy | Release B Ready for Owner Approval | DEC-055 Member Requests แก้แล้ว; Migration Merge Rehearsal, Backup/Rollback Plan, Security Comparison และ Automated/Browser Gate ผ่าน | เหลือ 2 ขั้นตอน: Owner Approval และ Cutover/Post-deploy Smoke Test |
 
 ## 3. สถานะเทียบกับ Vertical Slice

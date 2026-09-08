@@ -101,8 +101,11 @@ Shipment/Delivery, Claim และ Dashboard/Reports โดยไม่ต้อ
 - วันที่ 8 กันยายน 2569 แก้และตรวจ `/admin/members` กับ `/api/admin/members` แล้ว โดย Admin
   ใช้งานได้, Member ถูกปฏิเสธ 403 และ Anonymous ถูกส่งไป Login/ตอบ 401 ตามประเภทเส้นทาง
 - Release B Bundle ของ Slice 12, 12.1 และ 13 ผ่าน Merge Rehearsal บน Schema-only Branch ที่สร้าง
-  จาก Production ปัจจุบันโดยตรง: Integration/RLS 39 Assertions, Hosted Smoke 16 Assertions,
-  Unit Test 171 Tests, Build 118 Pages และ Responsive Browser 390×844 ผ่าน
+  จาก Production ปัจจุบันโดยตรง: Integration/RLS 39 Assertions, Hosted Smoke 27 Assertions,
+  Unit Test 172 Tests, Build 118 Pages และ Responsive Browser 390×844 ผ่าน
+- เพิ่ม Release B Route Gate ให้ Member เข้าถึงเฉพาะ Signup, Catalog, Project, Shared Catalog และ
+  Product Sourcing; Hosted Smoke ยืนยันว่า Custom RFQ, Quotation, Order, Payment, Claim และ Report
+  ยังปิดอยู่ตามขอบเขต Member Pilot
 - Security Advisor ก่อนและหลัง Bundle เท่ากัน 213 Findings และไม่มี Finding ใหม่จาก Shared Catalog
   หรือ Product Sourcing; Production ยังเป็น Release A และ Release B รอ Owner Approval แยก
 - รายละเอียด Gate, Runbook และ Rollback อยู่ที่
