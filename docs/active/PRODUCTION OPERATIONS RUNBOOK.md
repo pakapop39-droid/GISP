@@ -58,14 +58,15 @@ npx -y @insforge/cli backups list --json
 
 1. ตรวจ Production Project ID ต้องเป็น `865860c2-49fa-4e53-908f-9396b2f75233`
 2. สร้าง Backup ใหม่ชื่อ `pre-release-b-20260908` และตรวจสถานะ `completed`
-3. ตรวจ Migration Bundle `20260908150000_release-b-shared-catalog-sourcing.sql` ให้มี SHA-256
-   `F3889A61057C2DD7AD84F3E4ECFA88FFA97DD872664284A721267848F4E0FC72`
+3. ตรวจ Final Migration Bundle `20260908170000_release-b-member-pilot.sql` ให้มี SHA-256
+   `F46811B41386D824B66A795201EA6E20A596E99F6E1778E3B3AE8C0BF9399AE5`
 4. Apply Bundle แล้วตรวจตารางใหม่ 10 ตารางเปิด RLS, ไม่มี `anon` SELECT หรือ
    `authenticated` INSERT ตารางฐานโดยตรง และ `next_record_reference(text)` ยังเรียกตรงไม่ได้
 5. Deploy โดยใช้ `RELEASE_STAGE=B`, เปิด Shared Catalog และ Product Sourcing,
    คง Staff Operations เปิด และคง Transaction/Post-go-live Features ปิด
 6. ตรวจ Login Owner, Admin Members, Member Catalog/Project, Shared Catalog, Visual Sourcing,
-   Public Invalid Token และสิทธิ์ Member ที่ต้องเข้า Admin API ไม่ได้
+   Public Invalid Token, สิทธิ์ Member ที่ต้องเข้า Admin API ไม่ได้ และ Transaction RPC 16 รายการ
+   ต้องตอบ `permission denied`
 7. หาก Gate ใดไม่ผ่าน ให้หยุด Member Pilot และใช้แผนย้อนกลับก่อนรับรายการจริง
 
 Source, Migration Hash, Gate และแผนย้อนกลับฉบับเต็มอยู่ที่

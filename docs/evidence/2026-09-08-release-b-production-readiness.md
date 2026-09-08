@@ -30,12 +30,13 @@ Post-deploy Smoke Test เท่านั้น
 | Rehearsal Backend | `https://m8ugbyak-p4a.ap-southeast.insforge.app` |
 | Rehearsal Web | `https://gisp-release-b-rehearsal.vercel.app` |
 | Rehearsal Deployment | `dpl_9J8o6uNNL5w4nbzmeduk3xWYhiKo` (`READY`) |
-| Source Branch / Commit | `codex/release-b-readiness` / `7b88c43` |
-| Migration Bundle | `20260908150000_release-b-shared-catalog-sourcing.sql` |
-| Bundle SHA-256 | `F3889A61057C2DD7AD84F3E4ECFA88FFA97DD872664284A721267848F4E0FC72` |
+| Source Branch / Commit | `codex/release-b-readiness` / `cfba381` |
+| Migration Bundle | `20260908170000_release-b-member-pilot.sql` |
+| Bundle SHA-256 | `F46811B41386D824B66A795201EA6E20A596E99F6E1778E3B3AE8C0BF9399AE5` |
 
-Bundle รวม Migration Slice 12, Slice 12.1, Slice 13 และ Migration ซ่อน Draft จาก Member
-จำนวน 5 ไฟล์ตาม Manifest ใน `output/release-b-20260908/manifest.json`
+Bundle รวม Migration Slice 12, Slice 12.1, Slice 13, Migration ซ่อน Draft จาก Member และ
+Backend Transaction Gate ของ Release B จำนวน 6 ไฟล์ตาม Manifest ใน
+`output/release-b-20260908/manifest.json`
 ตรวจ SHA-256 ของ Runtime Source ระหว่าง Commit กับ Source ที่ Deploy ซ้อมแล้ว พบความต่าง 0 ไฟล์
 
 ## Merge Rehearsal บนฐาน Production ปัจจุบัน
@@ -48,8 +49,9 @@ Branch รุ่นแรก `production-completion-20260906` เก่ากว
 1. ตรวจฐานว่ามี Migration Production เดิม 25 รายการ
 2. Apply Release B Bundle หนึ่งไฟล์สำเร็จ ไม่มี Conflict
 3. Slice 12.1 Integration/RLS ผ่าน 19 Assertions
-4. Slice 13 Integration/RLS/File/Workflow ผ่าน 20 Assertions
-5. สร้างเฉพาะบัญชีและข้อมูล UAT ใน Branch ไม่มีการคัดลอกข้อมูลทดสอบเข้า Production
+4. Slice 13 Integration/RLS/File/Workflow ผ่าน 25 Assertions รวมการปฏิเสธ Member จากคำสั่ง Admin 5 รายการ
+5. Backend Transaction Gate ผ่าน 16 Assertions โดยเรียก RPC ตรงด้วยบัญชี Member
+6. สร้างเฉพาะบัญชีและข้อมูล UAT ใน Branch ไม่มีการคัดลอกข้อมูลทดสอบเข้า Production
 
 Preflight บน Production Parent ยืนยันว่ามี Role `PRODUCT_ADMIN`, `PURCHASING` และ
 `SUPER_ADMIN` ครบสำหรับรับ Permission ใหม่ และยังไม่มีตาราง `shared_catalogs`,
@@ -64,7 +66,7 @@ Preflight บน Production Parent ยืนยันว่ามี Role `PRODU
 | Unit Test | ผ่าน 42 Test Files / 172 Tests |
 | Production Build | ผ่าน 118 Pages/Routes |
 | Slice 12.1 Integration/RLS | ผ่าน 19 Assertions บน Current-production Rehearsal |
-| Slice 13 Integration/RLS/File/Workflow | ผ่าน 20 Assertions บน Current-production Rehearsal |
+| Slice 13 Integration/RLS/File/Workflow | ผ่าน 25 Assertions บน Current-production Rehearsal |
 | Hosted Smoke | ผ่าน 27 Assertions |
 | Responsive Browser | ผ่านที่ 390×844; ไม่มี Horizontal Overflow |
 | Admin Members | หน้าและ API เปิดให้ Admin; Anonymous 401/Login; Member 403 |
@@ -73,26 +75,33 @@ Preflight บน Production Parent ยืนยันว่ามี Role `PRODU
 | Public Catalog | Invalid Token ตอบ 404; Public-safe Serializer และ No-price Contract ผ่าน Integration |
 | Release B Boundary | ปิด Member Custom RFQ, Quotation, Order, Payment, Claim และ Report รวม 11 Page/API Checks |
 | Member Pilot Dashboard | แสดงเฉพาะ Catalog, Project, Shared Catalog, Product Sourcing และ Profile; ไม่มีลิงก์ไป Workflow ที่ปิด |
+| Backend Transaction Gate | ผ่าน 16 Assertions; Member เรียก RPC สร้าง Transaction โดยตรงไม่ได้ |
 
 หลักฐาน Runtime อยู่ใน `output/release-b-20260908/` และไม่ถูก Commit เพราะมีข้อมูลเชื่อมระบบซ้อม
-ไฟล์ที่ใช้อ้างอิงหลัก ได้แก่ `current-production-rehearsal-slice12-test.log`,
-`current-production-rehearsal-slice13-test.log`, `current-production-rehearsal-hosted-smoke.log`,
+ไฟล์ที่ใช้อ้างอิงหลัก ได้แก่ `final-bundle-slice12-test.log`,
+`final-bundle-slice13-test.log`, `final-bundle-backend-gate.log`, `final-bundle-hosted-smoke.log`,
 ผล Security Advisor และภาพ Responsive Test
 
 ## Security Review
 
-เปรียบเทียบ Security Advisor ของ Production ก่อน Release B กับ Rehearsal หลังลง Bundle:
+Trigger Security Advisor Scan ใหม่ทั้ง Production ก่อน Release B และ Rehearsal หลังลง Final Bundle:
 
 | Rule | Production ก่อนลง | Rehearsal หลังลง |
 | --- | ---: | ---: |
-| `dangerous-function` | 137 | 137 |
+| `dangerous-function` | 135 | 142 |
 | `rls-permissive` | 4 | 4 |
-| `rls-select-only` | 72 | 72 |
-| รวม | 213 | 213 |
+| `rls-select-only` | 72 | 82 |
+| รวม | 211 | 228 |
 
-ไม่มี Finding ใหม่และไม่มี `affectedObject` ที่มีชื่อ `shared_catalog`, `product_sourcing` หรือ
-`sourcing` รายการเดิมยังต้องบริหารตาม Production Security Baseline และไม่ถือว่าถูกยอมรับสำหรับ
-Release อื่นโดยอัตโนมัติ
+ผลต่างประกอบด้วย `dangerous-function` ใหม่ 22 รายการจาก RPC ของ Shared Catalog และ Product
+Sourcing ที่ต้องเปิดให้ Member/Operations เรียกผ่าน Authenticated Session และ `rls-select-only`
+ใหม่ 10 รายการจากตารางใหม่ที่ตั้งใจให้ Client อ่านอย่างเดียว ส่วนการเขียนต้องผ่าน Trusted RPC
+Advisor จึงแจ้งตามรูปแบบสิทธิ์ แม้ฟังก์ชันมี Owner/Permission/State Guard
+
+Final Bundle ถอนสิทธิ์ `dangerous-function` เดิม 15 รายการที่ใช้สร้างธุรกรรมหลัง Release B
+และ Backend Test เรียกครบ 16 Transaction RPC ด้วยบัญชี Member แล้วได้ `permission denied`
+ทุกครั้ง RPC ใหม่ 22 รายการผ่าน Integration/RLS 44 Assertions ครอบคลุมข้ามบริษัท, Admin Permission,
+Controlled Field, Append-only และ Member-safe Projection โดยไม่ Suppress Advisor Finding
 
 ตารางใหม่ 10 ตารางเปิด RLS ครบ มี Policy ตารางละ 1 รายการ, `anon` ไม่มีสิทธิ์ SELECT
 ตารางฐาน และ `authenticated` ไม่มีสิทธิ์ INSERT ตารางฐานโดยตรง การเขียนและเปลี่ยนสถานะต้องผ่าน
@@ -105,7 +114,7 @@ Trusted RPC/API ที่ตรวจสิทธิ์ ส่วน `next_recor
 
 1. ตรวจ Project ID ต้องเป็น Production `865860c2-49fa-4e53-908f-9396b2f75233`
 2. สร้าง Backup ใหม่ชื่อ `pre-release-b-20260908` และรอจนสถานะ `completed`
-3. ตรวจ SHA-256 ของ Migration Bundle ต้องตรงค่าด้านบน แล้ว Apply Bundle เพียงหนึ่งครั้ง
+3. ตรวจ SHA-256 ของ Final Migration Bundle ต้องตรงค่าด้านบน แล้ว Apply Bundle เพียงหนึ่งครั้ง
 4. ตรวจตาราง, RLS, Permission และ Function ACL หลัง Migration ก่อน Deploy เว็บ
 5. Deploy Source ที่ตรวจผ่าน โดยตั้ง `RELEASE_STAGE=B`, เปิด Shared Catalog และ Product Sourcing,
    คง `ENABLE_STAFF_OPERATIONS=true` และคง Post-go-live/Transaction Features เป็น `false`

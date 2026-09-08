@@ -31,10 +31,11 @@ Owner แจ้งตั้งรหัสผ่านใหม่ครบ พ�
 
 **อัปเดต 8 กันยายน 2569 — Release B readiness:** แก้เงื่อนไขหน้า Member Requests ตาม DEC-055
 และซ้อม Release B ใหม่บน Schema-only Branch ที่สร้างจาก Production ปัจจุบันโดยตรง Migration
-Bundle ผ่านโดยไม่มี Conflict, Integration/RLS ของ Slice 12.1 และ 13 ผ่านรวม 39 Assertions,
+Bundle ผ่านโดยไม่มี Conflict, Integration/RLS ของ Slice 12.1 และ 13 ผ่านรวม 44 Assertions,
 Hosted Smoke ผ่าน 27 Assertions, Unit Test 172 Tests และ Build 118 Pages ผ่าน หน้า Admin/Member
-บนมือถือ 390×844 ไม่มี Horizontal Overflow Security Advisor ก่อนและหลังมี 213 Findings เท่ากัน
-โดยไม่มี Finding ใหม่จาก Shared Catalog หรือ Product Sourcing Production ยังเป็น Release A
+บนมือถือ 390×844 ไม่มี Horizontal Overflow Backend Transaction Gate ผ่าน 16 Assertions
+Security Advisor ใหม่ตรวจ RPC/ตารางของ Shared Catalog และ Product Sourcing แล้ว โดยไม่ Suppress Finding
+Production ยังเป็น Release A
 คงเหลือ 2 ขั้นตอนเพื่อเปิด Release B: Owner Approval และ Cutover/Post-deploy Smoke Test
 ดู [Release B Production Readiness](../evidence/2026-09-08-release-b-production-readiness.md)
 
