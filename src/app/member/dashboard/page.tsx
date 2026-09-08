@@ -1,4 +1,4 @@
-import { ArrowUpRight, BarChart3 } from "lucide-react";
+import { ArrowUpRight, BarChart3, Building2, FolderKanban, Link2, ScanSearch, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import {
   ActionRequiredList,
@@ -13,6 +13,41 @@ import type { MemberDashboard as MemberDashboardData } from "@/modules/reports/t
 
 export default async function MemberDashboard() {
   const context = await requireAppAccess({ active: true });
+  if (process.env.RELEASE_STAGE === "B") {
+    const sharedCatalogEnabled = process.env.NEXT_PUBLIC_ENABLE_SHARED_CATALOGS === "true";
+    const productSourcingEnabled = process.env.NEXT_PUBLIC_ENABLE_PRODUCT_SOURCING === "true";
+    const actions = [
+      { href: "/member/catalog", label: "เลือกสินค้าจาก Catalog", note: "ค้นหาสินค้าและดูรายละเอียดสำหรับงานของคุณ", icon: ShoppingBag, enabled: true },
+      { href: "/member/projects", label: "จัดสินค้าเข้าโครงการ", note: "แยกพื้นที่ จำนวน และตัวเลือกสินค้าของแต่ละโครงการ", icon: FolderKanban, enabled: true },
+      { href: "/member/shared-catalogs", label: "ส่ง Catalog ให้ลูกค้า", note: "สร้างลิงก์สินค้ารายชิ้น โครงการ หรือสินค้าทั้งหมดโดยไม่แสดงราคา", icon: Link2, enabled: sharedCatalogEnabled },
+      { href: "/member/sourcing-requests", label: "ส่งภาพให้ช่วยจัดหา", note: "แนบภาพสินค้าที่ไม่มีในแอปและติดตามตัวเลือกจากทีม GISP", icon: ScanSearch, enabled: productSourcingEnabled },
+      { href: "/member/profile", label: "ตรวจข้อมูลบริษัท", note: "อัปเดตข้อมูลติดต่อที่ใช้กับบัญชี Member", icon: Building2, enabled: true },
+    ].filter((item) => item.enabled);
+
+    return <div className="member-catalog">
+      <section className="v14-hero ui-dashboard-hero">
+        <div>
+          <p className="v14-eyebrow">Member pilot</p>
+          <h1>สวัสดี, {context.displayName ?? context.companyName ?? "สมาชิก GISP"}</h1>
+          <p>เลือกสินค้า วางโครงการ ส่ง Catalog ให้ลูกค้า หรือส่งภาพให้ทีม GISP ช่วยจัดหา</p>
+        </div>
+        <span className="v14-status v14-status--good">PILOT ACTIVE</span>
+      </section>
+      <section className="grid gap-4 md:grid-cols-2">
+        {actions.map(({ href, label, note, icon: Icon }) => <Link key={href} href={href} className="v14-panel block">
+          <Icon size={24} />
+          <h2 className="mt-3">{label}</h2>
+          <p className="mt-2">{note}</p>
+          <span className="mt-4 inline-flex items-center gap-2 font-semibold">เปิดใช้งาน <ArrowUpRight size={15} /></span>
+        </Link>)}
+      </section>
+      <section className="v14-panel">
+        <p className="v14-eyebrow">ขอบเขตช่วงทดลองใช้</p>
+        <h2>ยังไม่เปิดการสั่งซื้อและชำระเงินผ่านระบบ</h2>
+        <p className="mt-2">หากต้องการสอบถามราคา สั่งซื้อ หรือดำเนินการต่อ กรุณาติดต่อทีม GISP ตามช่องทางที่ได้รับ</p>
+      </section>
+    </div>;
+  }
   let dashboard: MemberDashboardData | null = null;
   try {
     dashboard = await getMemberDashboard();
