@@ -1,9 +1,9 @@
 # GISP — CURRENT PROJECT STATUS
 
-**Document Version:** 6.8
-**Status Date:** 8 September 2026 (พ.ศ. 2569)
-**Last Verified:** 8 September 2026 (Asia/Bangkok)
-**Overall Status:** `SLICE 1–13 DONE · PRODUCTION RELEASE A LIVE · RELEASE B READY FOR OWNER APPROVAL`
+**Document Version:** 6.9
+**Status Date:** 9 September 2026 (พ.ศ. 2569)
+**Last Verified:** 9 September 2026 (Asia/Bangkok)
+**Overall Status:** `SLICE 1–13 DONE · PRODUCTION RELEASE B MEMBER PILOT LIVE`
 **Purpose:** สรุปสถานะระบบจริงล่าสุด หลักฐานตรวจรับ และขั้นตอนทำงานต่อ
 
 > เอกสารนี้เป็นรายงานสถานะ ไม่ได้สร้างหรือเปลี่ยน Business Rule หากข้อมูลขัดกัน ให้ยึด
@@ -13,6 +13,14 @@
 > [Requirement Traceability](../REQUIREMENT%20TRACEABILITY.md) ตามลำดับ
 
 ## 1. สรุปสำหรับผู้บริหาร
+
+**อัปเดต 9 กันยายน 2569 — Release B Production:** Owner อนุมัติและนำ Release B ขึ้น Production
+แล้ว Backup `pre-release-b-20260909` สถานะ completed, Migration Bundle ผ่าน, Deployment
+`e992de1f-be9a-4344-89d9-0b502fe7d777` สถานะ READY และ Anonymous Smoke ผ่าน 25 Assertions
+Owner Session เปิดหน้าคำขอสมาชิกและคิวจัดหาสินค้าจากภาพได้ ข้อมูลเดิมยังครบ 722 สินค้า,
+722 ราคา และ 3,942 รูป Security Advisor หลัง Cutover ตรงกับ Rehearsal ทุกค่า Transaction
+Workflow นอก Member Pilot ยังปิดทั้ง Route และ Backend คงเหลือ 0 ขั้นตอนเพื่อเปิด Release B
+ดู [Release B Production Readiness](../evidence/2026-09-08-release-b-production-readiness.md)
 
 **อัปเดต 6 กันยายน 2569 — Production completion:** นำ CN01 เข้า Production แล้ว 722 สินค้า
 (PUBLISHED 634 / DRAFT 88), ราคา 722 รายการ และรูป 3,942 รูป ไม่ย้ายบัญชีหรือออเดอร์ทดสอบ
@@ -29,14 +37,14 @@ Owner แจ้งตั้งรหัสผ่านใหม่ครบ พ�
 ดู [ผล CN01 และการกู้ระบบ](../evidence/2026-09-06-production-cn01-and-recovery.md) และ
 [คู่มือ Production](PRODUCTION%20OPERATIONS%20RUNBOOK.md)
 
-**อัปเดต 8 กันยายน 2569 — Release B readiness:** แก้เงื่อนไขหน้า Member Requests ตาม DEC-055
+**บันทึก 8 กันยายน 2569 — Release B readiness:** แก้เงื่อนไขหน้า Member Requests ตาม DEC-055
 และซ้อม Release B ใหม่บน Schema-only Branch ที่สร้างจาก Production ปัจจุบันโดยตรง Migration
 Bundle ผ่านโดยไม่มี Conflict, Integration/RLS ของ Slice 12.1 และ 13 ผ่านรวม 44 Assertions,
 Hosted Smoke ผ่าน 27 Assertions, Unit Test 172 Tests และ Build 118 Pages ผ่าน หน้า Admin/Member
 บนมือถือ 390×844 ไม่มี Horizontal Overflow Backend Transaction Gate ผ่าน 16 Assertions
 Security Advisor ใหม่ตรวจ RPC/ตารางของ Shared Catalog และ Product Sourcing แล้ว โดยไม่ Suppress Finding
-Production ยังเป็น Release A
-คงเหลือ 2 ขั้นตอนเพื่อเปิด Release B: Owner Approval และ Cutover/Post-deploy Smoke Test
+ณ วันที่ซ้อม Production ยังเป็น Release A และเหลือ Owner Approval กับ Cutover; ทั้งสองขั้นตอน
+ดำเนินการเสร็จแล้วเมื่อ 9 กันยายน 2569 ตามอัปเดตด้านบน
 ดู [Release B Production Readiness](../evidence/2026-09-08-release-b-production-readiness.md)
 
 **อัปเดต 6 กันยายน 2569 — Slice 12:** Human UAT ผ่าน 7/7, Owner อนุมัติขั้นตอนสุดท้าย,
@@ -184,15 +192,15 @@ Security Advisor พบ 98 Critical, 126 Warning และ 40 Info รวมถ�
 |---|---|---|---|
 | Demo 1.4 | อนุมัติแล้ว | `/v1-4/overview`, `/v1-4/member`, `/v1-4/admin`; Human UAT ผ่าน 8/8 | ใช้ Version 1.4 เป็น UX/Workflow Baseline ของ Application จริง |
 | Demo Gate | ผ่าน | `APPROVED_FOR_MVP_BUILD`; [UAT Sign-off PDF](../evidence/2026-08-18-demo-1.4-uat-signoff.pdf) | ใช้ Demo 1.4 เป็นหลักฐาน UX/Workflow Baseline |
-| Development Backend | Slice 1–13 DONE | InsForge Project `gisp-mvp-development`; Slice 13 Migration, Permission, Post-merge Schema Check และ Human UAT ผ่าน | พร้อมเตรียม Release B เมื่อได้รับอนุมัติแยก; Production ไม่ถูกเปลี่ยน |
+| Development Backend | Slice 1–13 DONE | InsForge Project `gisp-mvp-development`; Slice 13 Migration, Permission, Post-merge Schema Check และ Human UAT ผ่าน | ใช้เป็นฐานพัฒนางานลำดับถัดไปหลัง Release B |
 | Database | Slice 12 DONE | Shared Catalog Tables 5, RLS Policies 5, Functions 10, Append-only Snapshot/Event และ Migration History ครบ | Development ตรวจ Schema/Function/Trigger/Permission หลัง Integration แล้ว |
 | Storage | Slice 2 UAT ผ่าน | CN01 บน Branch UAT มีไฟล์ Import/รูป 724 และ Signed URL 4/4 | ข้อมูล UAT ไม่ถูกคัดลอกเข้า Development จาก schema-only Branch; Production Data Load อยู่ใน Release A |
 | Notification | Production พร้อม | SMTP/Recovery ผ่าน; Edge Function `notification-retry` active; Schedule ทุก 10 นาทีรอบจริงผ่าน HTTP 200 | เฝ้าดู Execution Log หลังเริ่มใช้งานจริง |
 | Application API | Slice 12 DONE | Member Shared Catalog API, Public-safe API, Signed URL และ Lifecycle Actions | Public Snapshot/Invalid Token/Auth Gate Smoke ผ่าน |
 | Application UI | Slice 12 DONE | Member Catalog Editor/Preview และ Public Mobile-first Catalog | Human UAT และ Owner Sign-off ผ่าน |
 | Quality & UAT | Slice 12 DONE | 40 Test Files / 160 Tests, Integration 28/28, Typecheck/Lint/Build, Browser QA, Human UAT และ Development Release ผ่าน | เหลือ 0 ขั้นตอนเพื่อปิด Slice 12 |
-| Deployment | Release B Technical Rehearsal ผ่าน / Production Release A Live | Current-production Rehearsal `dpl_9J8o6uNNL5w4nbzmeduk3xWYhiKo` READY ที่ `https://gisp-release-b-rehearsal.vercel.app`; Hosted Smoke 27 Assertions และ Responsive Gate ผ่าน | Production ยังไม่เปลี่ยน; รอ Owner Approval แยก |
-| Production Strategy | Release B Ready for Owner Approval | DEC-055 Member Requests แก้แล้ว; Migration Merge Rehearsal, Backup/Rollback Plan, Security Comparison และ Automated/Browser Gate ผ่าน | เหลือ 2 ขั้นตอน: Owner Approval และ Cutover/Post-deploy Smoke Test |
+| Deployment | Production Release B Live | Deployment `e992de1f-be9a-4344-89d9-0b502fe7d777` READY; Backup, Migration, Post-deploy Smoke และ Owner Browser Check ผ่าน | เปิด Member Pilot แล้วและยังปิด Transaction Workflow |
+| Production Strategy | Release B Complete | Owner Approval, Cutover, Security Comparison และ Post-deploy Verification ผ่าน | เหลือ 0 ขั้นตอนเพื่อเปิด Release B |
 
 ## 3. สถานะเทียบกับ Vertical Slice
 
@@ -220,8 +228,8 @@ Security Advisor พบ 98 Critical, 126 Warning และ 40 Info รวมถ�
 | 12.1 Customer Browse Catalog | `DONE` | Backend/API/UI/Security ตาม DEC-061, ลิงก์ Product/Project/Curated/Full Catalog แบบไม่มีราคา, Hosted Integration 69 Assertions, Responsive Gate, Human UAT 7/7, Development Deployment และ Post-merge Smoke 54 Assertions | — |
 | 13. Visual Product Sourcing | `DONE` | Schema-only Branch, Development Merge, Migration, Permission, Member/Admin API/UI, File Guard, Integration 20 Assertions, Candidate Workflow, Product Lifecycle Connection, Member-safe Projection, Build, Development Preview, Post-deployment Smoke, Responsive Browser Test, Human UAT และ Owner Sign-off | — |
 
-**ผลรวม:** Slice 1–13 ได้รับสถานะ `DONE` บน Development ตาม Definition of Done และเหลือ 0 ขั้นตอน
-โดย Production Release A ยังไม่ถูกเปลี่ยนและ Release B ต้องได้รับ Owner Approval แยกต่างหาก
+**ผลรวม:** Slice 1–13 ได้รับสถานะ `DONE` ตาม Definition of Done และ Production Release B
+Member Pilot เปิดใช้แล้ว คงเหลือ 0 ขั้นตอนเพื่อเปิด Release B
 
 ## 4. Requirement สำคัญที่ยังไม่อยู่ในระบบจริง
 
@@ -645,8 +653,8 @@ Human UAT Demo 1.4 ผ่าน 8/8 หมวด, `NEEDS FIX` 0, `NOT TESTED` 0 
 1. เฝ้าดู Production Health, Notification Schedule และ Audit หลังเริ่มใช้งาน
 2. ก่อน Production Data Load ให้ยืนยัน Lead time, Material Mapping, CNY → THB, Effective Date
    และตรวจมิติ CN01; รายการนี้เป็น Release Preparation ไม่ใช่ขั้นตอนค้างเพื่อปิด Slice 2
-3. แก้ `/admin/members` ก่อนเริ่ม Release B / Member Pilot
-4. เตรียม Release B จาก Slice 12–13 หลังแก้ `/admin/members` และได้รับ Owner Approval แยก
+3. เฝ้าดูคำขอสมาชิก, Shared Catalog และ Product Sourcing ช่วง Member Pilot
+4. เตรียม Release C และทดสอบ Transaction Workflow แยกก่อนขออนุมัติ Production รอบถัดไป
 
 ## 8. Definition of Next Work Package
 

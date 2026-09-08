@@ -1,15 +1,12 @@
-# Release B — Production Readiness และ Merge Rehearsal
+# Release B — Production Readiness, Cutover และ Post-deploy Verification
 
-วันที่ตรวจ: 8 กันยายน 2569 (Asia/Bangkok)
+วันที่ตรวจล่าสุด: 9 กันยายน 2569 (Asia/Bangkok)
 
 ## ผลสรุป
 
-Release B ผ่านการซ้อมบน Backend Branch ที่สร้างจาก Production ปัจจุบันโดยตรงแล้ว
-Migration, RLS, API, หน้าเว็บ และสิทธิ์ Admin/Member ผ่านตาม Gate ที่กำหนด
-Production ยังเป็น Release A และยังไม่ได้ Apply Migration หรือ Deploy Release B
-
-เงื่อนไขก่อนทำจริงเหลือ Owner Approval สำหรับ Production Deployment และการทำ Cutover พร้อม
-Post-deploy Smoke Test เท่านั้น
+Owner อนุมัติ Production Deployment เมื่อ 9 กันยายน 2569 และดำเนินการ Release B Cutover แล้ว
+Migration, RLS, API, หน้าเว็บ และสิทธิ์ Admin/Member ผ่านตาม Gate ที่กำหนด Production ปัจจุบัน
+เป็น Release B Member Pilot และ Transaction Workflow ที่อยู่นอกขอบเขตยังปิดอยู่
 
 ## ขอบเขตที่จะเปิดเพิ่ม
 
@@ -26,11 +23,12 @@ Post-deploy Smoke Test เท่านั้น
 | Production Project | `865860c2-49fa-4e53-908f-9396b2f75233` |
 | Production URL | `https://m8ugbyak.insforge.site` |
 | Production Deployment ก่อน Release B | `6b865051-aebc-4919-959e-d5aae0bc145b` (`READY`) |
+| Production Deployment หลัง Release B | `e992de1f-be9a-4344-89d9-0b502fe7d777` / Provider `dpl_Cmnn8odtk794aJdjNGcLavCiyeNX` (`READY`) |
 | Current-production Rehearsal Branch | `release-b-rehearsal-20260908` / `f0f9a36b-ec7d-4ceb-ae28-b2d5feef85f9` |
 | Rehearsal Backend | `https://m8ugbyak-p4a.ap-southeast.insforge.app` |
 | Rehearsal Web | `https://gisp-release-b-rehearsal.vercel.app` |
 | Rehearsal Deployment | `dpl_9J8o6uNNL5w4nbzmeduk3xWYhiKo` (`READY`) |
-| Source Branch / Commit | `codex/release-b-readiness` / `cfba381` |
+| Source Branch / Commit ที่ Deploy | `codex/release-b-readiness` / `45b7b03` |
 | Migration Bundle | `20260908170000_release-b-member-pilot.sql` |
 | Bundle SHA-256 | `F46811B41386D824B66A795201EA6E20A596E99F6E1778E3B3AE8C0BF9399AE5` |
 
@@ -108,19 +106,26 @@ Controlled Field, Append-only และ Member-safe Projection โดยไม�
 Trusted RPC/API ที่ตรวจสิทธิ์ ส่วน `next_record_reference(text)` ไม่เปิดให้ `anon` หรือ
 `authenticated` เรียกตรง
 
-## Cutover ที่เตรียมไว้
+หลัง Production Cutover รัน Scan `f33db0a7-f5b6-4efd-81c2-801952d6d1ce` ซ้ำ ได้ Security
+Findings 228 รายการ (`dangerous-function` 142, `rls-permissive` 4, `rls-select-only` 82)
+ตรงกับ Rehearsal ทุกค่า และไม่ได้ Suppress Finding
 
-หลัง Owner อนุมัติ Production Deployment ให้ทำตามลำดับนี้:
+## ผล Production Cutover
 
-1. ตรวจ Project ID ต้องเป็น Production `865860c2-49fa-4e53-908f-9396b2f75233`
-2. สร้าง Backup ใหม่ชื่อ `pre-release-b-20260908` และรอจนสถานะ `completed`
-3. ตรวจ SHA-256 ของ Final Migration Bundle ต้องตรงค่าด้านบน แล้ว Apply Bundle เพียงหนึ่งครั้ง
-4. ตรวจตาราง, RLS, Permission และ Function ACL หลัง Migration ก่อน Deploy เว็บ
-5. Deploy Source ที่ตรวจผ่าน โดยตั้ง `RELEASE_STAGE=B`, เปิด Shared Catalog และ Product Sourcing,
-   คง `ENABLE_STAFF_OPERATIONS=true` และคง Post-go-live/Transaction Features เป็น `false`
-6. ตรวจ `/api/health`, Login Owner, `/admin/members`, Member Catalog/Project, Shared Catalog,
-   Visual Sourcing, สิทธิ์ Member 403 บน Admin API และ Public Invalid Token 404
-7. บันทึก Deployment ID, Backup ID, เวลาตรวจ และผล Smoke Test ในเอกสารนี้
+1. ตรวจ Project ID เป็น Production `865860c2-49fa-4e53-908f-9396b2f75233` และ Bundle Hash ตรง
+2. ลบ Manual Backup เก่าสุด `pre-release-a-phase5-2026-09-04` เนื่องจากโควตา 5/5 โดยยังเก็บ
+   Backup ก่อน/หลังงาน Production รุ่นใหม่กว่าไว้ แล้วสร้าง `pre-release-b-20260909`
+   Backup ID `4ceb701e-fed3-4ee6-95e0-e821093526dd` สถานะ `completed`
+3. Apply `20260908170000_release-b-member-pilot.sql` สำเร็จหนึ่งไฟล์
+4. ตรวจตารางใหม่ 10 ตาราง: RLS เปิดครบ, Policy ตารางละ 1, `anon` ไม่มี SELECT และ
+   `authenticated` ไม่มี INSERT ตารางฐานโดยตรง
+5. ตรวจ Transaction RPC 16 รายการ: `authenticated` และ `anon` มีสิทธิ์ Execute 0 รายการ
+6. Deploy Source Commit `45b7b03` โดย Runtime ตรงกับชุดซ้อม เปิด Release B, Shared Catalog,
+   Product Sourcing และ Staff Operations พร้อมคง Post-go-live Transaction Features ปิด
+7. Anonymous Production Smoke ผ่าน 25 Assertions; Owner Session เปิด `/admin/members` และ
+   `/admin/sourcing-requests` พร้อมโหลดข้อมูลสำเร็จ
+8. ข้อมูลเดิมหลัง Cutover ยังครบ 722 สินค้า, 722 ราคา และ 3,942 รูป; ตารางใหม่เริ่มที่
+   Shared Catalog 0 และ Product Sourcing Request 0 รายการ
 
 ## แผนย้อนกลับ
 
@@ -136,10 +141,9 @@ Trusted RPC/API ที่ตรวจสิทธิ์ ส่วน `next_recor
 
 - Slice 12, 12.1 และ 13: Human UAT / Owner Sign-off ผ่านบน Development
 - Technical Production Rehearsal: ผ่าน
-- Production Release B Deployment: `AWAITING OWNER APPROVAL`
-- Production ณ เวลาปิดรายงาน: ยังเป็น Release A และไม่ถูกเปลี่ยน
-- Final untouched check: `/api/health` ตอบ 200 ส่วน `/register`, Member Shared Catalog API และ
-  Admin Sourcing API ยังตอบ 404; ตารางเป้าหมายและ `sourcing.manage` ยังไม่มีใน Production
+- Production Release B Deployment: `OWNER APPROVED / LIVE`
+- Production Deployment: `e992de1f-be9a-4344-89d9-0b502fe7d777` สถานะ `READY`
+- `/api/health` ตอบ 200, `/register` เปิด, Member/Admin Feature Routes เปิดตาม Release B,
+  Public Invalid Token ตอบ 404 และ Transaction Routes ยังตอบ 404
 
-คงเหลือ **2 ขั้นตอนเพื่อเปิด Release B**: Owner อนุมัติ Production Deployment และดำเนินการ
-Cutover/Post-deploy Smoke Test ตามรายการด้านบน
+คงเหลือ **0 ขั้นตอนเพื่อเปิด Release B**

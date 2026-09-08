@@ -102,7 +102,7 @@
 - ผลการตัดสิน: `SLICE_13_ACCEPTED`; สถานะ: `DONE` บน Development
 - คงเหลือ 0 ขั้นตอนเพื่อปิด Slice 13
 - หลักฐาน: `evidence/2026-09-08-slice-13-visual-sourcing.md` และ `uat/SLICE-13-HUMAN-UAT.md`
-- Production Release B ต้องได้รับ Owner Approval แยก
+- Production Release B ได้รับ Owner Approval และเปิดใช้เมื่อ 9 กันยายน 2569; คงเหลือ 0 ขั้นตอน
 
 ### Preliminary Baseline ที่เคยผ่านใน Local
 

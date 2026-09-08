@@ -1,6 +1,6 @@
 # GISP — STAGED PRODUCTION RELEASE PLAN
 
-**Document Version:** 1.7
+**Document Version:** 1.8
 **Approved:** 18 August 2026 (พ.ศ. 2569)  
 **Status:** `APPROVED RELEASE STRATEGY`  
 **Authority:** DEC-049
@@ -83,8 +83,8 @@ Shipment/Delivery, Claim และ Dashboard/Reports โดยไม่ต้อ
 - Slice 1: `DONE` บน Development
 - Slice 2: `DONE` บน Development (`SLICE_2_ACCEPTED`)
 - Slice 4: `DONE` บน Development (`SLICE_4_ACCEPTED`)
-- Production: `RELEASE A LIVE — GO-LIVE APPROVED`; Deployment
-  `b90108ef-3d6b-447e-97de-fc8bcd9a9f7e` ยังเป็น `READY` และรักษาขอบเขต Slice 1–2
+- Production: `RELEASE B MEMBER PILOT LIVE — OWNER APPROVED`; Deployment
+  `e992de1f-be9a-4344-89d9-0b502fe7d777` เป็น `READY`
 - Owner อนุมัติ Phase 4 และยอมรับความเสี่ยง RPC สำหรับ `authenticated` เมื่อ 4 กันยายน 2569
 - Phase 5 สร้าง Named Backup, Apply Production Config และ Runtime Hardening แล้ว Security Advisor
   ลดจาก 98 เหลือ 77 Critical; `PUBLIC/anon` Execute และ `rls-no-policy` เหลือ 0
@@ -109,7 +109,10 @@ Shipment/Delivery, Claim และ Dashboard/Reports โดยไม่ต้อ
 - Security Advisor Scan ใหม่รายงาน Production 211 และ Rehearsal 228 Findings: รายการใหม่เป็น
   Authenticated RPC 22 รายการที่ผ่าน Owner/Permission/RLS Gate และตาราง Client-read-only 10 ตาราง
   ขณะเดียวกันถอนสิทธิ์ Transaction RPC เดิม 15 รายการ; Backend Direct-call Test ผ่าน 16 Assertions
-  โดยไม่ Suppress Finding Production ยังเป็น Release A และ Release B รอ Owner Approval แยก
+  โดยไม่ Suppress Finding
+- วันที่ 9 กันยายน 2569 Owner อนุมัติ Production Deployment, สร้าง Backup ก่อน Release,
+  Apply Final Bundle และ Deploy สำเร็จ Anonymous Smoke ผ่าน 25 Assertions และ Owner Browser Check ผ่าน
+- Security Advisor หลัง Cutover ได้ 228 Security Findings ตรงกับ Rehearsal และข้อมูลสินค้าเดิมครบ
 - รายละเอียด Gate, Runbook และ Rollback อยู่ที่
   [Release A Readiness Audit](../evidence/2026-08-26-release-a-readiness.md) และ
   [Production Readiness Phase 1–3 Audit](../evidence/2026-09-02-production-readiness-phases-1-3.md) และ
@@ -117,5 +120,4 @@ Shipment/Delivery, Claim และ Dashboard/Reports โดยไม่ต้อ
   [Authenticated UAT and Notification Schedule](../evidence/2026-09-05-production-release-a-authenticated-uat.md) และ
   [Release B Production Readiness](../evidence/2026-09-08-release-b-production-readiness.md)
 
-คงเหลือ **2 ขั้นตอนเพื่อเปิด Release B**: Owner อนุมัติ Production Deployment และดำเนินการ
-Cutover/Post-deploy Smoke Test
+คงเหลือ **0 ขั้นตอนเพื่อเปิด Release B**

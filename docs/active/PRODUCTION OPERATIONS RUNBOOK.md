@@ -1,11 +1,13 @@
 # GISP Production — คู่มือเปิดใช้และกู้ระบบ
 
-ตรวจล่าสุด 8 กันยายน 2569
+ตรวจล่าสุด 9 กันยายน 2569
 
 ## ระบบที่ใช้งานจริง
 
 - เว็บจริง: https://m8ugbyak.insforge.site
 - Backend Production: `865860c2-49fa-4e53-908f-9396b2f75233`
+- Release ปัจจุบัน: `B — MEMBER PILOT`
+- Deployment ปัจจุบัน: `e992de1f-be9a-4344-89d9-0b502fe7d777` (`READY`)
 - พื้นที่ซ้อม: `2cff11a0-9e16-41d4-989a-dcfc9f48103d`
 - เว็บซ้อม: https://m8ugbyak-nfh.insforge.site
 - พื้นที่ซ้อม Release B จาก Production ปัจจุบัน: `f0f9a36b-ec7d-4ceb-ae28-b2d5feef85f9`
@@ -57,7 +59,7 @@ npx -y @insforge/cli backups list --json
 ใช้เฉพาะหลังได้รับ Owner Approval สำหรับ Production Deployment รอบ Release B แล้ว:
 
 1. ตรวจ Production Project ID ต้องเป็น `865860c2-49fa-4e53-908f-9396b2f75233`
-2. สร้าง Backup ใหม่ชื่อ `pre-release-b-20260908` และตรวจสถานะ `completed`
+2. สร้าง Backup ใหม่ชื่อ `pre-release-b-20260909` และตรวจสถานะ `completed`
 3. ตรวจ Final Migration Bundle `20260908170000_release-b-member-pilot.sql` ให้มี SHA-256
    `F46811B41386D824B66A795201EA6E20A596E99F6E1778E3B3AE8C0BF9399AE5`
 4. Apply Bundle แล้วตรวจตารางใหม่ 10 ตารางเปิด RLS, ไม่มี `anon` SELECT หรือ
@@ -71,6 +73,10 @@ npx -y @insforge/cli backups list --json
 
 Source, Migration Hash, Gate และแผนย้อนกลับฉบับเต็มอยู่ที่
 [Release B Production Readiness](../evidence/2026-09-08-release-b-production-readiness.md)
+
+ผลจริงวันที่ 9 กันยายน 2569: Backup ID `4ceb701e-fed3-4ee6-95e0-e821093526dd` completed,
+Migration ผ่าน, Deployment `e992de1f-be9a-4344-89d9-0b502fe7d777` READY, Anonymous Smoke
+25 Assertions และ Owner Browser Check ผ่าน คงเหลือ 0 ขั้นตอนเพื่อเปิด Release B
 
 ## หลักฐานการซ้อมกู้
 
