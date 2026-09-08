@@ -1,12 +1,13 @@
 import { z } from "zod";
 const nullableUuid=z.union([z.uuid(),z.literal(""),z.null()]).optional().transform(value=>value||null);
 const nullablePositive=z.union([z.number().positive(),z.null()]).optional().transform(value=>value??null);
+const nullableDimension=z.union([z.number().int().positive(),z.null()]).optional().transform(value=>value??null);
 const optionalText=(max:number)=>z.string().trim().max(max).optional().default("");
 
 export const sourcingRequestSchema=z.object({
   projectId:nullableUuid,areaId:nullableUuid,itemName:z.string().trim().min(2).max(240),
   description:z.string().trim().min(10).max(12000),matchPreference:z.enum(["EXACT_ONLY","SIMILAR_OK"]).default("SIMILAR_OK"),
-  quantity:z.number().positive().max(999999),unit:z.string().trim().min(1).max(30),widthMm:nullablePositive,depthMm:nullablePositive,heightMm:nullablePositive,
+  quantity:z.number().positive().max(999999),unit:z.string().trim().min(1).max(30),widthMm:nullableDimension,depthMm:nullableDimension,heightMm:nullableDimension,
   requestedMaterial:optionalText(2000),requestedColor:optionalText(1000),budgetMax:nullablePositive,
   neededAt:z.union([z.iso.date(),z.literal(""),z.null()]).optional().transform(value=>value||null),
   sourceUrl:z.union([z.url(),z.literal("")]).optional().default(""),memberNote:optionalText(4000),
@@ -23,4 +24,3 @@ export const sourcingCandidateSchema=z.object({
   factoryCost:z.union([z.number().nonnegative(),z.null()]).optional().default(null),factoryCurrency:optionalText(3),internalNote:optionalText(4000),
 });
 export const sourcingLinkProductSchema=z.object({candidateId:z.uuid(),productId:z.uuid()});
-

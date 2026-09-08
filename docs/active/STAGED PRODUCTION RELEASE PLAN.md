@@ -1,6 +1,6 @@
 # GISP — STAGED PRODUCTION RELEASE PLAN
 
-**Document Version:** 1.6  
+**Document Version:** 1.7
 **Approved:** 18 August 2026 (พ.ศ. 2569)  
 **Status:** `APPROVED RELEASE STRATEGY`  
 **Authority:** DEC-049
@@ -98,8 +98,19 @@ Shipment/Delivery, Claim และ Dashboard/Reports โดยไม่ต้อ
   แต่ไม่อยู่ในขอบเขต Release A และต้องแก้ก่อน Release B
 - Owner อนุมัติ Go-Live Release A เมื่อ 5 กันยายน 2569 โดยรับทราบ Known Issue และกำหนดให้
   แก้หน้า Member Requests ก่อน Release B; Production Data Load ยังต้องได้รับอนุมัติแยก
+- วันที่ 8 กันยายน 2569 แก้และตรวจ `/admin/members` กับ `/api/admin/members` แล้ว โดย Admin
+  ใช้งานได้, Member ถูกปฏิเสธ 403 และ Anonymous ถูกส่งไป Login/ตอบ 401 ตามประเภทเส้นทาง
+- Release B Bundle ของ Slice 12, 12.1 และ 13 ผ่าน Merge Rehearsal บน Schema-only Branch ที่สร้าง
+  จาก Production ปัจจุบันโดยตรง: Integration/RLS 39 Assertions, Hosted Smoke 16 Assertions,
+  Unit Test 171 Tests, Build 118 Pages และ Responsive Browser 390×844 ผ่าน
+- Security Advisor ก่อนและหลัง Bundle เท่ากัน 213 Findings และไม่มี Finding ใหม่จาก Shared Catalog
+  หรือ Product Sourcing; Production ยังเป็น Release A และ Release B รอ Owner Approval แยก
 - รายละเอียด Gate, Runbook และ Rollback อยู่ที่
   [Release A Readiness Audit](../evidence/2026-08-26-release-a-readiness.md) และ
   [Production Readiness Phase 1–3 Audit](../evidence/2026-09-02-production-readiness-phases-1-3.md) และ
   [Phase 5 Execution Record](../evidence/2026-09-04-production-release-a-phase-5.md) และ
-  [Authenticated UAT and Notification Schedule](../evidence/2026-09-05-production-release-a-authenticated-uat.md)
+  [Authenticated UAT and Notification Schedule](../evidence/2026-09-05-production-release-a-authenticated-uat.md) และ
+  [Release B Production Readiness](../evidence/2026-09-08-release-b-production-readiness.md)
+
+คงเหลือ **2 ขั้นตอนเพื่อเปิด Release B**: Owner อนุมัติ Production Deployment และดำเนินการ
+Cutover/Post-deploy Smoke Test

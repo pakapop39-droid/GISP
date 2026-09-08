@@ -1,8 +1,8 @@
 # GISP — DECISION LOG
 
-**Document Version:** 2.8  
-**Status:** Approved Decisions  
-**Last Updated:** 6 กันยายน 2569 (2026-09-06)  
+**Document Version:** 2.9
+**Status:** Approved Decisions
+**Last Updated:** 8 กันยายน 2569 (2026-09-08)
 **Authority:** อยู่ลำดับถัดจาก `MVP BUSINESS MASTER PLAN.md`
 
 ---
@@ -75,6 +75,7 @@
 | DEC-060 | อนุมัติขั้นตอนสุดท้ายเพื่อปิด Slice 12 บน Development | สำรองฐาน, รวม Schema/Migration, Deploy และ Post-merge Smoke; เปิดเฉพาะ Shared Catalog ด้วย Feature Flag แยก และคง Product Sourcing/Production Release A ปิดไว้ | Approved and executed — 6 September 2026 |
 | DEC-061 | Customer Browse Catalog ทุกแบบต้องไม่แสดงราคา และ Member ส่งได้ทั้งลิงก์สินค้ารายชิ้น สินค้าใน Project Catalog ที่คัดเอง และสินค้าทั้งหมด | ต่อยอด Token/Snapshot ของ Slice 12; Product/Project/Curated ใช้ Snapshot, Full Catalog ใช้ Live Public-safe Products, ลูกค้าเก็บรายการสนใจใน Browser และติดต่อ Member โดยไม่สร้าง Lead/Checkout; ส่วนการแสดงราคาลูกค้าใน DEC-056 ถูกแทนที่ | Approved — 6 September 2026; implemented and accepted on Development |
 | DEC-062 | Slice 12.1 ผ่าน Human UAT และเจ้าของระบบอนุมัติปิดบน Development | เจ้าของระบบยืนยันว่า “ใช้ได้หมด”; รวม Schema/Migration, Deploy Development และ Post-merge Smoke ครบ 4 Scope โดย Production Release A ไม่เปลี่ยน | Approved and executed — 6 September 2026 |
+| DEC-063 | Slice 13 Visual Product Sourcing ผ่าน Human UAT และเจ้าของระบบอนุมัติปิดบน Development | เจ้าของระบบยืนยันว่า “ผ่านทั้งหมด”; กำหนดผลเป็น `SLICE_13_ACCEPTED` และ Slice 13 `DONE` หลัง Integration/RLS, Development Preview, Hosted Smoke และ Responsive Test ผ่าน การอนุมัตินี้ไม่รวม Production Release B | Approved — 8 September 2026 |
 
 ---
 

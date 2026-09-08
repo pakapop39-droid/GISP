@@ -1,7 +1,7 @@
 # GISP MVP Requirement Traceability
 
-**Document Version:** 1.6  
-**Reconciled:** 6 September 2026  
+**Document Version:** 1.7
+**Reconciled:** 8 September 2026
 **Authority:** `active/MVP BUSINESS MASTER PLAN.md` → `active/DECISION LOG.md` → `active/MVP IMPLEMENTATION PLAN.md` → เอกสารฉบับนี้
 
 เอกสารนี้ใช้ตรวจว่า Approved Decision แต่ละข้อจะถูกนำไปวางไว้ตรงไหนในโค้ดและฐานข้อมูล ไม่ใช่เอกสารกำหนด Business Rule ฉบับใหม่ ช่อง Implementation ด้านล่างคือเป้าหมายของ MVP Build; Demo 1.4 พัฒนาเป็น Browser-local Prototype และ Deploy แล้ว แต่ยังไม่ใช่ Migration/API ของ App จริง
@@ -40,7 +40,7 @@
 | Canonical State/Number/Production Role | Decision Log + Implementation Plan Version 1.6 | Schema/API/UI contract review |
 | Slice 12: Member Shared Catalog ตาม DEC-056 | `shared_catalogs`, draft items, append-only versions/events, `/api/member/shared-catalogs/*`, `/api/public/catalogs/[token]`, `/member/shared-catalogs/*`, `/catalog/share/[token]` | Snapshot stability, token expiry/revoke/rotate, public field-leak test, signed URL, two-member RLS, responsive และ Human UAT |
 | Slice 12.1: Customer Browse Catalog ตาม DEC-061 | ขยาย `shared_catalogs/versions/version_items`, Public-safe paginated loader, Product/Project/Curated/Full Catalog scopes, Interest List ใน Browser และ Contact CTA | ลิงก์ 4 แบบ, no-price payload/UI, Snapshot vs Live contract, Project privacy, token lifecycle, signed URL, cross-member RLS, responsive และ Human UAT |
-| Slice 13: Visual Product Sourcing ตาม DEC-057 | `product_sourcing_requests/files/candidates/history`, trusted workflow RPC, `/api/member/sourcing-requests/*`, `/api/admin/sourcing-requests/*`, Member/Admin UI | Workflow ทุกทาง, file type/size/count, confidential-field isolation, cross-member RLS, Product Lifecycle connection และ Human UAT |
+| Slice 13: Visual Product Sourcing ตาม DEC-057 และ DEC-063 | `product_sourcing_requests/files/candidates/history`, trusted workflow RPC, `/api/member/sourcing-requests/*`, `/api/admin/sourcing-requests/*`, Member/Admin UI | Integration/RLS/File/Workflow 20 Assertions, confidential-field isolation, Product Lifecycle connection, Hosted/Responsive Test และ Human UAT ผ่าน; `SLICE_13_ACCEPTED` |
 
 ## สถานะการตรวจรับ
 
@@ -90,6 +90,19 @@
 - หน้า Member แสดง “หน้ารวมสินค้าทั้งหมดของฉัน” โดยตรงและ Prefill Branding/Contact จาก Member Profile
 - สถานะ: `DONE`; คงเหลือ 0 ขั้นตอนเพื่อปิด Slice 12.1
 - หลักฐาน: `evidence/2026-09-06-slice-12-1-customer-browse-catalog.md`
+
+### Slice 13 Human UAT — ผ่านและปิดแล้ว
+
+- Backend Branch, Migration และ Development Merge ผ่านโดยมี Backup และ Merge Dry-run
+- Integration/RLS/File/Workflow ผ่าน 20 Assertions
+- Typecheck, Lint, 42 Test Files / 171 Tests และ Production Build 118 Pages ผ่าน
+- Development Preview, Hosted Smoke และ Responsive Test 390×844 ผ่าน
+- แก้ UAT Finding เรื่อง Draft/ภาพและช่องขนาดมิลลิเมตรจำนวนเต็มแล้ว
+- เจ้าของระบบยืนยันว่า “ผ่านทั้งหมด” เมื่อ 8 กันยายน 2569
+- ผลการตัดสิน: `SLICE_13_ACCEPTED`; สถานะ: `DONE` บน Development
+- คงเหลือ 0 ขั้นตอนเพื่อปิด Slice 13
+- หลักฐาน: `evidence/2026-09-08-slice-13-visual-sourcing.md` และ `uat/SLICE-13-HUMAN-UAT.md`
+- Production Release B ต้องได้รับ Owner Approval แยก
 
 ### Preliminary Baseline ที่เคยผ่านใน Local
 

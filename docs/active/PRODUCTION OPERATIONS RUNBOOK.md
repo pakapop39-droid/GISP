@@ -1,6 +1,6 @@
 # GISP Production — คู่มือเปิดใช้และกู้ระบบ
 
-ตรวจล่าสุด 6 กันยายน 2569
+ตรวจล่าสุด 8 กันยายน 2569
 
 ## ระบบที่ใช้งานจริง
 
@@ -8,6 +8,8 @@
 - Backend Production: `865860c2-49fa-4e53-908f-9396b2f75233`
 - พื้นที่ซ้อม: `2cff11a0-9e16-41d4-989a-dcfc9f48103d`
 - เว็บซ้อม: https://m8ugbyak-nfh.insforge.site
+- พื้นที่ซ้อม Release B จาก Production ปัจจุบัน: `f0f9a36b-ec7d-4ceb-ae28-b2d5feef85f9`
+- เว็บซ้อม Release B: https://gisp-release-b-rehearsal.vercel.app
 - ไฟล์เชื่อม Production อยู่ใน `output/production-completion-20260906/production`
 - ห้ามใช้ไฟล์เชื่อมที่ root สำหรับงาน Production เพราะ root เชื่อม Development
 
@@ -49,6 +51,25 @@ npx -y @insforge/cli backups list --json
 ```
 
 ต้องได้สถานะ `completed` จึงเริ่ม migration/deploy บันทึก deployment เดิม ชุด migration ค่า Release Stage และเวลาหยุดรับรายการไว้ด้วย ห้ามแสดง API key หรือ signed download URL ในเอกสาร
+
+## Cutover Release B
+
+ใช้เฉพาะหลังได้รับ Owner Approval สำหรับ Production Deployment รอบ Release B แล้ว:
+
+1. ตรวจ Production Project ID ต้องเป็น `865860c2-49fa-4e53-908f-9396b2f75233`
+2. สร้าง Backup ใหม่ชื่อ `pre-release-b-20260908` และตรวจสถานะ `completed`
+3. ตรวจ Migration Bundle `20260908150000_release-b-shared-catalog-sourcing.sql` ให้มี SHA-256
+   `F3889A61057C2DD7AD84F3E4ECFA88FFA97DD872664284A721267848F4E0FC72`
+4. Apply Bundle แล้วตรวจตารางใหม่ 10 ตารางเปิด RLS, ไม่มี `anon` SELECT หรือ
+   `authenticated` INSERT ตารางฐานโดยตรง และ `next_record_reference(text)` ยังเรียกตรงไม่ได้
+5. Deploy โดยใช้ `RELEASE_STAGE=B`, เปิด Shared Catalog และ Product Sourcing,
+   คง Staff Operations เปิด และคง Transaction/Post-go-live Features ปิด
+6. ตรวจ Login Owner, Admin Members, Member Catalog/Project, Shared Catalog, Visual Sourcing,
+   Public Invalid Token และสิทธิ์ Member ที่ต้องเข้า Admin API ไม่ได้
+7. หาก Gate ใดไม่ผ่าน ให้หยุด Member Pilot และใช้แผนย้อนกลับก่อนรับรายการจริง
+
+Source, Migration Hash, Gate และแผนย้อนกลับฉบับเต็มอยู่ที่
+[Release B Production Readiness](../evidence/2026-09-08-release-b-production-readiness.md)
 
 ## หลักฐานการซ้อมกู้
 

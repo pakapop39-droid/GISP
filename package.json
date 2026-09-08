@@ -28,6 +28,8 @@
     "test:slice11:preview": "node --env-file=.env.local scripts/slice11-preview-smoke.mjs",
     "test:slice12:branch": "node --env-file=.env.local scripts/slice12-branch-test.mjs",
     "test:slice121:branch": "node --env-file=.env.local scripts/slice12-branch-test.mjs",
+    "test:slice13:branch": "node --env-file=.env.slice13.local scripts/slice13-branch-test.mjs",
+    "test:releaseb:hosted": "node scripts/release-b-hosted-smoke.mjs",
     "fixture:slice7:uat": "node --env-file=.env.local scripts/slice7-uat-fixture.mjs",
     "fixture:slice8:uat": "node --env-file=.env.local scripts/slice8-uat-fixture.mjs",
     "fixture:slice9:uat": "node --env-file=.env.local scripts/slice9-uat-fixture.mjs",

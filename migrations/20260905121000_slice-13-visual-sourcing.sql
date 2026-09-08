@@ -21,6 +21,10 @@ BEGIN
   RETURN target_prefix||'-'||target_year||'-'||LPAD(next_value::TEXT,6,'0');
 END;
 $$;
+-- This migration can be applied out of timestamp order to a branch created from
+-- Development after the sequence-helper hardening migration. Revoke the default
+-- function privilege again so recreating the helper cannot reopen direct calls.
+REVOKE ALL ON FUNCTION public.next_record_reference(TEXT) FROM PUBLIC,anon,authenticated;
 
 CREATE TABLE public.product_sourcing_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -142,11 +146,38 @@ $$;
 CREATE TRIGGER sourcing_reference_file_guard BEFORE INSERT ON public.product_sourcing_files
   FOR EACH ROW EXECUTE FUNCTION public.enforce_sourcing_reference_file();
 
+CREATE OR REPLACE FUNCTION public.enforce_sourcing_candidate_file()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
+DECLARE request_record public.product_sourcing_requests%ROWTYPE;
+BEGIN
+  SELECT r.* INTO request_record
+  FROM public.product_sourcing_candidates c
+  JOIN public.product_sourcing_requests r ON r.id=c.request_id
+  WHERE c.id=NEW.candidate_id AND c.status='DRAFT'
+    AND r.status IN ('SUBMITTED','UNDER_REVIEW','NEED_INFO')
+  FOR UPDATE OF r;
+  IF request_record.id IS NULL THEN RAISE EXCEPTION 'SOURCING_CANDIDATE_NOT_EDITABLE'; END IF;
+  IF (SELECT COUNT(*) FROM public.product_sourcing_candidate_files WHERE candidate_id=NEW.candidate_id) >= 8 THEN
+    RAISE EXCEPTION 'CANDIDATE_IMAGE_LIMIT';
+  END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.file_metadata f WHERE f.id=NEW.file_id
+    AND f.organization_id=request_record.organization_id AND f.member_profile_id=request_record.member_profile_id
+    AND f.bucket='gisp-member-private' AND f.visibility='MEMBER_PRIVATE'
+    AND f.entity_type='PRODUCT_SOURCING_CANDIDATE' AND f.entity_id=NEW.candidate_id
+    AND f.mime_type IN ('image/jpeg','image/png','image/webp') AND f.size_bytes>0 AND f.size_bytes<=10485760)
+  THEN RAISE EXCEPTION 'INVALID_CANDIDATE_IMAGE'; END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER sourcing_candidate_file_guard BEFORE INSERT ON public.product_sourcing_candidate_files
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_sourcing_candidate_file();
+
 CREATE OR REPLACE FUNCTION public.can_access_sourcing_request(request_id_input UUID)
 RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path=pg_catalog,public,pg_temp AS $$
   SELECT EXISTS(SELECT 1 FROM public.product_sourcing_requests r WHERE r.id=request_id_input
-    AND (r.member_profile_id=public.current_member_profile_id() OR public.has_permission('sourcing.manage',r.organization_id)));
+    AND (r.member_profile_id=public.current_member_profile_id()
+      OR (r.status<>'DRAFT' AND public.has_permission('sourcing.manage',r.organization_id))));
 $$;
 
 CREATE OR REPLACE FUNCTION public.record_sourcing_history(request_id_input UUID,action_input TEXT,from_input TEXT,to_input TEXT,message_input TEXT,visibility_input TEXT DEFAULT 'MEMBER')
@@ -364,13 +395,13 @@ ALTER TABLE public.product_sourcing_files ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.product_sourcing_candidates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.product_sourcing_candidate_files ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.product_sourcing_history ENABLE ROW LEVEL SECURITY;
-CREATE POLICY sourcing_requests_select ON public.product_sourcing_requests FOR SELECT TO authenticated USING(member_profile_id=public.current_member_profile_id() OR public.has_permission('sourcing.manage',organization_id));
+CREATE POLICY sourcing_requests_select ON public.product_sourcing_requests FOR SELECT TO authenticated USING(member_profile_id=public.current_member_profile_id() OR (status<>'DRAFT' AND public.has_permission('sourcing.manage',organization_id)));
 CREATE POLICY sourcing_files_select ON public.product_sourcing_files FOR SELECT TO authenticated USING(public.can_access_sourcing_request(request_id));
 CREATE POLICY sourcing_candidates_select ON public.product_sourcing_candidates FOR SELECT TO authenticated USING(public.can_access_sourcing_request(request_id));
 CREATE POLICY sourcing_candidate_files_select ON public.product_sourcing_candidate_files FOR SELECT TO authenticated USING(EXISTS(SELECT 1 FROM public.product_sourcing_candidates c WHERE c.id=candidate_id AND public.can_access_sourcing_request(c.request_id)));
 CREATE POLICY sourcing_history_select ON public.product_sourcing_history FOR SELECT TO authenticated USING(public.can_access_sourcing_request(request_id) AND (visibility='MEMBER' OR public.has_permission('sourcing.manage',organization_id)));
 REVOKE ALL ON public.product_sourcing_requests,public.product_sourcing_files,public.product_sourcing_candidates,public.product_sourcing_candidate_files,public.product_sourcing_history FROM PUBLIC,anon,authenticated;
-REVOKE ALL ON FUNCTION public.enforce_sourcing_reference_file(),public.can_access_sourcing_request(UUID),public.record_sourcing_history(UUID,TEXT,TEXT,TEXT,TEXT,TEXT),public.create_product_sourcing_draft(UUID,UUID,TEXT,TEXT,TEXT,NUMERIC,TEXT,NUMERIC,NUMERIC,NUMERIC,TEXT,TEXT,NUMERIC,DATE,TEXT,TEXT),public.save_product_sourcing_request(UUID,UUID,UUID,TEXT,TEXT,TEXT,NUMERIC,TEXT,NUMERIC,NUMERIC,NUMERIC,TEXT,TEXT,NUMERIC,DATE,TEXT,TEXT),public.submit_product_sourcing_request(UUID),public.cancel_product_sourcing_request(UUID,TEXT),public.save_sourcing_candidate(UUID,UUID,UUID,UUID,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,NUMERIC,INTEGER,NUMERIC,TEXT,TEXT),public.admin_product_sourcing_action(UUID,TEXT,TEXT),public.delete_sourcing_candidate(UUID,UUID),public.select_sourcing_candidate(UUID,UUID),public.reject_sourcing_options(UUID,TEXT),public.create_sourcing_product_draft(UUID,UUID),public.link_sourcing_product(UUID,UUID,UUID) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.enforce_sourcing_reference_file(),public.enforce_sourcing_candidate_file(),public.can_access_sourcing_request(UUID),public.record_sourcing_history(UUID,TEXT,TEXT,TEXT,TEXT,TEXT),public.create_product_sourcing_draft(UUID,UUID,TEXT,TEXT,TEXT,NUMERIC,TEXT,NUMERIC,NUMERIC,NUMERIC,TEXT,TEXT,NUMERIC,DATE,TEXT,TEXT),public.save_product_sourcing_request(UUID,UUID,UUID,TEXT,TEXT,TEXT,NUMERIC,TEXT,NUMERIC,NUMERIC,NUMERIC,TEXT,TEXT,NUMERIC,DATE,TEXT,TEXT),public.submit_product_sourcing_request(UUID),public.cancel_product_sourcing_request(UUID,TEXT),public.save_sourcing_candidate(UUID,UUID,UUID,UUID,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,NUMERIC,INTEGER,NUMERIC,TEXT,TEXT),public.admin_product_sourcing_action(UUID,TEXT,TEXT),public.delete_sourcing_candidate(UUID,UUID),public.select_sourcing_candidate(UUID,UUID),public.reject_sourcing_options(UUID,TEXT),public.create_sourcing_product_draft(UUID,UUID),public.link_sourcing_product(UUID,UUID,UUID) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.can_access_sourcing_request(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.create_product_sourcing_draft(UUID,UUID,TEXT,TEXT,TEXT,NUMERIC,TEXT,NUMERIC,NUMERIC,NUMERIC,TEXT,TEXT,NUMERIC,DATE,TEXT,TEXT),public.save_product_sourcing_request(UUID,UUID,UUID,TEXT,TEXT,TEXT,NUMERIC,TEXT,NUMERIC,NUMERIC,NUMERIC,TEXT,TEXT,NUMERIC,DATE,TEXT,TEXT),public.submit_product_sourcing_request(UUID),public.cancel_product_sourcing_request(UUID,TEXT),public.select_sourcing_candidate(UUID,UUID),public.reject_sourcing_options(UUID,TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.save_sourcing_candidate(UUID,UUID,UUID,UUID,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,NUMERIC,INTEGER,NUMERIC,TEXT,TEXT),public.admin_product_sourcing_action(UUID,TEXT,TEXT),public.delete_sourcing_candidate(UUID,UUID),public.create_sourcing_product_draft(UUID,UUID),public.link_sourcing_product(UUID,UUID,UUID) TO authenticated;

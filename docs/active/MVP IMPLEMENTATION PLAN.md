@@ -238,9 +238,17 @@ Candidate ที่ Member เลือกต้องเชื่อม Product
 Workflow ทุกทางทำงานผ่าน Trusted Function, Member เห็นเฉพาะคำขอของตนและไม่เห็น Supplier/Cost/Internal Note,
 ไฟล์ข้ามบริษัทเปิดไม่ได้ และ Product ที่ Publish แล้วเพิ่มเข้า Project หรือ Shared Catalog ได้
 
-**สถานะ 5 กันยายน 2569:** Migration, API, Member/Admin UI, File Validation, Member-safe Projection
-และ Unit Workflow Test ทำเสร็จใน Local แล้ว รอ Backend Branch, Integration/RLS Test, Preview และ Human UAT
-หลัง Slice 12 โดย Production Release A ไม่เปลี่ยน
+**สถานะ 8 กันยายน 2569:** Backend Branch, Migration, Integration/RLS/File/Workflow Test 20 Assertions,
+Member/Admin UI, Member-safe Projection, Unit/Contract Test 42 Files / 171 Tests, Production Build
+และ Local Browser/Responsive Test ผ่านแล้ว Merge เข้า Development สำเร็จโดยมี Backup และ Dry-run 0 Conflict
+เปิด Development Feature Flag แล้ว Development Preview `dpl_J6A1Pk2SDtRZUMSn3XPhbshZzaJ5`
+เป็น READY ที่ `https://gisp-slice-13-visual-sourcing.vercel.app` และ Post-deployment Smoke ผ่าน
+ทั้ง Member/Admin, Candidate Image Upload, Member-safe Projection และ Mobile Responsive
+แก้ UAT Finding ให้หน้าสร้างอัปโหลดภาพพร้อมร่าง และซ่อน Member Draft จาก Admin Queue/API/RLS แล้ว
+ช่องขนาดกว้าง/ลึก/สูงรับมิลลิเมตรจำนวนเต็มและ Hosted Validation `500 × 500 × 700` ผ่านแล้ว
+Human UAT ผ่านทั้งหมดและได้รับ Owner Sign-off เมื่อ 8 กันยายน 2569 จึงกำหนดสถานะ
+`SLICE_13_ACCEPTED` / `DONE` บน Development และคงเหลือ 0 ขั้นตอนเพื่อปิด Slice 13
+โดย Production Release A ไม่เปลี่ยน
 
 ## 5. Canonical State และ Role Contract
 
