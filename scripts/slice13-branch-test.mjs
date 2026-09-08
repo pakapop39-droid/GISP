@@ -288,6 +288,10 @@ await expectError(
   () => memberAClient.database.rpc("next_record_reference", { target_prefix: "PSR" }),
   "member cannot call the document sequence helper directly",
 );
+await expectError(
+  () => memberAClient.database.rpc("admin_product_sourcing_action", { request_id_input: mainRequest, action_input: "START_REVIEW", message_input: null }),
+  "member cannot run the sourcing admin workflow",
+);
 
 must(
   await operatorClient.database.rpc("admin_product_sourcing_action", { request_id_input: mainRequest, action_input: "START_REVIEW", message_input: null }),
@@ -357,9 +361,17 @@ const candidateInput = {
   factory_currency_input: "CNY",
   internal_note_input: "SECRET INTERNAL NOTE",
 };
+await expectError(
+  () => memberAClient.database.rpc("save_sourcing_candidate", candidateInput),
+  "member cannot create an internal sourcing candidate",
+);
 const candidateId = must(
   await operatorClient.database.rpc("save_sourcing_candidate", candidateInput),
   "create sourcing candidate",
+);
+await expectError(
+  () => memberAClient.database.rpc("delete_sourcing_candidate", { request_id_input: mainRequest, candidate_id_input: candidateId }),
+  "member cannot delete an internal sourcing candidate",
 );
 const candidateFile = must(
   await admin.database.from("file_metadata").insert([{
@@ -415,6 +427,10 @@ must(
   await memberAClient.database.rpc("select_sourcing_candidate", { request_id_input: mainRequest, candidate_id_input: candidateId }),
   "request owner selects a candidate",
 );
+await expectError(
+  () => memberAClient.database.rpc("create_sourcing_product_draft", { request_id_input: mainRequest, candidate_id_input: candidateId }),
+  "member cannot create a product draft from the selected candidate",
+);
 
 const publishedProduct = must(
   await admin.database.from("products").insert([{
@@ -435,6 +451,10 @@ const publishedProduct = must(
     created_by: operator.id,
   }]).select("id").single(),
   "create published product",
+);
+await expectError(
+  () => memberAClient.database.rpc("link_sourcing_product", { request_id_input: mainRequest, candidate_id_input: candidateId, product_id_input: publishedProduct.id }),
+  "member cannot link an internal product to the sourcing request",
 );
 must(
   await operatorClient.database.rpc("link_sourcing_product", { request_id_input: mainRequest, candidate_id_input: candidateId, product_id_input: publishedProduct.id }),
