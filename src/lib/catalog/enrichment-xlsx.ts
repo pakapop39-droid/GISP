@@ -29,9 +29,10 @@ function columnsXml(widths: readonly number[] | undefined, hiddenFirst = false) 
   if (!widths?.length) return hiddenFirst ? '<cols><col min="1" max="1" hidden="1"/></cols>' : "";
   return `<cols>${widths.map((width, index) => `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"${hiddenFirst && index === 0 ? ' hidden="1"' : ""}/>`).join("")}</cols>`;
 }
-function sheetXml(rows: Cell[][], options: { unlockedFrom?: number; unlockedTo?: number; hiddenFirst?: boolean; validations?: string; columnWidths?: readonly number[] } = {}) {
+function sheetXml(rows: Cell[][], options: { unlockedFrom?: number; unlockedTo?: number; hiddenFirst?: boolean; validations?: string; columnWidths?: readonly number[]; protect?: boolean } = {}) {
   const body = rows.map((values, rowIndex) => `<row r="${rowIndex + 1}">${values.map((value, columnIndex) => cellXml(value, rowIndex + 1, columnIndex, rowIndex > 0 && options.unlockedFrom !== undefined && columnIndex >= options.unlockedFrom && columnIndex <= (options.unlockedTo ?? options.unlockedFrom))).join("")}</row>`).join("");
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${columnsXml(options.columnWidths, options.hiddenFirst)}<sheetData>${body}</sheetData><sheetProtection sheet="1" objects="1" scenarios="1" formatColumns="1"/>${options.validations ?? ""}</worksheet>`;
+  const protection = options.protect === false ? "" : '<sheetProtection sheet="1" objects="1" scenarios="1" formatColumns="1"/>';
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${columnsXml(options.columnWidths, options.hiddenFirst)}<sheetData>${body}</sheetData>${protection}${options.validations ?? ""}</worksheet>`;
 }
 
 export function buildCatalogEnrichmentWorkbook(input: { workbookId: string; jobId: string; exportedAt: string; rows: EnrichmentExportRow[]; categories: string[]; countries: string[]; includeCosts: boolean }) {
@@ -63,7 +64,7 @@ export function buildCatalogEnrichmentWorkbook(input: { workbookId: string; jobI
   };
   const productWidths = [2,12,18,18,28,28,24,20,18,14,16,12,12,12,12,12,28,24,10,40,40] as const;
   const costWidths = [2,20,16,28,20,18,14,24,18] as const;
-  const content = [sheetXml(instructions,{columnWidths:[90]}),sheetXml(products,{unlockedFrom:2,unlockedTo:20,hiddenFirst:true,validations,columnWidths:productWidths}),...(input.includeCosts?[sheetXml(costs,{unlockedFrom:5,unlockedTo:8,hiddenFirst:true,columnWidths:costWidths})]:[]),sheetXml(listRows),sheetXml(meta,{hiddenFirst:false})];
+  const content = [sheetXml(instructions,{columnWidths:[90],protect:false}),sheetXml(products,{unlockedFrom:2,unlockedTo:20,hiddenFirst:true,validations,columnWidths:productWidths,protect:false}),...(input.includeCosts?[sheetXml(costs,{unlockedFrom:5,unlockedTo:8,hiddenFirst:true,columnWidths:costWidths,protect:false})]:[]),sheetXml(listRows),sheetXml(meta,{hiddenFirst:false})];
   content.forEach((xml,index)=>{files[`xl/worksheets/sheet${index+1}.xml`]=strToU8(xml);});
   return zipSync(files,{level:6});
 }
