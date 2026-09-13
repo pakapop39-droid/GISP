@@ -12,6 +12,17 @@ export const CATALOG_EXCEL_MIME = "application/vnd.openxmlformats-officedocument
 export const productTypes = ["STANDARD", "CUSTOM_TEMPLATE", "READY_TO_ORDER", "BUILT_IN", "MATERIAL", "EQUIPMENT", "DECORATIVE"] as const;
 export const enrichmentPreviewStatuses = ["READY", "UNCHANGED", "INVALID", "CONFLICT", "WAITING_FOR_DRAFT", "APPLIED", "CANCELLED"] as const;
 
+export function summarizeEnrichmentStatuses(rows: Array<{ detail_status: string; cost_status: string | null }>) {
+  return {
+    readyDetails: rows.filter((row) => row.detail_status === "READY").length,
+    readyCosts: rows.filter((row) => row.cost_status === "READY").length,
+    invalid: rows.filter((row) => row.detail_status === "INVALID" || row.cost_status === "INVALID").length,
+    conflicts: rows.filter((row) => row.detail_status === "CONFLICT" || row.cost_status === "CONFLICT").length,
+    unchanged: rows.filter((row) => row.detail_status === "UNCHANGED" && row.cost_status === "UNCHANGED").length,
+    waiting: rows.filter((row) => row.detail_status === "WAITING_FOR_DRAFT" || row.cost_status === "WAITING_FOR_DRAFT").length,
+  };
+}
+
 export const productColumns = [
   "row_key", "source_page", "sku", "factory_sku", "name_th", "name_en", "name_zh", "product_type",
   "category_code", "country_code", "lead_time_days", "width_mm", "depth_mm", "height_mm", "weight_kg", "cbm",

@@ -26,13 +26,20 @@ Status: implementation complete for independent QA; not merged or deployed
 
 ## Builder test evidence
 
-- `npx vitest run src/lib/catalog/excel-roundtrip.test.ts src/lib/catalog/excel-roundtrip-migration.test.ts src/lib/catalog/excel-roundtrip-api.test.ts src/components/catalog-enrichment-panel.test.ts` — 4 files / 21 tests passed.
+- `npx vitest run src/lib/catalog/excel-roundtrip.test.ts src/lib/catalog/excel-roundtrip-migration.test.ts src/lib/catalog/excel-roundtrip-api.test.ts src/components/catalog-enrichment-panel.test.ts` — 4 files / 25 tests passed after QA rework.
 - `npx tsc --noEmit` — passed.
-- `npm test` — 50 files / 230 tests passed.
+- `npm test` — 50 files / 234 tests passed after QA rework.
 - `npm run lint` — passed with zero warnings/errors.
 - `npm run build` — passed; Next.js generated 119 pages and all six enrichment routes.
 - `npm run test:pdf-excel-roundtrip:branch` — 14 live isolated-branch assertions passed: confidential-XLSX metadata guard, lifecycle stop after PDF cancellation, browser DML denial, Member/Purchasing/Product Admin RLS, Member RPC denial, trusted candidate details, review reset, immutable PDF snapshot/Product linkage, WAITING refresh, idempotent cost, ACTIVE/RETIRED Cost Version semantics, no Member Price, Product remains Draft/Not Reviewed.
 - The 1,000-row multilingual in-memory workbook round-trip completed below the 30-second unit threshold.
+
+## QA rework included
+
+- Cost rows in `APPLIED` now render the calculated Member Price amount in THB, an explicit `ยังไม่เปิดใช้ราคา` state and a link back to the existing Pricing workflow. Cost preview remains absent from the redacted API projection and UI for users without `catalog.cost.read`.
+- Preview pagination now orders by `row_number` and UUID `id`, so equal timestamps cannot duplicate or omit rows at page boundaries.
+- Upload summaries count `INVALID` and `CONFLICT` once per staging row, matching the trusted refresh RPC.
+- `INVALID` or `CONFLICT` rows without an error code render as warning states instead of `พร้อม`.
 
 ## QA focus
 

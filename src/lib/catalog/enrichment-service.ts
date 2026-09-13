@@ -5,7 +5,7 @@ import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { buildCatalogEnrichmentWorkbook, parseCatalogEnrichmentWorkbook, type EnrichmentExportRow } from "@/lib/catalog/enrichment-xlsx";
 import {
   CATALOG_EXCEL_MIME, CATALOG_EXCEL_SCHEMA_VERSION, CatalogExcelError, enrichmentDetailSchema,
-  parseFactoryCost, parseOptionalNumber, productColumns, stableHash,
+  parseFactoryCost, parseOptionalNumber, productColumns, stableHash, summarizeEnrichmentStatuses,
 } from "@/lib/catalog/excel-roundtrip";
 
 type AccessContext = { userId: string; organizationId: string | null; permissions: string[] };
@@ -163,6 +163,8 @@ export async function stageEnrichmentUpload(jobId: string, file: File, context: 
     const status=costConflict?"CONFLICT":errors.length?"INVALID":row.product_id?"READY":"WAITING_FOR_DRAFT"; if(status==="READY")readyCosts++; else if(status==="WAITING_FOR_DRAFT")waiting++; else if(status==="CONFLICT")conflicts++; else invalid++;
     const update=await db.from("catalog_import_enrichment_rows").update({proposed_cost:proposed,cost_diff:proposed,cost_status:status,error_codes:[...(Array.isArray(row.error_codes)?row.error_codes:[]),...errors]}).eq("id",row.id); if(update.error)throw update.error;
   }
+  const finalStatuses=check(await db.from("catalog_import_enrichment_rows").select("detail_status,cost_status").eq("batch_id",batchId).limit(1000)) as Array<{detail_status:string;cost_status:string|null}>;
+  ({readyDetails,readyCosts,invalid,conflicts,unchanged,waiting}=summarizeEnrichmentStatuses(finalStatuses));
   const updated=await db.from("catalog_import_enrichment_batches").update({status:"READY_FOR_REVIEW",upload_file_id:metadata.id,upload_sha256:uploadHash,uploaded_by:context.userId,uploaded_at:new Date().toISOString(),ready_detail_rows:readyDetails,ready_cost_rows:readyCosts,invalid_rows:invalid,conflict_rows:conflicts,unchanged_rows:unchanged,waiting_for_draft_rows:waiting}).eq("id",batchId); if(updated.error)throw updated.error;
   await audit(db,context.userId,"catalog_import_enrichment_batch",batchId,"CATALOG_ENRICHMENT_UPLOADED",{readyDetails,readyCosts,invalid,conflicts,unchanged,waiting});
   return {batchId,summary:{readyDetails,readyCosts,invalid,conflicts,unchanged,waiting}};
@@ -173,7 +175,7 @@ export async function getEnrichmentPreview(jobId:string,batchId:string,page:numb
   const batch=check(await db.from("catalog_import_enrichment_batches").select("*").eq("id",batchId).eq("import_job_id",jobId).maybeSingle()) as Record<string,unknown>|null;
   if(!batch)throw new CatalogExcelError("NOT_FOUND","ไม่พบ Preview");
   const countResult=await db.from("catalog_import_enrichment_rows").select("id",{count:"exact",head:true}).eq("batch_id",batchId);if(countResult.error)throw countResult.error;
-  const from=(page-1)*pageSize; const rows=check(await db.from("catalog_import_enrichment_rows").select("*").eq("batch_id",batchId).order("created_at").range(from,from+pageSize-1)) as Record<string,unknown>[];
+  const from=(page-1)*pageSize; const rows=check(await db.from("catalog_import_enrichment_rows").select("*").eq("batch_id",batchId).order("row_number",{ascending:true}).order("id",{ascending:true}).range(from,from+pageSize-1)) as Record<string,unknown>[];
   const redacted=canReadCosts?rows:rows.map(source=>{const row={...source};delete row.baseline_cost;delete row.proposed_cost;delete row.cost_diff;delete row.price_preview;return{...row,cost_status:null,error_codes:Array.isArray(row.error_codes)?row.error_codes.filter(code=>!/(COST|PRICE|CURRENCY|EXCHANGE|EFFECTIVE)/i.test(String(code))):[],warning_codes:Array.isArray(row.warning_codes)?row.warning_codes.filter(code=>!/(COST|PRICE|CURRENCY|EXCHANGE|EFFECTIVE)/i.test(String(code))):[]};});
   const total=countResult.count??Number(batch.row_count??rows.length);
   const visibleBatch=canReadCosts?batch:Object.fromEntries(Object.entries(batch).filter(([key])=>!["ready_cost_rows","waiting_for_draft_rows","exported_with_costs"].includes(key)));
