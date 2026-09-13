@@ -25,9 +25,13 @@ function cellXml(value: Cell, row: number, column: number, unlocked = false) {
   const text = value instanceof Date ? value.toISOString() : String(value);
   return `<c r="${ref}" t="inlineStr"${style}><is><t xml:space="preserve">${escapeXml(text)}</t></is></c>`;
 }
-function sheetXml(rows: Cell[][], options: { unlockedFrom?: number; unlockedTo?: number; hiddenFirst?: boolean; validations?: string } = {}) {
+function columnsXml(widths: readonly number[] | undefined, hiddenFirst = false) {
+  if (!widths?.length) return hiddenFirst ? '<cols><col min="1" max="1" hidden="1"/></cols>' : "";
+  return `<cols>${widths.map((width, index) => `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"${hiddenFirst && index === 0 ? ' hidden="1"' : ""}/>`).join("")}</cols>`;
+}
+function sheetXml(rows: Cell[][], options: { unlockedFrom?: number; unlockedTo?: number; hiddenFirst?: boolean; validations?: string; columnWidths?: readonly number[] } = {}) {
   const body = rows.map((values, rowIndex) => `<row r="${rowIndex + 1}">${values.map((value, columnIndex) => cellXml(value, rowIndex + 1, columnIndex, rowIndex > 0 && options.unlockedFrom !== undefined && columnIndex >= options.unlockedFrom && columnIndex <= (options.unlockedTo ?? options.unlockedFrom))).join("")}</row>`).join("");
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${options.hiddenFirst ? '<cols><col min="1" max="1" hidden="1"/></cols>' : ""}<sheetData>${body}</sheetData><sheetProtection sheet="1" objects="1" scenarios="1"/>${options.validations ?? ""}</worksheet>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${columnsXml(options.columnWidths, options.hiddenFirst)}<sheetData>${body}</sheetData><sheetProtection sheet="1" objects="1" scenarios="1" formatColumns="1"/>${options.validations ?? ""}</worksheet>`;
 }
 
 export function buildCatalogEnrichmentWorkbook(input: { workbookId: string; jobId: string; exportedAt: string; rows: EnrichmentExportRow[]; categories: string[]; countries: string[]; includeCosts: boolean }) {
@@ -57,7 +61,9 @@ export function buildCatalogEnrichmentWorkbook(input: { workbookId: string; jobI
     "xl/_rels/workbook.xml.rels":strToU8(`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`),
     "xl/styles.xml":strToU8(`<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Aptos"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyProtection="1"><protection locked="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyProtection="1"><protection locked="0"/></xf></cellXfs></styleSheet>`),
   };
-  const content = [sheetXml(instructions),sheetXml(products,{unlockedFrom:2,unlockedTo:20,hiddenFirst:true,validations}),...(input.includeCosts?[sheetXml(costs,{unlockedFrom:5,unlockedTo:8,hiddenFirst:true})]:[]),sheetXml(listRows),sheetXml(meta,{hiddenFirst:false})];
+  const productWidths = [2,12,18,18,28,28,24,20,18,14,16,12,12,12,12,12,28,24,10,40,40] as const;
+  const costWidths = [2,20,16,28,20,18,14,24,18] as const;
+  const content = [sheetXml(instructions,{columnWidths:[90]}),sheetXml(products,{unlockedFrom:2,unlockedTo:20,hiddenFirst:true,validations,columnWidths:productWidths}),...(input.includeCosts?[sheetXml(costs,{unlockedFrom:5,unlockedTo:8,hiddenFirst:true,columnWidths:costWidths})]:[]),sheetXml(listRows),sheetXml(meta,{hiddenFirst:false})];
   content.forEach((xml,index)=>{files[`xl/worksheets/sheet${index+1}.xml`]=strToU8(xml);});
   return zipSync(files,{level:6});
 }
