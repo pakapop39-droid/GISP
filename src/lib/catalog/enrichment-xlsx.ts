@@ -27,7 +27,7 @@ function cellXml(value: Cell, row: number, column: number, unlocked = false) {
 }
 function sheetXml(rows: Cell[][], options: { unlockedFrom?: number; unlockedTo?: number; hiddenFirst?: boolean; validations?: string } = {}) {
   const body = rows.map((values, rowIndex) => `<row r="${rowIndex + 1}">${values.map((value, columnIndex) => cellXml(value, rowIndex + 1, columnIndex, rowIndex > 0 && options.unlockedFrom !== undefined && columnIndex >= options.unlockedFrom && columnIndex <= (options.unlockedTo ?? options.unlockedFrom))).join("")}</row>`).join("");
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${options.hiddenFirst ? '<cols><col min="1" max="1" hidden="1"/></cols>' : ""}<sheetData>${body}</sheetData>${options.validations ?? ""}<sheetProtection sheet="1" objects="1" scenarios="1"/></worksheet>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${options.hiddenFirst ? '<cols><col min="1" max="1" hidden="1"/></cols>' : ""}<sheetData>${body}</sheetData><sheetProtection sheet="1" objects="1" scenarios="1"/>${options.validations ?? ""}</worksheet>`;
 }
 
 export function buildCatalogEnrichmentWorkbook(input: { workbookId: string; jobId: string; exportedAt: string; rows: EnrichmentExportRow[]; categories: string[]; countries: string[]; includeCosts: boolean }) {
