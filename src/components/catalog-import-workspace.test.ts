@@ -57,11 +57,10 @@ describe("Catalog Import history navigation", () => {
 
     expect(banner).toContain("กำลังดูงาน: synthetic.pdf");
     expect(banner).toContain("READY_FOR_REVIEW");
-    expect(detailRoute).toContain('.select("original_name")');
-    expect(detailRoute).toContain('.eq("entity_type", "CATALOG_IMPORT")');
-    expect(detailRoute).toContain('.eq("entity_id", id)');
-    expect(detailRoute).toContain('.eq("visibility", "CONFIDENTIAL")');
-    expect(detailRoute).toContain('.eq("bucket", "gisp-confidential")');
+    expect(detailRoute).toContain('.select("id,original_name,bucket,visibility,entity_type,entity_id")');
+    expect(detailRoute).toContain('.eq("id", job.data.source_file_id)');
+    expect(detailRoute).toContain("resolveCatalogImportSourceName(id, sourceFile.data)");
+    expect(detailRoute).not.toContain('.eq("entity_id", id)');
     expect(detailRoute).toContain('job: { ...job.data, file_name: sourceFileName }');
   });
 });

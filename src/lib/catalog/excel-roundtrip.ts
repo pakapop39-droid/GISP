@@ -18,12 +18,20 @@ export type CatalogSourceFileMetadata = {
   entity_id?: string | null;
 };
 
-export function resolveCatalogEnrichmentFilename(jobId: string, sourceFile: CatalogSourceFileMetadata | null) {
-  const trusted = sourceFile?.bucket === "gisp-confidential"
+export function isTrustedCatalogImportSourceFile(jobId: string, sourceFile: CatalogSourceFileMetadata | null) {
+  return sourceFile?.bucket === "gisp-confidential"
     && sourceFile.visibility === "CONFIDENTIAL"
     && sourceFile.entity_type === "CATALOG_IMPORT"
-    && sourceFile.entity_id === jobId;
-  const basename = trusted ? String(sourceFile.original_name ?? "").split(/[\\/]/).at(-1)?.replace(/\.pdf$/i, "") : "";
+    && (sourceFile.entity_id === null || sourceFile.entity_id === jobId);
+}
+
+export function resolveCatalogImportSourceName(jobId: string, sourceFile: CatalogSourceFileMetadata | null) {
+  if (!isTrustedCatalogImportSourceFile(jobId, sourceFile)) return null;
+  return String(sourceFile?.original_name ?? "").split(/[\\/]/).at(-1)?.trim() || null;
+}
+
+export function resolveCatalogEnrichmentFilename(jobId: string, sourceFile: CatalogSourceFileMetadata | null) {
+  const basename = resolveCatalogImportSourceName(jobId, sourceFile)?.replace(/\.pdf$/i, "") ?? "";
   const normalizedStem = String(basename ?? "").normalize("NFKC").replace(/[\u0000-\u001f\u007f<>:"/\\|?*]/g, "-").replace(/\s+/g, " ").trim();
   const safeStem = Array.from(normalizedStem, (character) => {
     const codePoint = character.codePointAt(0) ?? 0;

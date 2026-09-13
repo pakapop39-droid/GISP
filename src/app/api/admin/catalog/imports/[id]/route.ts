@@ -5,7 +5,7 @@ import { requireAppAccess } from "@/lib/auth/session";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { safePage, safePageSize } from "@/lib/catalog/pdf-import";
-import { isCatalogExcelRoundtripEnabled } from "@/lib/catalog/excel-roundtrip";
+import { isCatalogExcelRoundtripEnabled, resolveCatalogImportSourceName } from "@/lib/catalog/excel-roundtrip";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,16 +20,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (job.error) throw job.error;
     if (!job.data) return NextResponse.json({ code: "NOT_FOUND", message: "ไม่พบ Import Job" }, { status: 404 });
     const sourceFile = job.data.source_file_id
-      ? await insforge.database.from("file_metadata").select("original_name")
+      ? await insforge.database.from("file_metadata").select("id,original_name,bucket,visibility,entity_type,entity_id")
         .eq("id", job.data.source_file_id)
-        .eq("entity_type", "CATALOG_IMPORT")
-        .eq("entity_id", id)
-        .eq("visibility", "CONFIDENTIAL")
-        .eq("bucket", "gisp-confidential")
         .maybeSingle()
       : { data: null, error: null };
     if (sourceFile.error) throw sourceFile.error;
-    const sourceFileName = sourceFile.data?.original_name ?? "—";
+    const sourceFileName = resolveCatalogImportSourceName(id, sourceFile.data) ?? "—";
     const isPdf = job.data.source_type === "PDF";
     const from = isPdf ? (page - 1) * pageSize : 0;
     const to = isPdf ? from + pageSize - 1 : 999;
