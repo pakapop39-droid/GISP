@@ -3,9 +3,10 @@ import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { CatalogImportHistoryButton, revealCatalogImportDetail } from "./catalog-import-history";
+import { CatalogImportCurrentJob, CatalogImportHistoryButton, revealCatalogImportDetail } from "./catalog-import-history";
 
 const workspace = readFileSync(join(process.cwd(), "src/components/catalog-import-workspace.tsx"), "utf8");
+const detailRoute = readFileSync(join(process.cwd(), "src/app/api/admin/catalog/imports/[id]/route.ts"), "utf8");
 const job = {
   id: "30000000-0000-4000-8000-000000000001",
   file_name: "synthetic.pdf",
@@ -47,7 +48,20 @@ describe("Catalog Import history navigation", () => {
     expect(workspace).toContain("void loadDetail(job.id,1,true)");
     expect(workspace).toContain("onReload={()=>loadDetail(detail.job.id,detail.pagination?.page??1)}");
     expect(workspace).toContain("onPage={(page)=>loadDetail(detail.job.id,page)}");
-    expect(workspace).toContain('กำลังดูงาน: {detail.job.file_name}');
     expect(workspace).toContain('aria-labelledby="catalog-import-current-job"');
+    expect(workspace).toContain("scroll-mt-24");
+  });
+
+  it("resolves the trusted detail filename and renders it in the current-job banner", () => {
+    const banner = renderToStaticMarkup(createElement(CatalogImportCurrentJob, { fileName: "synthetic.pdf", status: "READY_FOR_REVIEW" }));
+
+    expect(banner).toContain("กำลังดูงาน: synthetic.pdf");
+    expect(banner).toContain("READY_FOR_REVIEW");
+    expect(detailRoute).toContain('.select("original_name")');
+    expect(detailRoute).toContain('.eq("entity_type", "CATALOG_IMPORT")');
+    expect(detailRoute).toContain('.eq("entity_id", id)');
+    expect(detailRoute).toContain('.eq("visibility", "CONFIDENTIAL")');
+    expect(detailRoute).toContain('.eq("bucket", "gisp-confidential")');
+    expect(detailRoute).toContain('job: { ...job.data, file_name: sourceFileName }');
   });
 });

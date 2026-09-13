@@ -19,6 +19,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const job = await insforge.database.from("catalog_import_jobs").select("*").eq("id", id).maybeSingle();
     if (job.error) throw job.error;
     if (!job.data) return NextResponse.json({ code: "NOT_FOUND", message: "ไม่พบ Import Job" }, { status: 404 });
+    const sourceFile = job.data.source_file_id
+      ? await insforge.database.from("file_metadata").select("original_name")
+        .eq("id", job.data.source_file_id)
+        .eq("entity_type", "CATALOG_IMPORT")
+        .eq("entity_id", id)
+        .eq("visibility", "CONFIDENTIAL")
+        .eq("bucket", "gisp-confidential")
+        .maybeSingle()
+      : { data: null, error: null };
+    if (sourceFile.error) throw sourceFile.error;
+    const sourceFileName = sourceFile.data?.original_name ?? "—";
     const isPdf = job.data.source_type === "PDF";
     const from = isPdf ? (page - 1) * pageSize : 0;
     const to = isPdf ? from + pageSize - 1 : 999;
@@ -64,7 +75,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
     return NextResponse.json({
       data: {
-        job: job.data,
+        job: { ...job.data, file_name: sourceFileName },
         rows: (rows.data ?? []).map((row) => ({ ...row, errors: errorByRow.get(row.id) ?? [] })),
         pages: pages.data ?? [],
         candidateImages: candidateImages.data ?? [],
