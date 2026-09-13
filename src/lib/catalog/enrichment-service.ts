@@ -47,6 +47,10 @@ export async function createEnrichmentExport(jobId: string, context: AccessConte
   if (!job) throw new CatalogExcelError("NOT_FOUND", "ไม่พบ Import Job");
   if (job.source_type !== "PDF" || !exportableStatuses.includes(String(job.status))) throw new CatalogExcelError("INVALID_TRANSITION", "สถานะงานนี้ยัง Export ไม่ได้");
   const sourceFile = job.source_file_id ? check(await db.from("file_metadata").select("id,original_name,bucket,visibility,entity_type,entity_id").eq("id",job.source_file_id).maybeSingle()) as Record<string,unknown>|null : null;
+  // Resolve the eventual response header before any Storage/DB writes so an
+  // unexpected filename can never leave a partially persisted export.
+  const filename = resolveCatalogEnrichmentFilename(jobId,sourceFile);
+  encodeURIComponent(filename);
   const sourceRows = check(await db.from("catalog_import_rows").select("*").eq("import_job_id", jobId).order("row_number").limit(1001)) as Record<string, unknown>[];
   if (!sourceRows.length) throw new CatalogExcelError("NOT_FOUND", "ไม่มีรายการสำหรับ Export");
   if(sourceRows.length>1000)throw new CatalogExcelError("XLSX_ROW_LIMIT","รองรับสูงสุด 1,000 รายการ");
@@ -79,7 +83,7 @@ export async function createEnrichmentExport(jobId: string, context: AccessConte
   const staged = exportRows.map((row,index) => {const baseline={...row.detail};delete baseline.category_code;return ({ batch_id: batchId, row_key: row.rowKey, import_row_id: row.importRowId, product_id: row.productId, row_number:index+1, baseline_detail_hash: row.baselineDetailHash, baseline_cost_hash: row.baselineCostHash, baseline_detail: baseline, baseline_cost: row.cost, proposed_detail:{}, proposed_cost:null, detail_status: "UNCHANGED", cost_status: "UNCHANGED" });});
   const inserted = await db.from("catalog_import_enrichment_rows").insert(staged); if (inserted.error) throw inserted.error;
   await audit(db, context.userId, "catalog_import_enrichment_batch", batchId, "CATALOG_ENRICHMENT_EXPORTED", { jobId, rowCount: exportRows.length, includeCosts });
-  return { bytes: workbook, batchId, filename: resolveCatalogEnrichmentFilename(jobId,sourceFile) };
+  return { bytes: workbook, batchId, filename };
 }
 
 function textChange(value: unknown, field: string) {

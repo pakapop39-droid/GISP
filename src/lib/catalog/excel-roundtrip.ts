@@ -24,7 +24,11 @@ export function resolveCatalogEnrichmentFilename(jobId: string, sourceFile: Cata
     && sourceFile.entity_type === "CATALOG_IMPORT"
     && sourceFile.entity_id === jobId;
   const basename = trusted ? String(sourceFile.original_name ?? "").split(/[\\/]/).at(-1)?.replace(/\.pdf$/i, "") : "";
-  const safeStem = String(basename ?? "").normalize("NFKC").replace(/[\u0000-\u001f\u007f<>:"/\\|?*]/g, "-").replace(/\s+/g, " ").trim().slice(0, 100);
+  const normalizedStem = String(basename ?? "").normalize("NFKC").replace(/[\u0000-\u001f\u007f<>:"/\\|?*]/g, "-").replace(/\s+/g, " ").trim();
+  const safeStem = Array.from(normalizedStem, (character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return codePoint >= 0xd800 && codePoint <= 0xdfff ? "-" : character;
+  }).slice(0, 100).join("");
   return `catalog-enrichment-${safeStem || `pdf-catalog-${jobId.slice(0, 8)}`}.xlsx`;
 }
 
