@@ -6,7 +6,7 @@ QA role: `vs_qa_guardian`
 
 Mode: Independent QA
 
-Source commit: `63fae4bc59763b91475a5ebc44cd21a7a9cd07a2`
+Source commit: `1902db984ac7b5364d330b4abdeb263081417232`
 
 Source branch: `codex/pdf-excel-roundtrip-v1`
 
@@ -30,7 +30,19 @@ Production: **No — not authorized, not changed, not tested**
 - Blocker: none.
 - Major: none remaining.
 - Minor: none remaining.
-- Observation: real Office/LibreOffice UAT, hosted frontend navigation, and hosted API timing remain outside this local/isolated-branch QA evidence.
+- Observation: real Office/LibreOffice UAT, manual browser confirmation of the final History focus/scroll behavior, and hosted API timing remain outside this local/isolated-branch QA evidence.
+
+## Import History UAT UX verification
+
+The History selection finding is resolved in the frozen source:
+
+- The selected History row has a distinct border/background/ring, visible `กำลังดู` badge, `aria-pressed="true"`, and `aria-current="true"`; unselected rows expose neither the badge nor `aria-current`.
+- The current-job banner renders the exact resolved source filename and current Job status, and labels the focusable detail region through `aria-labelledby="catalog-import-current-job"`.
+- Detail focus uses `{ preventScroll: true }` before smooth `scrollIntoView`, and the detail region uses `scroll-mt-24` to clear the sticky navigation.
+- Only a successful intentional History selection passes `revealAfterLoad=true`. Upload completion, Confirm refresh, Review reload, and pagination retain the default `false`, so background operations do not auto-scroll.
+- The detail API loads metadata by the authoritative `catalog_import_jobs.source_file_id`. The shared resolver accepts only bucket `gisp-confidential`, visibility `CONFIDENTIAL`, entity type `CATALOG_IMPORT`, and either the matching Job ID or legacy `entity_id=NULL`.
+- Missing metadata, a missing `entity_id` property, mismatched non-null Job ID, public visibility, or the wrong bucket/type is rejected. Detail falls back to `—`; Excel export falls back to the sanitized Job-based filename.
+- Detail and Excel export now use the same resolver, so legacy compatibility does not create divergent trust rules.
 
 ## Final CTA behavioral verification
 
@@ -76,23 +88,21 @@ The previously reported Unicode export Major is resolved:
 
 All commands ran from the frozen clean worktree.
 
-1. Focused regression:
+1. Focused History/metadata/export regression:
 
-   `npm test -- --run src/app/admin/catalog/page.test.ts src/components/catalog-enrichment-panel.test.ts src/lib/catalog/excel-roundtrip-api.test.ts src/lib/catalog/excel-roundtrip.test.ts src/lib/catalog/excel-roundtrip-migration.test.ts`
+   `npm test -- --run src/components/catalog-import-workspace.test.ts src/lib/catalog/excel-roundtrip.test.ts`
 
-   Result: **5 test files / 31 tests passed**.
+   Result: **2 test files / 15 tests passed**.
 
-2. Exact Unicode regression:
+2. Unicode/export boundary coverage:
 
-   `npx vitest run src/lib/catalog/excel-roundtrip.test.ts -t "truncates Unicode filenames without splitting emoji or leaving invalid surrogates"`
-
-   Result: **1 test passed / 9 unrelated tests skipped**.
+   The focused file above passed the exact `99 × "a" + emoji` and lone-surrogate filename cases, source metadata trust/fallback cases, XLSX gates, and round-trip parsing/building cases.
 
 3. Full unit/regression suite:
 
-   `npm test -- --run`
+   `npm test`
 
-   Result: **51 test files / 240 tests passed**.
+   Result: **52 test files / 245 tests passed**.
 
 4. Type checking:
 
@@ -134,16 +144,16 @@ All commands ran from the frozen clean worktree.
 
 8. Repository integrity:
 
-   - `git rev-parse HEAD` matched the full source commit above.
+   - `git rev-parse HEAD` matched the full source commit above before the evidence-only commit.
    - `git status --short` and `git diff --stat` were empty before and after source testing.
-   - The final Unicode fix changed the filename helper, export service, focused tests, and Builder handoff only; no migration, worker, dependency, feature-flag, secret, or environment configuration changed.
+   - The final legacy-linkage fix changed the shared metadata resolver, detail route, focused tests, and Builder handoff only; no migration, worker, dependency, feature flag, secret, or environment configuration changed.
 
 ## Security and data status
 
 - Existing RLS/browser DML denial and trusted-RPC boundaries passed the isolated-branch integration suite.
 - Cost preview redaction still requires `catalog.cost.read`; Cost apply still requires the approved stronger permissions.
 - The navigation change validates UUID input and does not weaken authentication or authorization.
-- Export filename input is constrained to linked confidential metadata, sanitized, Unicode-safe, and URI-validated before persistent writes.
+- Detail and export filename input is constrained to the Job's exact `source_file_id` plus the shared confidential metadata trust rule; export output remains sanitized, Unicode-safe, and URI-validated before persistent writes.
 - The branch integration script creates traceable synthetic test data in the isolated Development branch. It does not touch the Development parent or Production.
 - Five pre-existing dependency audit findings remain documented in the Builder handoff (1 critical, 2 high, 2 moderate). The final CTA/export fixes did not change `package.json` or `package-lock.json`; `fflate@0.8.3` did not introduce an advisory in the earlier independent audit.
 
@@ -152,6 +162,7 @@ All commands ran from the frozen clean worktree.
 Not yet verified:
 
 - real Microsoft Excel/LibreOffice edit-and-upload Human UAT;
+- manual browser re-check of the final selected-state focus/scroll behavior;
 - the CTA in a deployed hosted frontend;
 - hosted API export/preview timing at the 1,000-row boundary;
 - Development merge/deploy and post-deploy smoke test.
