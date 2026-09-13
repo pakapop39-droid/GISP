@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gisp.example/schemas/pdf-catalog-import-v1-ground-truth.json",
+  "title": "PDF Catalog Import v1.0 owner-approved ground truth",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["artifactType", "schemaVersion", "approval", "declaredProductCount", "catalogs"],
+  "properties": {
+    "artifactType": { "const": "PDF_CATALOG_UAT_GROUND_TRUTH" },
+    "schemaVersion": { "const": "1.0" },
+    "notice": { "type": "string" },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "approvedBy", "approvedAt"],
+      "properties": {
+        "status": { "enum": ["TEMPLATE_NOT_APPROVED", "OWNER_APPROVED"] },
+        "approvedBy": { "type": ["string", "null"] },
+        "approvedAt": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "declaredProductCount": { "type": "integer", "minimum": 100 },
+    "catalogs": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["catalogId", "language", "pdfKind", "pageCount", "sourcePdfSha256", "declaredProductCount", "products"],
+        "properties": {
+          "catalogId": { "type": "string", "minLength": 1 },
+          "language": { "enum": ["CN", "EN"] },
+          "pdfKind": { "enum": ["NATIVE_TEXT", "SCANNED"] },
+          "pageCount": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "sourcePdfSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "declaredProductCount": { "type": "integer", "minimum": 0 },
+          "products": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/product" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nullableText": { "type": ["string", "null"] },
+    "nullableNumber": { "type": ["number", "null"] },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["groundTruthId", "sourcePage", "readableSku", "imageAssessable", "expected", "expectedImageRef"],
+      "properties": {
+        "groundTruthId": { "type": "string", "minLength": 1 },
+        "sourcePage": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "readableSku": { "type": "boolean" },
+        "imageAssessable": { "type": "boolean" },
+        "expectedImageRef": { "type": ["string", "null"] },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sku", "factorySku", "nameZh", "nameEn", "nameThDraft", "productType", "categoryId", "countryCode", "leadTimeDays", "widthMm", "depthMm", "heightMm", "weightKg", "cbm", "materialSummary", "finishSummary", "moq", "descriptionTh", "specificationSummary", "sourcePage"],
+          "properties": {
+            "sku": { "$ref": "#/$defs/nullableText" },
+            "factorySku": { "$ref": "#/$defs/nullableText" },
+            "nameZh": { "$ref": "#/$defs/nullableText" },
+            "nameEn": { "$ref": "#/$defs/nullableText" },
+            "nameThDraft": { "$ref": "#/$defs/nullableText" },
+            "productType": { "$ref": "#/$defs/nullableText" },
+            "categoryId": { "$ref": "#/$defs/nullableText" },
+            "countryCode": { "$ref": "#/$defs/nullableText" },
+            "leadTimeDays": { "$ref": "#/$defs/nullableNumber" },
+            "widthMm": { "$ref": "#/$defs/nullableNumber" },
+            "depthMm": { "$ref": "#/$defs/nullableNumber" },
+            "heightMm": { "$ref": "#/$defs/nullableNumber" },
+            "weightKg": { "$ref": "#/$defs/nullableNumber" },
+            "cbm": { "$ref": "#/$defs/nullableNumber" },
+            "materialSummary": { "$ref": "#/$defs/nullableText" },
+            "finishSummary": { "$ref": "#/$defs/nullableText" },
+            "moq": { "$ref": "#/$defs/nullableNumber" },
+            "descriptionTh": { "$ref": "#/$defs/nullableText" },
+            "specificationSummary": { "$ref": "#/$defs/nullableText" },
+            "sourcePage": { "type": "integer", "minimum": 1, "maximum": 100 }
+          }
+        }
+      }
+    }
+  }
+}

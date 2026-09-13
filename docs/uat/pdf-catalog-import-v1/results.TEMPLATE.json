@@ -1,0 +1,152 @@
+{
+  "artifactType": "PDF_CATALOG_UAT_RESULTS",
+  "schemaVersion": "1.0",
+  "status": "TEMPLATE_NOT_RUN",
+  "notice": "TEMPLATE ONLY - ไม่ใช่ผล UAT ต้องใช้ export จริงจากงาน READY_FOR_REVIEW และห้ามแก้ค่าที่ระบบสกัดก่อนประเมิน",
+  "catalogs": [
+    {
+      "catalogId": "TEMPLATE-CN-NATIVE",
+      "sourcePdfSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "candidates": [
+        {
+          "candidateId": "REPLACE-WITH-EXPORTED-TEMPLATE-CN-NATIVE-ROW-ID",
+          "matchedGroundTruthId": "TEMPLATE-TEMPLATE-CN-NATIVE-PRODUCT-001",
+          "selectedImageFileId": "REPLACE-WITH-EXPORTED-TEMPLATE-CN-NATIVE-FILE-ID",
+          "selectedImageRef": "REPLACE-WITH-EXPORTED-TEMPLATE-CN-NATIVE-IMAGE-REF",
+          "fields": {
+            "sku": "REPLACE-TEMPLATE-CN-NATIVE-SKU",
+            "factorySku": null,
+            "nameZh": "แทนที่ด้วยชื่อจีนจาก PDF",
+            "nameEn": null,
+            "nameThDraft": "แทนที่ด้วยชื่อไทยที่ผู้เชี่ยวชาญอนุมัติ",
+            "productType": null,
+            "categoryId": null,
+            "countryCode": null,
+            "leadTimeDays": null,
+            "widthMm": null,
+            "depthMm": null,
+            "heightMm": null,
+            "weightKg": null,
+            "cbm": null,
+            "materialSummary": null,
+            "finishSummary": null,
+            "moq": null,
+            "descriptionTh": null,
+            "specificationSummary": null,
+            "sourcePage": 1
+          }
+        }
+      ]
+    },
+    {
+      "catalogId": "TEMPLATE-CN-SCANNED",
+      "sourcePdfSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "candidates": [
+        {
+          "candidateId": "REPLACE-WITH-EXPORTED-TEMPLATE-CN-SCANNED-ROW-ID",
+          "matchedGroundTruthId": "TEMPLATE-TEMPLATE-CN-SCANNED-PRODUCT-001",
+          "selectedImageFileId": "REPLACE-WITH-EXPORTED-TEMPLATE-CN-SCANNED-FILE-ID",
+          "selectedImageRef": "REPLACE-WITH-EXPORTED-TEMPLATE-CN-SCANNED-IMAGE-REF",
+          "fields": {
+            "sku": "REPLACE-TEMPLATE-CN-SCANNED-SKU",
+            "factorySku": null,
+            "nameZh": "แทนที่ด้วยชื่อจีนจาก PDF",
+            "nameEn": null,
+            "nameThDraft": "แทนที่ด้วยชื่อไทยที่ผู้เชี่ยวชาญอนุมัติ",
+            "productType": null,
+            "categoryId": null,
+            "countryCode": null,
+            "leadTimeDays": null,
+            "widthMm": null,
+            "depthMm": null,
+            "heightMm": null,
+            "weightKg": null,
+            "cbm": null,
+            "materialSummary": null,
+            "finishSummary": null,
+            "moq": null,
+            "descriptionTh": null,
+            "specificationSummary": null,
+            "sourcePage": 1
+          }
+        }
+      ]
+    },
+    {
+      "catalogId": "TEMPLATE-EN-NATIVE",
+      "sourcePdfSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "candidates": [
+        {
+          "candidateId": "REPLACE-WITH-EXPORTED-TEMPLATE-EN-NATIVE-ROW-ID",
+          "matchedGroundTruthId": "TEMPLATE-TEMPLATE-EN-NATIVE-PRODUCT-001",
+          "selectedImageFileId": "REPLACE-WITH-EXPORTED-TEMPLATE-EN-NATIVE-FILE-ID",
+          "selectedImageRef": "REPLACE-WITH-EXPORTED-TEMPLATE-EN-NATIVE-IMAGE-REF",
+          "fields": {
+            "sku": "REPLACE-TEMPLATE-EN-NATIVE-SKU",
+            "factorySku": null,
+            "nameZh": null,
+            "nameEn": "REPLACE WITH ENGLISH NAME FROM PDF",
+            "nameThDraft": "แทนที่ด้วยชื่อไทยที่ผู้เชี่ยวชาญอนุมัติ",
+            "productType": null,
+            "categoryId": null,
+            "countryCode": null,
+            "leadTimeDays": null,
+            "widthMm": null,
+            "depthMm": null,
+            "heightMm": null,
+            "weightKg": null,
+            "cbm": null,
+            "materialSummary": null,
+            "finishSummary": null,
+            "moq": null,
+            "descriptionTh": null,
+            "specificationSummary": null,
+            "sourcePage": 1
+          }
+        }
+      ]
+    },
+    {
+      "catalogId": "TEMPLATE-EN-SCANNED",
+      "sourcePdfSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "candidates": [
+        {
+          "candidateId": "REPLACE-WITH-EXPORTED-TEMPLATE-EN-SCANNED-ROW-ID",
+          "matchedGroundTruthId": "TEMPLATE-TEMPLATE-EN-SCANNED-PRODUCT-001",
+          "selectedImageFileId": "REPLACE-WITH-EXPORTED-TEMPLATE-EN-SCANNED-FILE-ID",
+          "selectedImageRef": "REPLACE-WITH-EXPORTED-TEMPLATE-EN-SCANNED-IMAGE-REF",
+          "fields": {
+            "sku": "REPLACE-TEMPLATE-EN-SCANNED-SKU",
+            "factorySku": null,
+            "nameZh": null,
+            "nameEn": "REPLACE WITH ENGLISH NAME FROM PDF",
+            "nameThDraft": "แทนที่ด้วยชื่อไทยที่ผู้เชี่ยวชาญอนุมัติ",
+            "productType": null,
+            "categoryId": null,
+            "countryCode": null,
+            "leadTimeDays": null,
+            "widthMm": null,
+            "depthMm": null,
+            "heightMm": null,
+            "weightKg": null,
+            "cbm": null,
+            "materialSummary": null,
+            "finishSummary": null,
+            "moq": null,
+            "descriptionTh": null,
+            "specificationSummary": null,
+            "sourcePage": 1
+          }
+        }
+      ]
+    }
+  ],
+  "performanceRuns": [
+    {
+      "catalogId": "REPLACE-WITH-REAL-100-PAGE-JOB-ID",
+      "pageCount": 100,
+      "startedAt": null,
+      "readyForReviewAt": null
+    }
+  ]
+}

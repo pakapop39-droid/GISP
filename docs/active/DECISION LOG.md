@@ -1,8 +1,8 @@
 # GISP — DECISION LOG
 
-**Document Version:** 2.9
+**Document Version:** 3.1
 **Status:** Approved Decisions
-**Last Updated:** 8 กันยายน 2569 (2026-09-08)
+**Last Updated:** 13 กันยายน 2569 (2026-09-13)
 **Authority:** อยู่ลำดับถัดจาก `MVP BUSINESS MASTER PLAN.md`
 
 ---
@@ -76,6 +76,10 @@
 | DEC-061 | Customer Browse Catalog ทุกแบบต้องไม่แสดงราคา และ Member ส่งได้ทั้งลิงก์สินค้ารายชิ้น สินค้าใน Project Catalog ที่คัดเอง และสินค้าทั้งหมด | ต่อยอด Token/Snapshot ของ Slice 12; Product/Project/Curated ใช้ Snapshot, Full Catalog ใช้ Live Public-safe Products, ลูกค้าเก็บรายการสนใจใน Browser และติดต่อ Member โดยไม่สร้าง Lead/Checkout; ส่วนการแสดงราคาลูกค้าใน DEC-056 ถูกแทนที่ | Approved — 6 September 2026; implemented and accepted on Development |
 | DEC-062 | Slice 12.1 ผ่าน Human UAT และเจ้าของระบบอนุมัติปิดบน Development | เจ้าของระบบยืนยันว่า “ใช้ได้หมด”; รวม Schema/Migration, Deploy Development และ Post-merge Smoke ครบ 4 Scope โดย Production Release A ไม่เปลี่ยน | Approved and executed — 6 September 2026 |
 | DEC-063 | Slice 13 Visual Product Sourcing ผ่าน Human UAT และเจ้าของระบบอนุมัติปิดบน Development | เจ้าของระบบยืนยันว่า “ผ่านทั้งหมด”; กำหนดผลเป็น `SLICE_13_ACCEPTED` และ Slice 13 `DONE` หลัง Integration/RLS, Development Preview, Hosted Smoke และ Responsive Test ผ่าน การอนุมัตินี้ไม่รวม Production Release B | Approved — 8 September 2026 |
+| DEC-065 | ย้ายเฉพาะ `PDF Catalog Import v1.0` ออกจาก Post-MVP และอนุมัติ Scope + Implementation บน Development | อนุญาต code, additive Migration/RLS, Confidential Storage 25 MB, Full Backend Branch, Custom Compute ไม่เกิน USD 20/เดือน และ AI ไม่เกิน USD 1/งาน / USD 50/เดือน; Schema + Test data เท่านั้น; Feature Flag เริ่มปิด; ไม่อนุญาต Production | Approved by ภคภพ ช.เจริญยิ่ง — 12 September 2026 19:24:35 +07:00 |
+| DEC-066 | แก้ provider ของ `PDF Catalog Import v1.0` เป็น `openai/gpt-4o-mini` ผ่าน Azure บน OpenRouter เท่านั้น | กำหนด Azure-only ด้วย `only/order`, ปิด fallback, บังคับ ZDR และ `data_collection=deny`; คงงบ AI USD 1/งาน และ USD 50/เดือน; แก้เฉพาะ Development และไม่อนุญาต Production; แทนที่เฉพาะ provider routing เดิมใน DEC-065 | Approved by ภคภพ ช.เจริญยิ่ง — 12 September 2026 21:07:09 +07:00 |
+| DEC-067 | เปลี่ยน provider routing ของ `PDF Catalog Import v1.0` บน Development จาก Azure-only เป็น OpenAI-only ผ่าน OpenRouter | ใช้ `openai/gpt-4o-mini` ผ่าน OpenAI ด้วย `only/order`, ปิด fallback, บังคับ ZDR และ `data_collection=deny`; คงงบ AI USD 1/งาน และ USD 50/เดือน; ไม่อนุญาต Production; แทนที่เฉพาะ provider routing ใน DEC-066 | Approved by ภคภพ ช.เจริญยิ่ง — 13 September 2026 08:47:44 +07:00 |
+| DEC-068 | เปลี่ยน provider routing ของ `PDF Catalog Import v1.0` บน Development กลับจาก OpenAI-only เป็น Azure-only ผ่าน OpenRouter | คงโมเดล `openai/gpt-4o-mini`; บังคับ `only/order` เป็น Azure เท่านั้น, ปิด fallback, ใช้ ZDR และ `data_collection=deny`; คงงบ AI USD 1/งาน และ USD 50/เดือน; Production=No; แทนที่เฉพาะ provider routing ใน DEC-067 | Approved by ภคภพ ช.เจริญยิ่ง — 13 September 2026 09:06:36 +07:00 |
 
 ---
 

@@ -18,7 +18,9 @@
 
 - Member Team, Sub-user, Team Invitation และ Audit แยกผู้ใช้ย่อยภายในบัญชีสมาชิก
 - Commission ทุกประเภท
-- AI Catalog/PDF Import และ AI Product Draft
+- AI Catalog Import และ AI Product Draft อื่นนอกเหนือจาก `PDF Catalog Import v1.0` ตาม DEC-065 (ยังเป็น Post-MVP)
+
+> `PDF Catalog Import v1.0` ถูกย้ายออกจากรายการนี้เฉพาะขอบเขต Development ที่ DEC-065 อนุมัติ และยังไม่อนุญาต Production
 - Advanced Executive BI, Margin/Profitability Analysis และ KPI ขั้นสูง
 - Custom Report Builder และ Full Export Center
 - Generic Task Center/Workflow Builder

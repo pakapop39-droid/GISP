@@ -5,11 +5,13 @@ import { requireAppAccess } from "@/lib/auth/session";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { readCatalogImportFile, validateCatalogImportRows } from "@/lib/catalog/import-file";
+import { isPdfCatalogImportEnabled, PdfImportValidationError, validatePdfCatalogFile } from "@/lib/catalog/pdf-import";
 
 const maxBytes = 10 * 1024 * 1024;
 const mimeByExtension = new Map([
   ["csv", "text/csv"],
   ["xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+  ["pdf", "application/pdf"],
 ]);
 
 function chunks<T>(items: T[], size = 200) {
@@ -22,7 +24,7 @@ export async function GET() {
     const insforge = await createInsForgeServerClient();
     const result = await insforge.database
       .from("catalog_import_jobs")
-      .select("id,source_type,status,total_rows,valid_rows,invalid_rows,created_at,completed_at,source_file_id")
+      .select("id,source_type,status,total_rows,valid_rows,invalid_rows,created_at,completed_at,source_file_id,page_count,processed_pages,ai_cost_usd,compute_cost_usd,failure_message")
       .order("created_at", { ascending: false })
       .limit(20);
     if (result.error) throw result.error;
@@ -41,17 +43,65 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   let uploadedKey: string | null = null;
   let fileMetadataId: string | null = null;
+  let createdJobId: string | null = null;
   try {
     const context = await requireAppAccess({ permissions: ["catalog.import"] });
     const form = await request.formData();
     const file = form.get("file");
     const supplierId = String(form.get("supplierId") ?? "");
-    if (!(file instanceof File) || !supplierId || file.size <= 0 || file.size > maxBytes) {
-      return NextResponse.json({ code: "INVALID_FILE", message: "เลือก Supplier และไฟล์ขนาดไม่เกิน 10 MB" }, { status: 400 });
+    if (!(file instanceof File) || !supplierId || file.size <= 0) {
+      return NextResponse.json({ code: "INVALID_FILE", message: "เลือก Supplier และไฟล์ที่ต้องการนำเข้า" }, { status: 400 });
     }
     const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
     const mimeType = mimeByExtension.get(extension);
-    if (!mimeType) return NextResponse.json({ code: "INVALID_FILE", message: "รองรับเฉพาะไฟล์ .xlsx และ .csv" }, { status: 400 });
+    if (!mimeType) return NextResponse.json({ code: "INVALID_FILE", message: "รองรับไฟล์ .xlsx, .csv และ PDF Catalog" }, { status: 400 });
+
+    if (extension === "pdf") {
+      if (!isPdfCatalogImportEnabled()) return NextResponse.json({ code: "FEATURE_DISABLED", message: "PDF Catalog Import ยังไม่ได้เปิดใน Environment นี้" }, { status: 404 });
+      const validatedPdf = await validatePdfCatalogFile(file);
+      const insforge = await createInsForgeServerClient();
+      const supplier = await insforge.database.from("suppliers").select("id,code,name,status").eq("id", supplierId).in("status", ["PROSPECT", "ACTIVE"]).maybeSingle();
+      if (supplier.error) throw supplier.error;
+      if (!supplier.data) return NextResponse.json({ code: "INVALID_INPUT", message: "ไม่พบ Supplier ที่เลือก" }, { status: 400 });
+      const duplicate = await insforge.database.from("catalog_import_jobs").select("id,status").eq("supplier_id", supplierId).eq("file_sha256", validatedPdf.sha256).eq("source_type", "PDF").not("status", "in", "(FAILED,CANCELLED)").maybeSingle();
+      if (duplicate.error) throw duplicate.error;
+      if (duplicate.data) return NextResponse.json({ code: "DUPLICATE_IMPORT", message: "PDF นี้อยู่ในประวัติ Import แล้ว", data: duplicate.data }, { status: 409 });
+
+      const jobId = randomUUID();
+      const admin = createInsForgeAdminClient();
+      uploadedKey = `${context.organizationId}/catalog/imports/${jobId}/source.pdf`;
+      const pdfBuffer = validatedPdf.bytes.buffer.slice(validatedPdf.bytes.byteOffset, validatedPdf.bytes.byteOffset + validatedPdf.bytes.byteLength) as ArrayBuffer;
+      const uploaded = await admin.storage.from("gisp-confidential").upload(uploadedKey, new File([pdfBuffer], file.name, { type: mimeType }));
+      if (uploaded.error || !uploaded.data) throw uploaded.error ?? new Error("UPLOAD_FAILED");
+      const storageData = uploaded.data as unknown as { url?: string; key?: string };
+      uploadedKey = storageData.key ?? uploadedKey;
+      const metadata = await admin.database.from("file_metadata").insert([{
+        organization_id: context.organizationId, bucket: "gisp-confidential", object_key: uploadedKey,
+        url: storageData.url ?? null, original_name: file.name, mime_type: mimeType, size_bytes: file.size,
+        visibility: "CONFIDENTIAL", entity_type: "CATALOG_IMPORT", entity_id: jobId, uploaded_by: context.userId,
+      }]).select("id").single();
+      if (metadata.error || !metadata.data) throw metadata.error ?? new Error("FILE_METADATA_FAILED");
+      fileMetadataId = metadata.data.id;
+      const job = await admin.database.from("catalog_import_jobs").insert([{
+        id: jobId, source_file_id: fileMetadataId, source_type: "PDF", status: "QUEUED", supplier_id: supplierId,
+        page_count: validatedPdf.pageCount, file_sha256: validatedPdf.sha256, processor_version: "gisp-pdf-worker/1.0.0",
+        total_rows: 0, valid_rows: 0, invalid_rows: 0, created_by: context.userId,
+      }]);
+      if (job.error) throw job.error;
+      createdJobId = jobId;
+      const pages = Array.from({ length: validatedPdf.pageCount }, (_, index) => ({
+        import_job_id: jobId, page_number: index + 1, status: "PENDING",
+      }));
+      for (const batch of chunks(pages)) {
+        // Page staging is worker-owned and intentionally unavailable to browser roles.
+        // Authorization already passed above; the admin client is restricted to this generated job id.
+        const inserted = await admin.database.from("catalog_import_pages").insert(batch);
+        if (inserted.error) throw inserted.error;
+      }
+      return NextResponse.json({ data: { id: jobId }, message: `รับ PDF ${validatedPdf.pageCount} หน้าเข้าคิวแล้ว` }, { status: 202 });
+    }
+
+    if (file.size > maxBytes) return NextResponse.json({ code: "INVALID_FILE", message: "ไฟล์ Excel/CSV ต้องมีขนาดไม่เกิน 10 MB" }, { status: 400 });
 
     const parsed = await readCatalogImportFile(file);
     const insforge = await createInsForgeServerClient();
@@ -70,6 +120,8 @@ export async function POST(request: NextRequest) {
     });
 
     const jobId = randomUUID();
+    // The request already passed catalog.import above. All staging writes use the
+    // server-only admin client because browser roles intentionally have no table DML.
     const admin = createInsForgeAdminClient();
     uploadedKey = `catalog/imports/${jobId}/${randomUUID()}.${extension}`;
     const uploaded = await admin.storage.from("gisp-confidential").upload(uploadedKey, new File([await file.arrayBuffer()], file.name, { type: mimeType }));
@@ -93,7 +145,7 @@ export async function POST(request: NextRequest) {
     fileMetadataId = metadata.data.id;
 
     const invalidRows = validated.filter((row) => row.errors.length > 0).length;
-    const job = await insforge.database.from("catalog_import_jobs").insert([{
+    const job = await admin.database.from("catalog_import_jobs").insert([{
       id: jobId,
       source_file_id: fileMetadataId,
       source_type: extension.toUpperCase(),
@@ -104,6 +156,7 @@ export async function POST(request: NextRequest) {
       created_by: context.userId,
     }]);
     if (job.error) throw job.error;
+    createdJobId = jobId;
 
     const stagedRows = validated.map((row) => ({
       id: randomUUID(),
@@ -113,7 +166,7 @@ export async function POST(request: NextRequest) {
       validation_status: row.errors.length ? "INVALID" : "VALID",
     }));
     for (const batch of chunks(stagedRows)) {
-      const inserted = await insforge.database.from("catalog_import_rows").insert(batch);
+      const inserted = await admin.database.from("catalog_import_rows").insert(batch);
       if (inserted.error) throw inserted.error;
     }
     const rowIdByNumber = new Map(stagedRows.map((row) => [row.row_number, row.id]));
@@ -124,12 +177,13 @@ export async function POST(request: NextRequest) {
       error_message: error.message,
     })));
     for (const batch of chunks(errors)) {
-      const inserted = await insforge.database.from("catalog_import_errors").insert(batch);
+      const inserted = await admin.database.from("catalog_import_errors").insert(batch);
       if (inserted.error) throw inserted.error;
     }
     return NextResponse.json({ data: { id: jobId }, message: `ตรวจแล้ว ${validated.length} แถว: พร้อม ${validated.length - invalidRows}, ต้องแก้ ${invalidRows}` }, { status: 201 });
   } catch (error) {
     const admin = createInsForgeAdminClient();
+    if (createdJobId) await admin.database.from("catalog_import_jobs").delete().eq("id", createdJobId);
     if (fileMetadataId) await admin.database.from("file_metadata").delete().eq("id", fileMetadataId);
     if (uploadedKey) await admin.storage.from("gisp-confidential").remove(uploadedKey);
     const message = error instanceof Error ? error.message : "";
@@ -138,6 +192,7 @@ export async function POST(request: NextRequest) {
     }
     if (message === "IMPORT_EMPTY_FILE") return NextResponse.json({ code: "INVALID_TEMPLATE", message: "ไฟล์ไม่มีรายการสินค้า" }, { status: 400 });
     if (message === "IMPORT_ROW_LIMIT") return NextResponse.json({ code: "INVALID_TEMPLATE", message: "หนึ่งไฟล์รองรับสูงสุด 1,000 รายการ" }, { status: 400 });
+    if (error instanceof PdfImportValidationError) return NextResponse.json({ code: error.code, message: error.message }, { status: 400 });
     return apiError(error);
   }
 }

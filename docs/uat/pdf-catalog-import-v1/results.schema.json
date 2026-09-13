@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gisp.example/schemas/pdf-catalog-import-v1-results.json",
+  "title": "PDF Catalog Import v1.0 normalized candidate export",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["artifactType", "schemaVersion", "status", "catalogs", "performanceRuns"],
+  "properties": {
+    "artifactType": { "const": "PDF_CATALOG_UAT_RESULTS" },
+    "schemaVersion": { "const": "1.0" },
+    "status": { "enum": ["TEMPLATE_NOT_RUN", "COMPLETED_EXPORT"] },
+    "notice": { "type": "string" },
+    "catalogs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["catalogId", "sourcePdfSha256", "candidates"],
+        "properties": {
+          "catalogId": { "type": "string", "minLength": 1 },
+          "sourcePdfSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["candidateId", "matchedGroundTruthId", "selectedImageFileId", "selectedImageRef", "fields"],
+              "properties": {
+                "candidateId": { "type": "string", "minLength": 1 },
+                "matchedGroundTruthId": { "type": ["string", "null"] },
+                "selectedImageFileId": { "type": ["string", "null"] },
+                "selectedImageRef": { "type": ["string", "null"] },
+                "fields": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "performanceRuns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["catalogId", "pageCount", "startedAt", "readyForReviewAt"],
+        "properties": {
+          "catalogId": { "type": "string", "minLength": 1 },
+          "pageCount": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "startedAt": { "type": ["string", "null"], "format": "date-time" },
+          "readyForReviewAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      }
+    }
+  }
+}
