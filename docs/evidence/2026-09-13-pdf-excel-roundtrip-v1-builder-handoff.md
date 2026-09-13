@@ -35,6 +35,10 @@ Status: implementation complete for independent QA; not merged or deployed
 - `npm run lint` — passed with zero warnings/errors.
 - `npm run build` — passed; Next.js generated 119 pages and all six enrichment routes.
 - `npm run test:pdf-excel-roundtrip:branch` — 15 live isolated-branch assertions passed: confidential PDF source metadata resolution, confidential-XLSX metadata guard, lifecycle stop after PDF cancellation, browser DML denial, Member/Purchasing/Product Admin RLS, Member RPC denial, trusted candidate details, review reset, immutable PDF snapshot/Product linkage, WAITING refresh, idempotent cost, ACTIVE/RETIRED Cost Version semantics, no Member Price, Product remains Draft/Not Reviewed.
+- `npx vitest run src/lib/catalog/excel-roundtrip.test.ts src/lib/catalog/excel-roundtrip-api.test.ts` — 2 files / 20 tests passed after the runtime export linkage hotfix.
+- `npm test` — 52 files / 247 tests passed after the runtime export linkage hotfix.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build` — passed after the hotfix; the production build generated all 119 pages and six enrichment API routes.
+- `npm run test:pdf-excel-roundtrip:branch` — all 15 isolated-branch integration assertions passed again after the hotfix.
 - The 1,000-row multilingual in-memory workbook round-trip completed below the 30-second unit threshold.
 
 ## QA rework included
@@ -48,6 +52,14 @@ Status: implementation complete for independent QA; not merged or deployed
 - Export filenames are truncated by Unicode code point, preserve complete astral characters such as emoji, and replace lone UTF-16 surrogates. The final filename is URI-validated before any Storage or database write, preventing response-header encoding failure from leaving a partial export.
 - History rows now expose a visible and accessible selected state (`aria-pressed`, `aria-current`, border/background and `กำลังดู`). The detail API resolves `original_name` only from same-job `CATALOG_IMPORT` metadata in `gisp-confidential`, so the banner renders the active filename and status. It receives focus and smooth scrolling with a sticky-header-safe offset only after an intentional History selection succeeds; background refresh and Candidate pagination do not move the viewport.
 - The job's `source_file_id` is the authoritative file link. Both Detail and Excel Export accept legacy metadata whose `entity_id` is null or matches the job, while a non-null ID for another job is rejected and cannot leak its filename.
+- Export now treats a row as linked to an imported Product only when `imported_at` exists and the immutable `imported_product_snapshot.id` matches `product_id`. An untrusted/manual `product_id` without those markers is exported as the pre-Draft Candidate instead of failing the database linkage guard.
+- Export persistence now compensates a mid-flight failure by deleting the new EXPORTED batch (and staged rows via cascade), its export metadata and its just-uploaded Storage object. Diagnostics log only the failed stage, a bounded error code and cleanup outcome.
+
+## Runtime export hotfix evidence
+
+- Real isolated-branch UAT job `b40d54a3-3020-4198-9b06-e14e85d8782a` reproduced `CONFLICT: PDF_PRODUCT_LINKAGE`: its manually linked `product_id` had both `imported_at` and `imported_product_snapshot` null.
+- After the fix, two live UAT retries returned HTTP 200 in about 4.4 seconds. Batches `bf16316c-16d2-4a4c-b66a-a90fa1252966` and `8539bc14-9daf-44e7-a9c9-cb7f5ae6a406` each have one staged row, export metadata, confidential Storage object and `CATALOG_ENRICHMENT_EXPORTED` audit evidence.
+- Two failed UAT attempts were cleaned from the isolated Development branch after exact authorization: batches `25bda986-09cc-48f3-9293-08e063602d93` and `4da2821e-f9f9-4f15-9c99-6cc8a0960db8`, metadata `29e6eb33-5e14-43e8-b1ba-1813788ba150` and `4ce6871e-4a27-4cea-abfc-908ef89b7f5c`, plus their two Storage objects. Verification returned zero remaining records/objects. This cleanup is not recoverable from the application, but the attempts had zero staged rows, no audit event and never returned a successful download.
 
 ## QA focus
 

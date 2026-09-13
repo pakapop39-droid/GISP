@@ -5,7 +5,7 @@ import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { buildCatalogEnrichmentWorkbook, parseCatalogEnrichmentWorkbook, type EnrichmentExportRow } from "@/lib/catalog/enrichment-xlsx";
 import {
   CATALOG_EXCEL_MIME, CATALOG_EXCEL_SCHEMA_VERSION, CatalogExcelError, enrichmentDetailSchema,
-  parseFactoryCost, parseOptionalNumber, productColumns, resolveCatalogEnrichmentFilename, stableHash, summarizeEnrichmentStatuses,
+  parseFactoryCost, parseOptionalNumber, productColumns, resolveCatalogEnrichmentFilename, resolveTrustedCatalogProductId, stableHash, summarizeEnrichmentStatuses,
 } from "@/lib/catalog/excel-roundtrip";
 
 type AccessContext = { userId: string; organizationId: string | null; permissions: string[] };
@@ -15,6 +15,13 @@ const exportableStatuses = ["READY_FOR_REVIEW", "COMPLETED", "COMPLETED_WITH_ISS
 const requiredFields = new Set(["sku", "name_th", "product_type", "country_code"]);
 const numericFields = new Set(["lead_time_days", "width_mm", "depth_mm", "height_mm", "weight_kg", "cbm", "moq"]);
 function byteHash(bytes:Uint8Array){return createHash("sha256").update(bytes).digest("hex");}
+
+function safeErrorCode(error: unknown) {
+  if (!error || typeof error !== "object") return "UNKNOWN";
+  const raw = "code" in error ? error.code : "error" in error ? error.error : null;
+  const code = typeof raw === "string" ? raw : "UNKNOWN";
+  return /^[A-Z0-9_-]{1,80}$/i.test(code) ? code : "UNKNOWN";
+}
 
 function check<T>(result: { data: T; error?: unknown | null }): T {
   if (result.error) throw result.error;
@@ -54,7 +61,8 @@ export async function createEnrichmentExport(jobId: string, context: AccessConte
   const sourceRows = check(await db.from("catalog_import_rows").select("*").eq("import_job_id", jobId).order("row_number").limit(1001)) as Record<string, unknown>[];
   if (!sourceRows.length) throw new CatalogExcelError("NOT_FOUND", "ไม่มีรายการสำหรับ Export");
   if(sourceRows.length>1000)throw new CatalogExcelError("XLSX_ROW_LIMIT","รองรับสูงสุด 1,000 รายการ");
-  const productIds = sourceRows.map(row => row.product_id).filter(Boolean) as string[];
+  const linkedProductByRow = new Map(sourceRows.map(row => [String(row.id), resolveTrustedCatalogProductId(row)]));
+  const productIds = sourceRows.map(row => linkedProductByRow.get(String(row.id))).filter(Boolean) as string[];
   const products = productIds.length ? check(await db.from("products").select("*").in("id", productIds)) as Record<string, unknown>[] : [];
   const productById = new Map(products.map(product => [String(product.id), product]));
   const categories = check(await db.from("categories").select("id,code").eq("status", "ACTIVE").order("sort_order").limit(500)) as { id: string; code: string }[];
@@ -65,7 +73,8 @@ export async function createEnrichmentExport(jobId: string, context: AccessConte
   const costByProduct = new Map(costs.map(cost => [String(cost.product_id), cost]));
   const batchId = randomUUID(); const exportedAt = new Date().toISOString();
   const exportRows: EnrichmentExportRow[] = sourceRows.map(row => {
-    const product = row.product_id ? productById.get(String(row.product_id)) : null;
+    const linkedProductId = linkedProductByRow.get(String(row.id)) ?? null;
+    const product = linkedProductId ? productById.get(linkedProductId) : null;
     const detail = normalizedDetail(product ?? row);
     detail.category_code = detail.category_id ? categoryById.get(String(detail.category_id)) ?? null : null;
     const rawCost = product ? costByProduct.get(String(product.id)) ?? null : null;
@@ -78,11 +87,29 @@ export async function createEnrichmentExport(jobId: string, context: AccessConte
   const uploaded = await admin.storage.from("gisp-confidential").upload(key, new File([workbook], `catalog-enrichment-${jobId}.xlsx`, { type: CATALOG_EXCEL_MIME }));
   if (uploaded.error || !uploaded.data) throw uploaded.error ?? new Error("UPLOAD_FAILED");
   const storage = uploaded.data as unknown as { key?: string; url?: string };
-  const metadata = check(await db.from("file_metadata").insert([{ organization_id: context.organizationId, bucket: "gisp-confidential", object_key: storage.key ?? key, url: storage.url ?? null, original_name: `catalog-enrichment-${jobId}.xlsx`, mime_type: CATALOG_EXCEL_MIME, size_bytes: workbook.length, visibility: "CONFIDENTIAL", entity_type: "CATALOG_ENRICHMENT_EXPORT", entity_id: batchId, uploaded_by: context.userId }]).select("id").single()) as { id: string };
-  const batchInsert=await db.from("catalog_import_enrichment_batches").insert([{ id: batchId, import_job_id: jobId, workbook_id: batchId, schema_version: CATALOG_EXCEL_SCHEMA_VERSION, status: "EXPORTED", export_file_id: metadata.id, export_sha256: byteHash(workbook), exported_with_costs: includeCosts, total_rows: exportRows.length, created_by: context.userId,exported_at:exportedAt }]);if(batchInsert.error)throw batchInsert.error;
-  const staged = exportRows.map((row,index) => {const baseline={...row.detail};delete baseline.category_code;return ({ batch_id: batchId, row_key: row.rowKey, import_row_id: row.importRowId, product_id: row.productId, row_number:index+1, baseline_detail_hash: row.baselineDetailHash, baseline_cost_hash: row.baselineCostHash, baseline_detail: baseline, baseline_cost: row.cost, proposed_detail:{}, proposed_cost:null, detail_status: "UNCHANGED", cost_status: "UNCHANGED" });});
-  const inserted = await db.from("catalog_import_enrichment_rows").insert(staged); if (inserted.error) throw inserted.error;
-  await audit(db, context.userId, "catalog_import_enrichment_batch", batchId, "CATALOG_ENRICHMENT_EXPORTED", { jobId, rowCount: exportRows.length, includeCosts });
+  const storedKey = storage.key ?? key;
+  const metadataId = randomUUID();
+  let persistenceStage = "file_metadata";
+  try {
+    check(await db.from("file_metadata").insert([{ id: metadataId, organization_id: context.organizationId, bucket: "gisp-confidential", object_key: storedKey, url: storage.url ?? null, original_name: `catalog-enrichment-${jobId}.xlsx`, mime_type: CATALOG_EXCEL_MIME, size_bytes: workbook.length, visibility: "CONFIDENTIAL", entity_type: "CATALOG_ENRICHMENT_EXPORT", entity_id: batchId, uploaded_by: context.userId }]));
+    persistenceStage = "batch";
+    const batchInsert=await db.from("catalog_import_enrichment_batches").insert([{ id: batchId, import_job_id: jobId, workbook_id: batchId, schema_version: CATALOG_EXCEL_SCHEMA_VERSION, status: "EXPORTED", export_file_id: metadataId, export_sha256: byteHash(workbook), exported_with_costs: includeCosts, total_rows: exportRows.length, created_by: context.userId,exported_at:exportedAt }]);if(batchInsert.error)throw batchInsert.error;
+    persistenceStage = "rows";
+    const staged = exportRows.map((row,index) => {const baseline={...row.detail};delete baseline.category_code;return ({ batch_id: batchId, row_key: row.rowKey, import_row_id: row.importRowId, product_id: row.productId, row_number:index+1, baseline_detail_hash: row.baselineDetailHash, baseline_cost_hash: row.baselineCostHash, baseline_detail: baseline, baseline_cost: row.cost, proposed_detail:{}, proposed_cost:null, detail_status: "UNCHANGED", cost_status: "UNCHANGED" });});
+    const inserted = await db.from("catalog_import_enrichment_rows").insert(staged); if (inserted.error) throw inserted.error;
+    persistenceStage = "audit";
+    await audit(db, context.userId, "catalog_import_enrichment_batch", batchId, "CATALOG_ENRICHMENT_EXPORTED", { jobId, rowCount: exportRows.length, includeCosts });
+  } catch (error) {
+    const batchCleanup = await db.from("catalog_import_enrichment_batches").delete().eq("id", batchId).eq("import_job_id", jobId).eq("status", "EXPORTED");
+    const metadataCleanup = !batchCleanup.error ? await db.from("file_metadata").delete().eq("id", metadataId).eq("entity_id", batchId).eq("entity_type", "CATALOG_ENRICHMENT_EXPORT") : null;
+    const storageCleanup = !batchCleanup.error && !metadataCleanup?.error ? await admin.storage.from("gisp-confidential").remove(storedKey) : null;
+    console.error("catalog enrichment export persistence failed", {
+      stage: persistenceStage,
+      code: safeErrorCode(error),
+      cleanupFailed: Boolean(batchCleanup.error || metadataCleanup?.error || storageCleanup?.error),
+    });
+    throw error;
+  }
   return { bytes: workbook, batchId, filename };
 }
 

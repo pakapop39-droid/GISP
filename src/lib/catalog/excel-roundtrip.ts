@@ -40,6 +40,19 @@ export function resolveCatalogEnrichmentFilename(jobId: string, sourceFile: Cata
   return `catalog-enrichment-${safeStem || `pdf-catalog-${jobId.slice(0, 8)}`}.xlsx`;
 }
 
+type CatalogImportProductLink = {
+  product_id?: unknown;
+  imported_at?: unknown;
+  imported_product_snapshot?: unknown;
+};
+
+export function resolveTrustedCatalogProductId(row: CatalogImportProductLink) {
+  const productId = typeof row.product_id === "string" ? row.product_id : "";
+  const snapshot = row.imported_product_snapshot;
+  if (!productId || !row.imported_at || !snapshot || typeof snapshot !== "object") return null;
+  return (snapshot as Record<string, unknown>).id === productId ? productId : null;
+}
+
 export const productTypes = ["STANDARD", "CUSTOM_TEMPLATE", "READY_TO_ORDER", "BUILT_IN", "MATERIAL", "EQUIPMENT", "DECORATIVE"] as const;
 export const enrichmentPreviewStatuses = ["READY", "UNCHANGED", "INVALID", "CONFLICT", "WAITING_FOR_DRAFT", "APPLIED", "CANCELLED"] as const;
 
