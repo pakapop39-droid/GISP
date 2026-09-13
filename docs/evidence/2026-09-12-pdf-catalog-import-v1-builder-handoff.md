@@ -3,6 +3,11 @@
 Date: 2026-09-12; status corrected 2026-09-13
 Environment: Development release executed; implementation was prepared through InsForge Full Backend Branch `pdf-catalog-import-v1` under `gisp-mvp-development`
 Production: Not authorized and not changed
+Status: Development slice closed by Owner Acceptance on 2026-09-13; remaining steps 0
+
+Latest Owner Acceptance: ภคภพ ช.เจริญยิ่ง stated “PDF Catalog Import v1.0 บน Development เหลือ 0 ขั้นตอน — ปิด Slice”. The date/time source is the timestamp of the owner's latest message. Only the date `2026-09-13` in Asia/Bangkok is recorded because a reliable minute-level time was unavailable. Environment is Development and Production remains unauthorized.
+
+The formal four-distinct-PDF/at-least-100-product quantitative benchmark is not attached or proven. The owner accepted this as a documented, non-blocking evidence limitation when closing the Development slice; this handoff does not claim the numerical thresholds passed.
 
 Latest Release Authorization: ภคภพ ช.เจริญยิ่ง approved Merge/Deploy to Development and post-deploy verification at 2026-09-13T10:48:37+07:00 with the exact text “โอเคตรวจแล้วผ่าน อนุมัติ Merge/Deploy Development และตรวจหลัง Deploy”. Production remains unauthorized. The active technical amendment remains Azure-only routing through OpenRouter, approved at 2026-09-13T09:06:36+07:00. See `2026-09-12-pdf-catalog-import-v1-approval.md`.
 
@@ -10,7 +15,7 @@ Latest Release Authorization: ภคภพ ช.เจริญยิ่ง appro
 
 Source commit `a674de3c8e4cc9509c85ab00c3c080600457e047` was released to Development under the authorization above. The backend Full branch merged with 34 additions, 5 modifications and 0 conflicts after a clean dry-run. Frontend deployment `999ff236-e60c-4208-a6e5-62e56754ca4f` reached `READY` at `https://kit6y4pj.insforge.site`. Worker health, bearer boundaries, empty-queue wake, RLS/schema inventory and schedules passed the recorded post-deploy checks; compute returned to the stopped state and Production was untouched.
 
-See `2026-09-13-pdf-catalog-import-v1-development-release.md` for the immutable backup/dry-run hashes and all backend, compute, schedule and endpoint evidence. The formal four-distinct-PDF/at-least-100-product accuracy and timing benchmark remains outstanding unless owner-approved UAT evidence already covers it.
+See `2026-09-13-pdf-catalog-import-v1-development-release.md` for the immutable backup/dry-run hashes and all backend, compute, schedule and endpoint evidence. The formal four-distinct-PDF/at-least-100-product accuracy and timing benchmark remains an accepted, non-blocking evidence limitation and is not claimed as passed.
 
 ## Minimal PDF Catalog v1.0 release file manifest
 
@@ -83,4 +88,4 @@ The following shared files require selective hunk staging, not whole-file stagin
 
 ENV2-v0.1 authorizes only Git/document organization. Nothing in ENV2-v0.1 authorizes migration/config changes, deployment, merge, deletion, or any Production action for PDF Catalog Import.
 
-Development Merge/Deploy and post-deploy verification are complete and recorded. Remaining step to close the Development slice: **1** — complete or attach owner-approved human UAT evidence for four distinct real PDFs and at least 100 products, including the locked accuracy, image-association and 100-page timing measures. Production remains separate and unauthorized.
+Development Merge/Deploy and post-deploy verification are complete and recorded. Owner Acceptance closed the Development slice with **0 remaining steps**. The unproven four-PDF/at-least-100-product quantitative benchmark remains documented as a non-blocking evidence limitation and is not represented as a passing result. Production remains separate and unauthorized.

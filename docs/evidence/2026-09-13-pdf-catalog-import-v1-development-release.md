@@ -4,6 +4,22 @@ Date: 2026-09-13 (Asia/Bangkok)
 Environment: Development
 Production: No — untouched and not authorized
 
+## Owner Acceptance and closure
+
+- Acceptance level: Owner Acceptance — Development slice closure
+- Accepted by: ภคภพ ช.เจริญยิ่ง
+- Accepted date: 2026-09-13 (Asia/Bangkok)
+- Date/time source: timestamp of the owner's latest message; a reliable minute-level time was not available and is not fabricated
+- Environment: Development
+- Production allowed: No
+- Remaining steps: 0 — Development slice closed
+
+Owner acceptance text:
+
+> PDF Catalog Import v1.0 บน Development เหลือ 0 ขั้นตอน — ปิด Slice
+
+The owner closed the Development slice while accepting the missing formal four-distinct-PDF, at-least-100-product quantitative benchmark as a documented, non-blocking evidence limitation. This acceptance does not convert the missing evidence into a benchmark pass and does not authorize Production.
+
 ## Authorization
 
 - Approval level: Release Authorization — Merge/Deploy Development and post-deploy verification
@@ -53,8 +69,8 @@ The Development database verification found seven PDF Catalog tables with RLS en
 - Compute remained stopped after the empty-queue check.
 - Production was not changed.
 
-## Remaining acceptance evidence
+## Documented non-blocking evidence limitation
 
-The infrastructure and Development post-deploy checks above are complete. The formal accuracy and performance benchmark remains an evidence gap unless the owner's UAT already supplied four distinct authorized PDFs covering Chinese/English × native/scanned, owner-approved ground truth for at least 100 products, and the locked evaluator output. No benchmark result is inferred or fabricated by this release record.
+The infrastructure and Development post-deploy checks above are complete. The formal accuracy and performance benchmark is not attached or proven for four distinct authorized PDFs covering Chinese/English × native/scanned, owner-approved ground truth for at least 100 products, and the locked evaluator output. Owner Acceptance treats this as a documented, non-blocking evidence limitation and closes the Development slice with zero remaining steps. No benchmark result is inferred or fabricated by this release record.
 
 This document records evidence supplied by the Release Executor. This docs-only update did not merge, deploy, operate compute, change schedules, mutate backend data, or touch Production.
