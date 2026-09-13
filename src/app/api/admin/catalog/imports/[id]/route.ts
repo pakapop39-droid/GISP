@@ -5,6 +5,7 @@ import { requireAppAccess } from "@/lib/auth/session";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { safePage, safePageSize } from "@/lib/catalog/pdf-import";
+import { isCatalogExcelRoundtripEnabled } from "@/lib/catalog/excel-roundtrip";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -53,6 +54,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       ? await insforge.database.from("catalog_import_errors").select("import_row_id,field_name,error_code,error_message").in("import_row_id", rowIds).limit(5000)
       : { data: [], error: null };
     if (errors.error) throw errors.error;
+    const enrichmentBatch=isPdf&&isCatalogExcelRoundtripEnabled()?await insforge.database.from("catalog_import_enrichment_batches").select("id,status,updated_at").eq("import_job_id",id).order("created_at",{ascending:false}).limit(1).maybeSingle():{data:null,error:null};
+    if(enrichmentBatch.error)throw enrichmentBatch.error;
     const errorByRow = new Map<string, typeof errors.data>();
     for (const error of errors.data ?? []) {
       const current = errorByRow.get(error.import_row_id) ?? [];
@@ -69,6 +72,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         countries: countries.data ?? [],
         computeBudget: computeUsage.data ? { ...computeUsage.data, limitUsd: 20, warning80Percent: Number(computeUsage.data.actual_usd) + Number(computeUsage.data.reserved_usd) >= 16 } : { reserved_usd: 0, actual_usd: 0, limitUsd: 20, warning80Percent: false },
         sourceUrl,
+        enrichmentBatch:enrichmentBatch.data,
         pagination: { page, pageSize, total: job.data.total_rows, totalPages: Math.max(1, Math.ceil(job.data.total_rows / pageSize)) },
       },
     });

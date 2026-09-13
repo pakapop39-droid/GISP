@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { AlertTriangle, Check, ExternalLink, LoaderCircle, RotateCcw, Save, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { CatalogEnrichmentPanel } from "@/components/catalog-enrichment-panel";
 
 export type PdfImportRow = {
   id: string; row_number: number; validation_status: string; review_status?: string; product_id: string | null; updated_at?: string;
@@ -23,6 +24,7 @@ export type PdfImportDetail = {
   categories?: { id: string; code: string; name_th: string; name_en?: string | null }[];
   countries?: { code: string; name_th?: string | null; name_en?: string | null }[];
   computeBudget?: { reserved_usd: number | string; actual_usd: number | string; limitUsd: number; warning80Percent: boolean };
+  enrichmentBatch?:{id:string;status:string;updated_at:string}|null;
   pagination?: { page: number; pageSize: number; total: number; totalPages: number };
 };
 
@@ -46,7 +48,7 @@ async function action(url: string, body?: unknown) {
   return result;
 }
 
-export function PdfCatalogReview({ detail, canManage, onReload, onPage, onNotice }: { detail: PdfImportDetail; canManage: boolean; onReload: () => Promise<void>; onPage: (page: number) => Promise<void>; onNotice: (notice: Notice) => void }) {
+export function PdfCatalogReview({ detail, canManage, canReadCosts=false, canManageCosts=false, excelRoundtripEnabled=false, onReload, onPage, onNotice }: { detail: PdfImportDetail; canManage: boolean; canReadCosts?:boolean; canManageCosts?:boolean; excelRoundtripEnabled?:boolean; onReload: () => Promise<void>; onPage: (page: number) => Promise<void>; onNotice: (notice: Notice) => void }) {
   const [selectedId, setSelectedId] = useState(detail.rows[0]?.id ?? "");
   const [checked, setChecked] = useState<string[]>([]);
   const [draft, setDraft] = useState<Record<string, string>>(()=>draftFrom(detail.rows[0]));
@@ -129,6 +131,7 @@ export function PdfCatalogReview({ detail, canManage, onReload, onPage, onNotice
     </div>
     <div className="flex flex-wrap items-center gap-2"><label className="text-sm"><input type="checkbox" checked={approvable.length>0&&checked.length===approvable.length} onChange={(event)=>setChecked(event.target.checked?approvable.map((row)=>row.id):[])}/> เลือกรายการที่ผ่านการตรวจทั้งหมดในหน้านี้ ({approvable.length})</label><button type="button" className="v14-button v14-button--dark" disabled={!canManage||!checked.length||busy||detail.job.status!=="READY_FOR_REVIEW"} onClick={()=>void confirmSelected()}><Check size={14}/>สร้าง Draft {checked.length} รายการ</button>{["FAILED","READY_FOR_REVIEW"].includes(detail.job.status)&&detail.pages?.some((page)=>page.status==="FAILED")?<button type="button" className="v14-button v14-button--outline" disabled={busy} onClick={()=>void run(()=>action(`/api/admin/catalog/imports/${detail.job.id}/retry`),"ส่งหน้าที่ล้มเหลวกลับเข้าคิวแล้ว")}><RotateCcw size={14}/>Retry หน้าที่ล้มเหลว</button>:null}{["QUEUED","EXTRACTING","NORMALIZING","READY_FOR_REVIEW"].includes(detail.job.status)?<button type="button" className="v14-button v14-button--outline" disabled={busy} onClick={()=>void run(()=>action(`/api/admin/catalog/imports/${detail.job.id}/cancel`),"ยกเลิกงาน PDF แล้ว")}><X size={14}/>ยกเลิกงาน</button>:null}</div>
     {detail.pagination&&detail.pagination.totalPages>1?<div className="flex items-center justify-end gap-2"><button type="button" className="v14-button v14-button--outline" disabled={busy||detail.pagination.page<=1} onClick={()=>void onPage(detail.pagination!.page-1)}>ก่อนหน้า</button><span className="text-sm">หน้า {detail.pagination.page}/{detail.pagination.totalPages}</span><button type="button" className="v14-button v14-button--outline" disabled={busy||detail.pagination.page>=detail.pagination.totalPages} onClick={()=>void onPage(detail.pagination!.page+1)}>ถัดไป</button></div>:null}
+    {excelRoundtripEnabled&&["READY_FOR_REVIEW","COMPLETED","COMPLETED_WITH_ISSUES"].includes(detail.job.status)?<CatalogEnrichmentPanel jobId={detail.job.id} initialBatchId={detail.enrichmentBatch?.id??null} canManage={canManage} canReadCosts={canReadCosts} canManageCosts={canManageCosts} onNotice={onNotice}/>:null}
   </section>;
 }
 
