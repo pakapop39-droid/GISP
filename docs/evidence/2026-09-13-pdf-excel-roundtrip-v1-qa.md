@@ -6,7 +6,7 @@ QA role: `vs_qa_guardian`
 
 Mode: Independent QA
 
-Source commit: `a76791a2e7bc8dc69daecf4c7e00ac90ad1870bb`
+Source commit: `63fae4bc59763b91475a5ebc44cd21a7a9cd07a2`
 
 Source branch: `codex/pdf-excel-roundtrip-v1`
 
@@ -51,6 +51,18 @@ Direct behavioral helper results used during QA:
 - no query → Supplier tab and first Product
 - invalid Product UUID without a valid tab → Supplier tab and first Product
 
+## Export filename and partial-write verification
+
+The previously reported Unicode export Major is resolved:
+
+- Export reads `catalog_import_jobs.source_file_id`; it does not query or access a nonexistent `catalog_import_jobs.file_name` column.
+- A source name is trusted only when its metadata belongs to the same Import Job and has bucket `gisp-confidential`, visibility `CONFIDENTIAL`, and entity type `CATALOG_IMPORT`.
+- Missing, public, or mismatched metadata uses the sanitized `pdf-catalog-<job prefix>` fallback.
+- Path separators, ASCII controls, and filename-reserved characters are removed or replaced before the name reaches the response header.
+- Truncation now operates on Unicode code points. The exact `99 × "a" + 😀 + ".pdf"` boundary preserves the complete emoji and remains accepted by `encodeURIComponent`.
+- A lone high surrogate at the same boundary is replaced with `-` and also remains accepted by `encodeURIComponent`.
+- The final filename is resolved and URI-validated immediately after the read-only Job/source metadata lookup, before workbook generation, Storage upload, file metadata insert, batch insert, staging-row insert, or audit write. The response header therefore cannot encounter the prior encoding failure after persistent writes.
+
 ## Regression findings re-tested
 
 - Actual calculated Member Price preview renders a two-decimal amount, `THB`, and explicit `ยังไม่เปิดใช้ราคา` state.
@@ -68,38 +80,45 @@ All commands ran from the frozen clean worktree.
 
    `npm test -- --run src/app/admin/catalog/page.test.ts src/components/catalog-enrichment-panel.test.ts src/lib/catalog/excel-roundtrip-api.test.ts src/lib/catalog/excel-roundtrip.test.ts src/lib/catalog/excel-roundtrip-migration.test.ts`
 
-   Result: **5 test files / 27 tests passed**.
+   Result: **5 test files / 31 tests passed**.
 
-2. Full unit/regression suite:
+2. Exact Unicode regression:
+
+   `npx vitest run src/lib/catalog/excel-roundtrip.test.ts -t "truncates Unicode filenames without splitting emoji or leaving invalid surrogates"`
+
+   Result: **1 test passed / 9 unrelated tests skipped**.
+
+3. Full unit/regression suite:
 
    `npm test -- --run`
 
-   Result: **51 test files / 236 tests passed**.
+   Result: **51 test files / 240 tests passed**.
 
-3. Type checking:
+4. Type checking:
 
    `npm run typecheck`
 
    Result: **passed**.
 
-4. Lint:
+5. Lint:
 
    `npm run lint`
 
    Result: **passed with no reported warning or error**.
 
-5. Production build:
+6. Production build:
 
    `npm run build`
 
    Result: **passed; 119 pages generated**, including the six Excel enrichment API routes.
 
-6. Isolated Development branch integration:
+7. Isolated Development branch integration:
 
    `npm run test:pdf-excel-roundtrip:branch`
 
-   Result: **14/14 assertions passed**:
+   Result: **15/15 assertions passed**:
 
+   - PDF source filename resolves through linked confidential `file_metadata`;
    - non-XLSX confidential metadata rejection;
    - authenticated browser DML denial;
    - trusted detail apply and review reset;
@@ -113,19 +132,20 @@ All commands ran from the frozen clean worktree.
    - Product remains Draft/Not Reviewed;
    - lifecycle rejection after PDF job cancellation.
 
-7. Repository integrity:
+8. Repository integrity:
 
    - `git rev-parse HEAD` matched the full source commit above.
    - `git status --short` and `git diff --stat` were empty before and after source testing.
-   - The CTA fix commit changed UI/navigation/test/evidence files only; no migration, worker, dependency, feature-flag, secret, or environment configuration changed.
+   - The final Unicode fix changed the filename helper, export service, focused tests, and Builder handoff only; no migration, worker, dependency, feature-flag, secret, or environment configuration changed.
 
 ## Security and data status
 
 - Existing RLS/browser DML denial and trusted-RPC boundaries passed the isolated-branch integration suite.
 - Cost preview redaction still requires `catalog.cost.read`; Cost apply still requires the approved stronger permissions.
 - The navigation change validates UUID input and does not weaken authentication or authorization.
+- Export filename input is constrained to linked confidential metadata, sanitized, Unicode-safe, and URI-validated before persistent writes.
 - The branch integration script creates traceable synthetic test data in the isolated Development branch. It does not touch the Development parent or Production.
-- Five pre-existing dependency audit findings remain documented in the Builder handoff (1 critical, 2 high, 2 moderate). This CTA-only commit did not change `package.json` or `package-lock.json`; `fflate@0.8.3` did not introduce an advisory in the earlier independent audit.
+- Five pre-existing dependency audit findings remain documented in the Builder handoff (1 critical, 2 high, 2 moderate). The final CTA/export fixes did not change `package.json` or `package-lock.json`; `fflate@0.8.3` did not introduce an advisory in the earlier independent audit.
 
 ## Remaining limitations and next actions
 
