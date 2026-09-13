@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { resolveCatalogProductSelection, type CatalogTab } from "@/lib/catalog/catalog-navigation";
 
 type Supplier = {
   id: string; code: string; name: string; legal_name?: string | null;
@@ -55,7 +56,7 @@ type PricePreview = {
   freightEstimateMin: number; freightEstimateMax: number; grossMargin: number;
   marginPercent: number; components: Array<{ code: string; name: string; calculatedAmount: number }>;
 };
-type Tab = "suppliers" | "products" | "pricing";
+type Tab = CatalogTab;
 type ApiBody<T> = { data: T; message?: string; code?: string };
 
 const defaultComponents: FormulaComponent[] = [
@@ -72,16 +73,16 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<ApiBody<
   return body as ApiBody<T>;
 }
 
-export function CatalogWorkspace({ canManage, canReadCost, canManageCost, canManageFormula }:{
-  canManage:boolean; canReadCost:boolean; canManageCost:boolean; canManageFormula:boolean;
+export function CatalogWorkspace({ canManage, canReadCost, canManageCost, canManageFormula, initialProductId="", initialTab="suppliers" }:{
+  canManage:boolean; canReadCost:boolean; canManageCost:boolean; canManageFormula:boolean; initialProductId?:string; initialTab?:Tab;
 }) {
-  const [tab, setTab] = useState<Tab>("suppliers");
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [formulas, setFormulas] = useState<Formula[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedProductId, setSelectedProductId] = useState(initialProductId);
   const [selectedFormulaId, setSelectedFormulaId] = useState("");
   const [costs, setCosts] = useState<CostVersion[]>([]);
   const [prices, setPrices] = useState<PriceVersion[]>([]);
@@ -104,7 +105,7 @@ export function CatalogWorkspace({ canManage, canReadCost, canManageCost, canMan
       setSuppliers(supplierBody.data); setProducts(productBody.data);
       setCountries(optionBody.data.countries); setCategories(optionBody.data.categories);
       setFormulas(formulaBody.data.formulas);
-      setSelectedProductId(current => current || productBody.data[0]?.id || "");
+      setSelectedProductId(current => resolveCatalogProductSelection(current,productBody.data));
       setSelectedFormulaId(current => current || formulaBody.data.formulas[0]?.id || "");
     } catch (error) {
       setNotice({ kind:"bad", text:error instanceof Error ? error.message : "โหลดข้อมูลไม่สำเร็จ" });
@@ -254,7 +255,7 @@ export function CatalogWorkspace({ canManage, canReadCost, canManageCost, canMan
       <form className="v14-panel catalog-form" onSubmit={submitProduct}><PanelHead eyebrow="New product" title="สร้าง Product Draft" note="ยังไม่ต้องกรอกราคา"/><fieldset disabled={!canManage||busy==="product"}><Select name="supplierId" label="Supplier *" options={suppliers.map(s=>[s.id,`${s.code} — ${s.name}`])}/><div className="v14-grid v14-grid--2"><Field name="sku" label="GISP SKU *" placeholder="CHR-001"/><Field name="factorySku" label="Factory SKU"/></div><Field name="nameTh" label="ชื่อสินค้า (ไทย) *"/><Field name="nameEn" label="ชื่อสินค้า (อังกฤษ)"/><div className="v14-grid v14-grid--2"><Select name="productType" label="ประเภทสินค้า *" options={[["STANDARD","Standard"],["READY_TO_ORDER","Ready to order"],["BUILT_IN","Built-in"],["MATERIAL","Material"],["EQUIPMENT","Equipment"],["DECORATIVE","Decorative"],["CUSTOM_TEMPLATE","Custom template"]]}/><Select name="countryCode" label="ประเทศต้นทาง *" options={countries.map(c=>[c.code,`${c.name_th} (${c.code})`])}/></div><Select name="categoryId" label="หมวดหมู่" allowEmpty options={categories.map(c=>[c.id,`${c.code} — ${c.name_th}`])}/><Field name="leadDays" type="number" min="1" label="Lead time (วัน)"/><button className="v14-button v14-button--dark" disabled={!canManage||!suppliers.length||busy==="product"}>{busy==="product"?<LoaderCircle className="animate-spin" size={14}/>:<PackagePlus size={14}/>}สร้าง Product Draft</button></fieldset>{!canManage&&<PermissionNote/>}</form>
     </section>:null}
 
-    {!loading&&tab==="pricing"?<section className="catalog-pricing">
+    {!loading&&tab==="pricing"?<section id="pricing" className="catalog-pricing">
       <div className="v14-panel catalog-pricing__selector"><PanelHead eyebrow="Price cockpit" title="เลือกสินค้า" note="ต้นทุนและสูตรแยกเวอร์ชัน"/><Select name="selectedProduct" label="Product" value={selectedProductId} onChange={e=>{setSelectedProductId(e.target.value);setPreview(undefined)}} options={products.map(p=>[p.id,`${p.sku} — ${p.name_th}`])}/>{selectedProduct&&<div className="catalog-product-chip"><span><strong>{selectedProduct.sku}</strong><small>{supplierMap.get(selectedProduct.supplier_id)?.name}</small></span><Status value={selectedProduct.status}/></div>}</div>
 
       <div className="catalog-pricing__grid">
