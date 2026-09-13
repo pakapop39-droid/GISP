@@ -30,7 +30,8 @@ Status: implementation complete for independent QA; not merged or deployed
 - `npx tsc --noEmit` — passed.
 - `npx vitest run src/app/admin/catalog/page.test.ts src/components/catalog-enrichment-panel.test.ts src/lib/catalog/excel-roundtrip-api.test.ts` — 3 files / 11 tests passed after Pricing deep-link rework.
 - `npx vitest run src/lib/catalog/excel-roundtrip.test.ts src/lib/catalog/excel-roundtrip-api.test.ts` — 2 files / 17 tests passed after Unicode-safe source-filename rework.
-- `npm test` — 51 files / 240 tests passed after QA rework.
+- `npx vitest run src/components/catalog-import-workspace.test.ts` — 1 file / 3 behavioral and component tests passed after the History navigation UX rework.
+- `npm test` — 52 files / 243 tests passed after QA rework.
 - `npm run lint` — passed with zero warnings/errors.
 - `npm run build` — passed; Next.js generated 119 pages and all six enrichment routes.
 - `npm run test:pdf-excel-roundtrip:branch` — 15 live isolated-branch assertions passed: confidential PDF source metadata resolution, confidential-XLSX metadata guard, lifecycle stop after PDF cancellation, browser DML denial, Member/Purchasing/Product Admin RLS, Member RPC denial, trusted candidate details, review reset, immutable PDF snapshot/Product linkage, WAITING refresh, idempotent cost, ACTIVE/RETIRED Cost Version semantics, no Member Price, Product remains Draft/Not Reviewed.
@@ -45,6 +46,7 @@ Status: implementation complete for independent QA; not merged or deployed
 - The Pricing CTA now carries `tab=pricing` and the Product UUID. The Catalog page validates those query values, opens `Cost & Formula`, selects that exact Product when it exists, and falls back to the original Supplier/first-Product behavior otherwise.
 - Export filename resolution now follows `catalog_import_jobs.source_file_id` to a matching `CATALOG_IMPORT` file in `gisp-confidential`. Untrusted/missing/mismatched metadata uses a sanitized job-based filename; it never references the nonexistent `catalog_import_jobs.file_name` column.
 - Export filenames are truncated by Unicode code point, preserve complete astral characters such as emoji, and replace lone UTF-16 surrogates. The final filename is URI-validated before any Storage or database write, preventing response-header encoding failure from leaving a partial export.
+- History rows now expose a visible and accessible selected state (`aria-pressed`, `aria-current`, border/background and `กำลังดู`). The loaded section names the active file and status, then receives focus and smooth scrolling only after an intentional History selection succeeds; background refresh and Candidate pagination do not move the viewport.
 
 ## QA focus
 
