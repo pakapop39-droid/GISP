@@ -9,6 +9,25 @@ export const CATALOG_EXCEL_MAX_PART_BYTES = 20 * 1024 * 1024;
 export const CATALOG_EXCEL_MAX_RATIO = 100;
 export const CATALOG_EXCEL_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+export type CatalogSourceFileMetadata = {
+  id?: string;
+  original_name?: string | null;
+  bucket?: string | null;
+  visibility?: string | null;
+  entity_type?: string | null;
+  entity_id?: string | null;
+};
+
+export function resolveCatalogEnrichmentFilename(jobId: string, sourceFile: CatalogSourceFileMetadata | null) {
+  const trusted = sourceFile?.bucket === "gisp-confidential"
+    && sourceFile.visibility === "CONFIDENTIAL"
+    && sourceFile.entity_type === "CATALOG_IMPORT"
+    && sourceFile.entity_id === jobId;
+  const basename = trusted ? String(sourceFile.original_name ?? "").split(/[\\/]/).at(-1)?.replace(/\.pdf$/i, "") : "";
+  const safeStem = String(basename ?? "").normalize("NFKC").replace(/[\u0000-\u001f\u007f<>:"/\\|?*]/g, "-").replace(/\s+/g, " ").trim().slice(0, 100);
+  return `catalog-enrichment-${safeStem || `pdf-catalog-${jobId.slice(0, 8)}`}.xlsx`;
+}
+
 export const productTypes = ["STANDARD", "CUSTOM_TEMPLATE", "READY_TO_ORDER", "BUILT_IN", "MATERIAL", "EQUIPMENT", "DECORATIVE"] as const;
 export const enrichmentPreviewStatuses = ["READY", "UNCHANGED", "INVALID", "CONFLICT", "WAITING_FOR_DRAFT", "APPLIED", "CANCELLED"] as const;
 

@@ -182,6 +182,7 @@ const category = must(
   "category",
 );
 const fileId = randomUUID();
+const jobId = randomUUID();
 must(
   await admin.database.from("file_metadata").insert([
     {
@@ -193,13 +194,12 @@ must(
       size_bytes: 1,
       visibility: "CONFIDENTIAL",
       entity_type: "CATALOG_IMPORT",
-      entity_id: null,
+      entity_id: jobId,
       uploaded_by: userId,
     },
   ]),
   "file metadata",
 );
-const jobId = randomUUID();
 must(
   await admin.database.from("catalog_import_jobs").insert([
     {
@@ -220,6 +220,22 @@ must(
     },
   ]),
   "job",
+);
+const sourceFile = must(
+  await admin.database
+    .from("file_metadata")
+    .select("id,original_name,bucket,visibility,entity_type,entity_id")
+    .eq("id", fileId)
+    .single(),
+  "source metadata",
+);
+pass(
+  sourceFile.original_name === "synthetic.pdf" &&
+    sourceFile.bucket === "gisp-confidential" &&
+    sourceFile.visibility === "CONFIDENTIAL" &&
+    sourceFile.entity_type === "CATALOG_IMPORT" &&
+    sourceFile.entity_id === jobId,
+  "PDF export source filename resolves through confidential file_metadata",
 );
 const importRow = must(
   await admin.database
