@@ -6,7 +6,7 @@ import {
   staffJobGroups,
 } from "@/lib/auth/staff-job-groups";
 
-export function AdminUsersForm() {
+export function AdminUsersForm({ onCreated }: { onCreated?: () => void } = {}) {
   const formRef = useRef<HTMLFormElement>(null);
   const [message, setMessage] = useState<{ error?: boolean; text: string }>();
   const [pending, setPending] = useState(false);
@@ -30,7 +30,10 @@ export function AdminUsersForm() {
         error: !response.ok,
         text: body.message ?? (response.ok ? "สร้างผู้ใช้แล้ว" : "สร้างผู้ใช้ไม่สำเร็จ"),
       });
-      if (response.ok) formRef.current?.reset();
+      if (response.ok) {
+        formRef.current?.reset();
+        onCreated?.();
+      }
     } catch {
       setMessage({
         error: true,

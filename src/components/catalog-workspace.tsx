@@ -7,6 +7,7 @@ import {
   Factory,
   LoaderCircle,
   PackagePlus,
+  FileUp,
   Plus,
   RefreshCw,
   Save,
@@ -221,7 +222,7 @@ export function CatalogWorkspace({ canManage, canReadCost, canManageCost, canMan
   }
 
   return <div className="catalog-workspace">
-    <section className="v14-hero catalog-hero"><div><p className="v14-eyebrow">Catalog operations</p><h1>สินค้า โรงงาน และโครงสร้างราคา</h1><p>จัดการโรงงาน สินค้า ต้นทุน และราคาสมาชิก พร้อมตรวจความครบถ้วนก่อนเผยแพร่สินค้า</p><Link className="v14-button v14-button--outline catalog-sample-link" href="/admin/catalog/samples-warranty"><PackagePlus size={14}/> ตัวอย่างสินค้าและการรับประกัน</Link></div><div className="catalog-hero__seal"><ShieldCheck size={18}/><span>SERVER CALCULATED</span><small>ต้นทุนไม่ออกสู่ Member API</small></div></section>
+    <section className="v14-hero catalog-hero"><div><p className="v14-eyebrow">Catalog operations</p><h1>สินค้า โรงงาน และโครงสร้างราคา</h1><p>จัดการโรงงาน สินค้า ต้นทุน และราคาสมาชิก พร้อมตรวจความครบถ้วนก่อนเผยแพร่สินค้า</p><div className="flex flex-wrap gap-2"><Link className="v14-button v14-button--dark catalog-sample-link" href="/admin/catalog/imports"><FileUp size={14}/> นำเข้า Catalog</Link><Link className="v14-button v14-button--outline catalog-sample-link" href="/admin/catalog/samples-warranty"><PackagePlus size={14}/> ตัวอย่างสินค้าและการรับประกัน</Link></div></div><div className="catalog-hero__seal"><ShieldCheck size={18}/><span>SERVER CALCULATED</span><small>ต้นทุนไม่ออกสู่ Member API</small></div></section>
 
     <div className="catalog-flow" aria-label="ขั้นตอนการทำงาน">
       {[[Factory,"01","Supplier"],[PackagePlus,"02","Product Draft"],[Calculator,"03","Factory Cost"],[Sparkles,"04","Member Price"]].map(([Icon,no,label],index)=><div key={String(label)} className="catalog-flow__step">{index>0&&<ArrowRight className="catalog-flow__arrow" size={14}/>}<span>{typeof Icon!=="string"&&<Icon size={15}/>}</span><small>{String(no)}</small><strong>{String(label)}</strong></div>)}

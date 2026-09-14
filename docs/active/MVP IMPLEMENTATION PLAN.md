@@ -34,21 +34,23 @@ Permission/RLS, API หรือ Server Action, หน้าหลังบ้�
 
 ## 3. Environment
 
-Application จริงมี 3 Environment คือ Development, Staging/UAT และ Production ส่วน Demo เป็น
-Browser-local Sandbox แยกต่างหากและไม่นับเป็น Backend Environment ที่สี่
+ตั้งแต่ ENV2-v0.1 Application มี Environment ถาวรที่เจ้าของต้องใช้เพียง Production และ Development
+ส่วน Demo, Preview, Staging/UAT เดิม และ feature/backend branch เป็นหลักฐานเชิงประวัติหรือ sandbox
+ชั่วคราวภายใต้ Development ไม่ใช่ตัวเลือกถาวรที่สาม รายละเอียดให้ยึด
+[Environment Registry](ENVIRONMENT%20REGISTRY.md)
 
 | Environment | Frontend | Backend | ใช้สำหรับ |
 |---|---|---|---|
-| Demo Sandbox | `https://gisp-mvp-demo.insforge.site` | Browser-local fixture; Transaction API disabled | ตรวจภาพรวม Workflow/UX ก่อนทำระบบจริง |
-| Development | Local / InsForge Development Deployment | InsForge Development Branch/Project | พัฒนาและ Automated Test |
-| Staging | InsForge Staging Deployment | InsForge Staging | UAT และ E2E |
-| Production | InsForge Production Deployment | InsForge Production | ผู้ใช้งานจริง |
+| Development | `https://gisp-mvp-development.insforge.site` | InsForge Development Project และ sandbox branch ชั่วคราว | พัฒนา, Automated Test, QA และ UAT ก่อนขอ Release |
+| Production | `https://m8ugbyak.insforge.site` | InsForge Production | ผู้ใช้งานจริง; เปลี่ยนได้เมื่อมี Release Authorization เท่านั้น |
 
 Browser เก็บเฉพาะ `NEXT_PUBLIC_INSFORGE_URL` และ `NEXT_PUBLIC_INSFORGE_ANON_KEY` ส่วน `INSFORGE_URL` และ `INSFORGE_API_KEY` เป็น Server-only
 
 Frontend ต้อง Deploy จาก Source Root ด้วย `npx @insforge/cli deployments deploy .` หลัง Local Build ผ่าน และต้องตรวจ `deployments env list` ก่อน Deploy ทุกครั้ง ส่วน Notification Retry ใช้ InsForge Schedule เรียก Endpoint/Function ที่ได้รับการป้องกันด้วย Secret
 
 ### 3.1 Demo Gate ก่อนพัฒนา Application จริงต่อ
+
+หัวข้อนี้เป็นประวัติ Gate ก่อนเริ่ม MVP ไม่ได้สร้าง Environment ถาวรเพิ่มจาก ENV2-v0.1
 
 ก่อนเริ่ม Vertical Slice ถัดไป ให้สร้าง Interactive Demo แยกชื่อ
 `gisp-mvp-demo` โดยใช้ Guided Story และข้อมูลสมมติจาก

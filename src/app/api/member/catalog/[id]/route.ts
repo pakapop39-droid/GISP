@@ -9,6 +9,7 @@ import {
 import { serializeMemberCatalogExtras } from "@/lib/catalog/sample-warranty";
 import {
   signedMemberDocuments,
+  signedMemberOptionFinishes,
   signedMemberProductMedia,
 } from "@/lib/catalog/member-server";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
@@ -54,8 +55,9 @@ export async function GET(
         .limit(200),
       admin.database
         .from("product_options")
-        .select("id,name,is_required,sort_order")
+        .select("id,name,is_required,sort_order,status")
         .eq("product_id", id)
+        .eq("status", "ACTIVE")
         .order("sort_order")
         .limit(100),
       insforge.database.rpc("get_member_product_catalog_extras", {
@@ -80,6 +82,7 @@ export async function GET(
       : { data: [], error: null };
     if (valueResult.error) throw valueResult.error;
     const values = valueResult.data ?? [];
+    const finishByOptionValueId = await signedMemberOptionFinishes(id, values.map((value) => value.id));
     const images = media.get(id) ?? [];
     const item = serializeMemberCatalogItem(
       result.data as MemberCatalogViewRow,
@@ -102,6 +105,7 @@ export async function GET(
               id: value.id,
               label: value.label,
               memberPriceDelta: Number(value.member_price_delta),
+              finish: finishByOptionValueId.get(value.id) ?? null,
             })),
         })),
         documents,

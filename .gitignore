@@ -34,6 +34,12 @@ slice3-*-preview.png
 .insforge
 .agent
 .agents
+!.agents/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/vs-app-development-team/
+!.agents/skills/vs-app-development-team/**
 .augment
 .claude
 .cline

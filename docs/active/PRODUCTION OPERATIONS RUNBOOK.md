@@ -2,16 +2,25 @@
 
 ตรวจล่าสุด 9 กันยายน 2569
 
-## ระบบที่ใช้งานจริง
+## ระบบถาวรตาม ENV2-v0.1
 
 - เว็บจริง: https://m8ugbyak.insforge.site
+- เว็บ Development: https://gisp-mvp-development.insforge.site
 - Backend Production: `865860c2-49fa-4e53-908f-9396b2f75233`
 - Release ปัจจุบัน: `B — MEMBER PILOT`
 - Deployment ปัจจุบัน: `e992de1f-be9a-4344-89d9-0b502fe7d777` (`READY`)
+
+ชื่อและลิงก์ระบบปัจจุบันให้ยึด [Environment Registry](ENVIRONMENT%20REGISTRY.md) การแก้ Production ยังต้องมี Release Authorization แยกเสมอ
+
+## หลักฐานพื้นที่ซ้อมเดิม (ไม่ใช่ Environment ถาวร)
+
 - พื้นที่ซ้อม: `2cff11a0-9e16-41d4-989a-dcfc9f48103d`
 - เว็บซ้อม: https://m8ugbyak-nfh.insforge.site
 - พื้นที่ซ้อม Release B จาก Production ปัจจุบัน: `f0f9a36b-ec7d-4ceb-ae28-b2d5feef85f9`
 - เว็บซ้อม Release B: https://gisp-release-b-rehearsal.vercel.app
+
+รายการข้างต้นเก็บเพื่ออ้างอิงการซ้อม Release B ในอดีตเท่านั้น ไม่ใช่ตัวเลือกใช้งานของเจ้าของ และ ENV2-v0.1 ไม่อนุญาตให้ลบหรือเปลี่ยนทรัพยากรเหล่านี้
+
 - ไฟล์เชื่อม Production อยู่ใน `output/production-completion-20260906/production`
 - ห้ามใช้ไฟล์เชื่อมที่ root สำหรับงาน Production เพราะ root เชื่อม Development
 

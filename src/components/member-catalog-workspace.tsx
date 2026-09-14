@@ -49,7 +49,7 @@ const postGoLiveFeaturesEnabled = process.env.NEXT_PUBLIC_ENABLE_POST_GO_LIVE_FE
 const sharedCatalogEnabled = postGoLiveFeaturesEnabled || process.env.NEXT_PUBLIC_ENABLE_SHARED_CATALOGS === "true";
 const productSourcingEnabled = postGoLiveFeaturesEnabled || process.env.NEXT_PUBLIC_ENABLE_PRODUCT_SOURCING === "true";
 
-export function MemberCatalogWorkspace() {
+export function MemberCatalogWorkspace({ imageSearchEnabled = false }: { imageSearchEnabled?: boolean }) {
   const [data, setData] = useState<CatalogResponse>();
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -109,6 +109,8 @@ export function MemberCatalogWorkspace() {
         <div className="member-catalog__promise"><Sparkles size={18} /><strong>Member-safe pricing</strong><span>ราคาก่อน VAT</span></div>
       </section>
 
+      {imageSearchEnabled ? <Link className="v14-button v14-button--dark self-start" href="/member/catalog/image-search"><PackageSearch size={18}/>ค้นหาด้วยรูปภาพ · ทดลอง</Link> : null}
+
       <section className="v14-panel member-catalog__toolbar">
         <label className="member-catalog__search">ค้นหาสินค้า<input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="ชื่อ รหัสสินค้า วัสดุ หรือหมวด" /></label>
         <label>หมวดสินค้า<select value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setPage(1); }}><option value="">ทุกหมวด</option>{(data?.categories ?? []).map((category) => <option key={category.id} value={category.id}>{category.name ?? "ไม่ระบุหมวด"}</option>)}</select></label>
@@ -141,7 +143,7 @@ export function MemberCatalogWorkspace() {
   );
 }
 
-function ProductCard({ item }: { item: CatalogItem }) {
+export function ProductCard({ item }: { item: CatalogItem }) {
   const dimensions = [item.dimensions.widthMm, item.dimensions.depthMm, item.dimensions.heightMm].every(Boolean)
     ? `${item.dimensions.widthMm} × ${item.dimensions.depthMm} × ${item.dimensions.heightMm} มม.`
     : "ตรวจขนาดในรายละเอียด";

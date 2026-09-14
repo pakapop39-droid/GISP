@@ -2,9 +2,9 @@
 
 ## **GISP – MVP BUSINESS MASTER PLAN**
 
-**Document Version:** 2.3  
-**Reconciled Date:** 1 สิงหาคม 2569 (2026-08-01)  
-**Change Summary:** เพิ่ม Customer Browse Catalog แบบไม่มีราคาและลิงก์ 4 ขอบเขตตาม DEC-061  
+**Document Version:** 2.4
+**Reconciled Date:** 13 กันยายน 2569 (2026-09-13)
+**Change Summary:** ปรับการเรียก Environment สำหรับเจ้าของเป็น Production และ Development ตาม ENV2-v0.1/DEC-069 โดยรักษา Demo isolation เดิม
 **Document Type:** Business Master Plan  
 **Project Stage:** Minimum Viable Product  
 **Primary Market:** ประเทศไทย  
@@ -39,7 +39,11 @@
 * Browser ใช้เฉพาะ Public InsForge URL และ Anon Key
 * InsForge API Key เป็น Server-only Secret ห้ามใช้ชื่อ `NEXT_PUBLIC_*` และห้ามส่งไป Browser
 * ตาราง `public.users` เชื่อม `auth.users` และห้ามเก็บ Password หรือ `password_hash`
-* Environment แยก Development, Staging/UAT และ Production โดยทั้ง Frontend และ Backend อยู่ภายใต้ InsForge Environment ที่ตรงกัน
+* Environment ถาวรที่เจ้าของระบบใช้มีเพียง **Development** และ **Production** ตาม ENV2-v0.1/DEC-069
+* Staging/UAT, Preview, feature branch และ backend branch ใช้เป็น sandbox ชั่วคราวภายใน Development ได้ แต่ไม่ใช่ Environment ถาวรหรือตัวเลือกใช้งานที่สาม
+* Demo เดิมคงการแยกข้อมูลและระบบตาม DEC-027: ใช้หลักฐาน/ข้อมูลจำลองเท่านั้น ห้ามเขียนข้อมูลเข้า Development หรือ Production และไม่ใช่ Environment ถาวร
+* DEC-069 ปรับ DEC-023 และ DEC-027 เฉพาะการจัดประเภท Environment ที่แสดงต่อเจ้าของ ไม่ยกเลิกกฎแยก Demo หรือข้อห้ามเขียนข้อมูลข้ามระบบ
+* ชื่อและลิงก์หลักให้ยึด [Environment Registry](ENVIRONMENT%20REGISTRY.md)
 
 ## **0.3 Product, RFQ และ Quotation**
 

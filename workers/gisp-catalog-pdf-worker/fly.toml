@@ -12,3 +12,4 @@ primary_region = "sin"
   cpu_kind = "performance"
   cpus = 4
   memory = "8192mb"
+

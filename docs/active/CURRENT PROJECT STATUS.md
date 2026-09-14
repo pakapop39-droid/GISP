@@ -6,6 +6,8 @@
 **Overall Status:** `SLICE 1–13 DONE · PRODUCTION RELEASE B MEMBER PILOT LIVE`
 **Purpose:** สรุปสถานะระบบจริงล่าสุด หลักฐานตรวจรับ และขั้นตอนทำงานต่อ
 
+> ตั้งแต่ ENV2-v0.1 ให้ยึด [Environment Registry](ENVIRONMENT%20REGISTRY.md) สำหรับชื่อและลิงก์ระบบถาวร รายการ Preview, deployment URL หรือ alias อื่นในเอกสารนี้เป็นหลักฐานตามเวลาของงานเดิม ไม่ใช่ Environment ถาวรหรือทางเลือกที่เจ้าของต้องเลือก
+>
 > เอกสารนี้เป็นรายงานสถานะ ไม่ได้สร้างหรือเปลี่ยน Business Rule หากข้อมูลขัดกัน ให้ยึด
 > [MVP Business Master Plan](MVP%20BUSINESS%20MASTER%20PLAN.md) →
 > [Decision Log](DECISION%20LOG.md) →

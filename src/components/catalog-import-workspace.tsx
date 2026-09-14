@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, Check, Download, FileSpreadsheet, FileText, LoaderCircle, RefreshCw, Upload } from "lucide-react";
+import { AlertTriangle, Boxes, Check, Download, FileSpreadsheet, FileText, LoaderCircle, Palette, RefreshCw, Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { FinishImportPanel } from "@/components/finish-import-panel";
 import { PdfCatalogReview, type PdfImportDetail, type PdfImportRow } from "@/components/pdf-catalog-review";
 
 type Supplier = { id: string; code: string; name: string; status: string };
@@ -18,6 +19,7 @@ async function json<T>(response: Response): Promise<T> {
 }
 
 export function CatalogImportWorkspace({ canImport, canManage, pdfEnabled = false }: { canImport: boolean; canManage: boolean; pdfEnabled?: boolean }) {
+  const [importKind, setImportKind] = useState<"product" | "finish">("product");
   const [productSource, setProductSource] = useState<"spreadsheet" | "pdf">("spreadsheet");
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [supplierId, setSupplierId] = useState("");
@@ -47,8 +49,16 @@ export function CatalogImportWorkspace({ canImport, canManage, pdfEnabled = fals
   }, []);
 
   useEffect(() => {
+    if (importKind !== "product") return;
     void loadJobs().catch((error) => setNotice({ kind: "bad", text: error instanceof Error ? error.message : "โหลดข้อมูลไม่ได้" }));
-  }, [loadJobs]);
+  }, [importKind, loadJobs]);
+
+  function selectImportKind(kind: "product" | "finish") {
+    setImportKind(kind);
+    setFile(null);
+    setDetail(null);
+    setNotice(null);
+  }
 
   function selectProductSource(source: "spreadsheet" | "pdf") {
     setProductSource(source); setFile(null); setDetail(null); setNotice(null); setFileInputKey((current)=>current+1);
@@ -91,7 +101,12 @@ export function CatalogImportWorkspace({ canImport, canManage, pdfEnabled = fals
   const mappedColumns = useMemo(() => [["sku", "SKU"], ["factory_sku", "รหัสโรงงาน"], ["name_th", "ชื่อสินค้า"], ["product_type", "ประเภท"], ["category_code", "หมวด"], ["country_code", "ประเทศ"], ["lead_time_days", "Lead time"], ["width/depth/height", "มิติ"], ["material_summary", "วัสดุ"]], []);
 
   return <div className="space-y-5">
-    <section className="v14-hero"><div><p className="v14-eyebrow">Product catalog import</p><h1>นำเข้าสินค้าเป็น Draft</h1><p>เลือก Excel/CSV หรือ PDF Catalog ที่ตรวจแล้ว ระบบจะไม่สร้างราคาและไม่เผยแพร่สินค้าอัตโนมัติ</p></div></section>
+    <section className="v14-hero"><div><p className="v14-eyebrow">Unified catalog import</p><h1>นำเข้า Catalog</h1><p>เลือกนำเข้าข้อมูลสินค้า หรือคลังสีจากไฟล์ที่ตรวจแล้ว ระบบจะสร้างเป็น Draft เท่านั้น</p></div></section>
+    <section className="grid gap-3 md:grid-cols-2" aria-label="เลือกประเภทข้อมูลที่จะนำเข้า">
+      <button type="button" aria-pressed={importKind === "product"} onClick={() => selectImportKind("product")} className={`v14-panel flex items-start gap-3 text-left ${importKind === "product" ? "border-black bg-black/[.035]" : ""}`}><Boxes size={22}/><span><strong className="block">ข้อมูลสินค้า</strong><small className="text-black/55">SKU, ชื่อ, ประเภท, หมวด และรายละเอียดสินค้า</small></span></button>
+      <button type="button" aria-pressed={importKind === "finish"} onClick={() => selectImportKind("finish")} className={`v14-panel flex items-start gap-3 text-left ${importKind === "finish" ? "border-black bg-black/[.035]" : ""}`}><Palette size={22}/><span><strong className="block">คลังสีและผิวสำเร็จ</strong><small className="text-black/55">Collection, รหัสสี, ชื่อสี และเอกสารอ้างอิง</small></span></button>
+    </section>
+    {importKind === "product" ? <>
     <section className={`grid gap-3 ${pdfEnabled?"md:grid-cols-2":""}`} aria-label="เลือกรูปแบบไฟล์สินค้า"><button type="button" aria-pressed={productSource==="spreadsheet"} onClick={()=>selectProductSource("spreadsheet")} className={`v14-panel flex items-start gap-3 text-left ${productSource==="spreadsheet"?"border-black bg-black/[.035]":""}`}><FileSpreadsheet size={20}/><span><strong className="block">Excel / CSV</strong><small className="text-black/55">ใช้ Template และตรวจข้อมูลทันที</small></span></button>{pdfEnabled?<button type="button" aria-pressed={productSource==="pdf"} onClick={()=>selectProductSource("pdf")} className={`v14-panel flex items-start gap-3 text-left ${productSource==="pdf"?"border-black bg-black/[.035]":""}`}><FileText size={20}/><span><strong className="block">PDF Catalog</strong><small className="text-black/55">จีน/อังกฤษ ทั้งข้อความและไฟล์สแกน</small></span></button>:null}</section>
     {productSource==="spreadsheet"?<section className="v14-panel !p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><strong className="block">Template สำหรับข้อมูลสินค้า</strong><span className="text-xs text-black/55">ใช้กับการนำเข้า Product Draft ด้านล่าง</span></div><a href="/api/admin/catalog/imports/template" className="v14-button v14-button--outline"><Download size={14}/>ดาวน์โหลด Template สินค้า</a></div></section>:null}
     <div className="grid gap-3 md:grid-cols-4">{(productSource==="pdf"?[["01","อัปโหลด PDF","ไม่เกิน 25 MB / 100 หน้า"],["02","ระบบอ่านข้อมูล","Native text / OCR / AI"],["03","เจ้าหน้าที่ตรวจ","เทียบ PDF และเคลียร์คำเตือน"],["04","ยืนยัน Draft","ไม่สร้างราคาและไม่ Publish"]]:[["01","เลือกไฟล์","Excel/CSV ไม่เกิน 10 MB"],["02","ตรวจข้อมูล","SKU หมวด และรูปแบบ"],["03","ดู Preview","แยกพร้อม/ต้องแก้"],["04","ยืนยัน Draft","ยังไม่ Publish"]]).map(([number,title,note])=><article key={number} className="v14-panel !p-4"><small className="v14-eyebrow">{number}</small><strong className="mt-1 block">{title}</strong><span className="text-xs text-black/55">{note}</span></article>)}</div>
@@ -100,6 +115,7 @@ export function CatalogImportWorkspace({ canImport, canManage, pdfEnabled = fals
     {productSource==="spreadsheet"?<section className="v14-panel"><div className="v14-panel__head"><div><p className="v14-eyebrow">Column mapping</p><h2>คอลัมน์ใน Template ไปที่ข้อมูลใด</h2></div></div><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{mappedColumns.map(([column,label])=><div key={column} className="flex items-center justify-between border border-black/10 px-3 py-2 text-xs"><code>{column}</code><span>→ {label}</span></div>)}</div></section>:null}
     {detail?.job.source_type==="PDF"?<PdfCatalogReview key={`${detail.job.id}-${detail.pagination?.page??1}-${detail.rows.map((row)=>`${row.id}:${row.updated_at??""}:${row.validation_status}:${row.review_status??""}`).join("|")}`} detail={detail} canManage={canManage} onReload={()=>loadDetail(detail.job.id,detail.pagination?.page??1)} onPage={(page)=>loadDetail(detail.job.id,page)} onNotice={setNotice}/>:detail ? <section className="v14-panel"><div className="v14-panel__head"><div><p className="v14-eyebrow">Preview</p><h2>ผลตรวจไฟล์สินค้าก่อน Import</h2></div><span className={`v14-status ${detail.job.status === "COMPLETED" ? "v14-status--good" : ""}`}>{detail.job.status}</span></div><div className="grid gap-3 sm:grid-cols-3"><Summary label="ทั้งหมด" value={detail.job.total_rows}/><Summary label="พร้อมนำเข้า" value={detail.job.valid_rows} good/><Summary label="ต้องแก้" value={detail.job.invalid_rows} bad={detail.job.invalid_rows > 0}/></div><div className="mt-4 max-h-[520px] overflow-auto border border-black/10"><table className="w-full min-w-[760px] border-collapse text-left text-xs"><thead className="sticky top-0 bg-[#f3f0e9]"><tr><th className="p-3">แถว</th><th className="p-3">SKU</th><th className="p-3">ชื่อสินค้า</th><th className="p-3">ประเภท/หมวด</th><th className="p-3">ผลตรวจ</th></tr></thead><tbody>{detail.rows.map((row)=><tr key={row.id} className="border-t border-black/10 align-top"><td className="p-3">{row.row_number}</td><td className="p-3 font-bold">{row.source_data.sku}</td><td className="p-3">{row.source_data.name_th}</td><td className="p-3">{row.source_data.product_type}<br/><span className="text-black/50">{row.source_data.category_code || "ไม่ระบุหมวด"}</span></td><td className="p-3">{row.errors.length ? <div className="space-y-1 text-[#a83226]">{row.errors.map((error,index)=><div key={`${error.error_code}-${index}`}>{error.error_message}</div>)}</div> : <span className="inline-flex flex-wrap items-center gap-1 text-[#356b52]"><Check size={12}/>{row.validation_status === "IMPORTED" ? "สร้าง Draft แล้ว" : "พร้อม"}{row.validation_status === "IMPORTED" && row.product_id ? <Link className="ml-2 underline" href={`/admin/catalog/products/${row.product_id}`}>เปิด Product Draft</Link> : null}</span>}</td></tr>)}</tbody></table></div><div className="mt-4 flex flex-wrap gap-2">{detail.job.invalid_rows > 0 ? <button type="button" className="v14-button v14-button--outline" onClick={downloadErrors}><Download size={14}/> ดาวน์โหลด Error Report</button> : null}<button type="button" className="v14-button v14-button--dark" disabled={!canManage || detail.job.status !== "READY_FOR_REVIEW" || detail.job.valid_rows < 1 || !!busy} onClick={()=>void confirmImport()}>{busy === "confirm" ? <LoaderCircle className="animate-spin" size={14}/> : <Check size={14}/>} ยืนยัน Import {detail.job.valid_rows} รายการเป็น Draft</button></div></section> : null}
     <section className="v14-panel"><div className="v14-panel__head"><div><p className="v14-eyebrow">Product import history</p><h2>ประวัติ Import สินค้าล่าสุด</h2></div><button className="v14-button v14-button--outline" onClick={()=>void loadJobs()} disabled={!!busy}><RefreshCw size={14}/> โหลดใหม่</button></div><div className="space-y-2">{jobs.map((job)=><button key={job.id} type="button" onClick={()=>{if(job.source_type==="PDF"&&!pdfEnabled){setNotice({kind:"bad",text:"PDF Catalog Import ถูกปิดด้วย Feature Flag"});return;}void loadDetail(job.id);}} className="grid w-full grid-cols-[1fr_auto] gap-3 border border-black/10 p-3 text-left hover:bg-black/[.025] md:grid-cols-[1.5fr_.6fr_.8fr_auto]"><span><strong className="block">{job.file_name}</strong><small>{new Date(job.created_at).toLocaleString("th-TH")}</small></span><span>{job.source_type}</span><span>พร้อม {job.valid_rows} · ต้องแก้ {job.invalid_rows}</span><strong>{job.status}</strong></button>)}{!jobs.length ? <p className="py-6 text-center text-sm text-black/50">ยังไม่มีประวัติ Import สินค้า</p> : null}</div></section>
+    </> : <FinishImportPanel canImport={canImport} canManage={canManage}/>}
   </div>;
 }
 

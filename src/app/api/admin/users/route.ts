@@ -5,6 +5,16 @@ import { requireSuperAdmin } from "@/lib/auth/session";
 import { rolesForStaffJobGroup } from "@/lib/auth/staff-job-groups";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
+import { listInternalUsers } from "@/lib/auth/internal-users";
+
+export async function GET() {
+  try {
+    await requireSuperAdmin();
+    return NextResponse.json({ data: await listInternalUsers() }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    return apiError(error);
+  }
+}
 
 export async function POST(request: NextRequest) {
   const parsed = internalUserCreateSchema.safeParse(await request.json().catch(() => null));

@@ -81,7 +81,12 @@ type Detail = {
     id: string;
     name: string;
     isRequired: boolean;
-    values: Array<{ id: string; label: string; memberPriceDelta: number }>;
+    values: Array<{
+      id: string;
+      label: string;
+      memberPriceDelta: number;
+      finish: { code: string; label: string; labelZh: string | null; swatchUrl: string } | null;
+    }>;
   }>;
   documents: Array<{
     id: string;
@@ -375,30 +380,13 @@ export function MemberProductDetail({ productId }: { productId: string }) {
               </select>
             </label>
           ) : null}
-          {data.options.map((option) => (
-            <label key={option.id}>
-              {option.name}
-              {option.isRequired ? " *" : ""}
-              <select
-                value={options[option.id] ?? ""}
-                onChange={(event) =>
-                  setOptions((current) => ({
-                    ...current,
-                    [option.id]: event.target.value,
-                  }))
-                }
-              >
-                {option.values.map((value) => (
-                  <option key={value.id} value={value.id}>
-                    {value.label}
-                    {value.memberPriceDelta
-                      ? ` (+${money.format(value.memberPriceDelta)} THB)`
-                      : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
+          {data.options.map((option) => {
+            const hasSwatches = option.values.some((value) => value.finish);
+            return <fieldset className="border-0 p-0" key={option.id}>
+              <legend className="mb-2 text-sm font-semibold">{option.name}{option.isRequired ? " *" : ""}</legend>
+              {hasSwatches ? <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{option.values.map((value) => <label className={`cursor-pointer border p-2 text-xs ${options[option.id] === value.id ? "border-black bg-black/[.04]" : "border-black/10"}`} key={value.id}><input className="sr-only" type="radio" name={`option-${option.id}`} value={value.id} checked={options[option.id] === value.id} onChange={() => setOptions((current) => ({ ...current, [option.id]: value.id }))}/>{value.finish ? <Image src={value.finish.swatchUrl} alt={`ตัวอย่างสี ${value.finish.code}`} width={72} height={72} unoptimized className="mb-2 aspect-square w-full object-cover"/> : <span className="mb-2 flex aspect-square w-full items-center justify-center bg-black/[.04]"><PalettePlaceholder/></span>}<strong className="block">{value.finish?.code ?? value.label}</strong><span>{value.finish?.label ?? value.label}</span>{value.memberPriceDelta ? <small className="block">+{money.format(value.memberPriceDelta)} THB</small> : null}</label>)}</div> : <select value={options[option.id] ?? ""} onChange={(event) => setOptions((current) => ({ ...current, [option.id]: event.target.value }))}>{option.values.map((value) => <option key={value.id} value={value.id}>{value.label}{value.memberPriceDelta ? ` (+${money.format(value.memberPriceDelta)} THB)` : ""}</option>)}</select>}
+            </fieldset>;
+          })}
           <form className="member-detail__project-form" onSubmit={addToProject}>
             <strong>เพิ่มสินค้านี้เข้า Project</strong>
             {projectsLoading ? (
@@ -571,4 +559,8 @@ export function MemberProductDetail({ productId }: { productId: string }) {
       ) : null}
     </div>
   );
+}
+
+function PalettePlaceholder() {
+  return <span aria-hidden="true">สี</span>;
 }

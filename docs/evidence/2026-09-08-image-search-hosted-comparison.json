@@ -1,0 +1,116 @@
+{
+  "summary": {
+    "runAt": "2026-09-08T15:08:13.829Z",
+    "modelId": "voyageai/voyage-multimodal-3.5",
+    "revision": "voyageai/voyage-multimodal-3.5-20260727",
+    "dtype": "float",
+    "dimension": 1024,
+    "runtime": "OpenRouter / Voyage AI by MongoDB",
+    "galleryProducts": 634,
+    "queryCount": 97,
+    "metrics": [
+      {
+        "split": "calibration",
+        "kind": "compressed",
+        "total": 25,
+        "hit1": 18,
+        "hit5": 24,
+        "hit10": 25,
+        "categoryFilterHit10": 25,
+        "withoutByteLeakage": {
+          "total": 25,
+          "hit1": 18,
+          "hit5": 24,
+          "hit10": 25,
+          "categoryFilterHit10": 25
+        }
+      },
+      {
+        "split": "calibration",
+        "kind": "alternate-proxy",
+        "total": 23,
+        "hit1": 11,
+        "hit5": 16,
+        "hit10": 18,
+        "categoryFilterHit10": 19,
+        "withoutByteLeakage": {
+          "total": 23,
+          "hit1": 11,
+          "hit5": 16,
+          "hit10": 18,
+          "categoryFilterHit10": 19
+        }
+      },
+      {
+        "split": "holdout",
+        "kind": "compressed",
+        "total": 25,
+        "hit1": 22,
+        "hit5": 25,
+        "hit10": 25,
+        "categoryFilterHit10": 25,
+        "withoutByteLeakage": {
+          "total": 25,
+          "hit1": 22,
+          "hit5": 25,
+          "hit10": 25,
+          "categoryFilterHit10": 25
+        }
+      },
+      {
+        "split": "holdout",
+        "kind": "alternate-proxy",
+        "total": 24,
+        "hit1": 14,
+        "hit5": 18,
+        "hit10": 21,
+        "categoryFilterHit10": 21,
+        "withoutByteLeakage": {
+          "total": 24,
+          "hit1": 14,
+          "hit5": 18,
+          "hit10": 21,
+          "categoryFilterHit10": 21
+        }
+      }
+    ],
+    "hostedQueryMs": {
+      "n": 20,
+      "median": 621.5913,
+      "p95": 684.2177999999985
+    },
+    "policy": {
+      "only": [
+        "voyageai"
+      ],
+      "allow_fallbacks": false,
+      "data_collection": "deny"
+    },
+    "threshold": null,
+    "absentProductEvaluation": "NOT_RUN_NO_HUMAN_LABELS",
+    "similarProductEvaluation": "NOT_RUN_NO_HUMAN_LABELS",
+    "reportedCostUsd": 0.24375214080000002,
+    "missingCostResponses": 0,
+    "conservativeReservedUsd": 0.9685,
+    "limitations": [
+      "Catalog alternate-image queries are same-product proxies, not independent customer photos",
+      "No human-rated similarity or absent-product evaluation",
+      "Timing includes gateway network and local ranking but excludes user upload, production database, auth, and signed URLs",
+      "Input type is omitted for both gallery/query; this gateway baseline does not compare document/query-specific prompting"
+    ]
+  },
+  "receipts": {
+    "successfulRequests": 68,
+    "processedImages": 744,
+    "failedRequests": [
+      {
+        "httpStatus": 404,
+        "errorCode": 404,
+        "purpose": "smoke"
+      }
+    ],
+    "totalReportedCostUsd": 0.24375214080000002,
+    "allCostsPresent": true
+  },
+  "credentialSource": "Existing InsForge Model Gateway via ai setup; server-only .env.local"
+}

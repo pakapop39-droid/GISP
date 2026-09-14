@@ -5,16 +5,19 @@
 > เอกสารใน `docs/active/` และรายการ Active Documents ด้านล่างเป็น Requirement ชุดปัจจุบันเท่านั้น
 > เอกสารใน `docs/archive/` ใช้ตรวจประวัติหรือกู้คืนและไม่มีอำนาจกำหนด Requirement
 
-## Development ที่ใช้งานอยู่
+## ระบบหลักที่ใช้งาน
 
-- หน้าเว็บ: `https://gisp-mvp-development.insforge.site`
-- InsForge Project: `gisp-mvp-development` (`ap-southeast`)
-- Environment นี้ใช้ข้อมูลทดสอบเท่านั้น
+| ระบบ | ลิงก์หลัก | ใช้ทำอะไร |
+| --- | --- | --- |
+| Production | `https://m8ugbyak.insforge.site` | ระบบใช้งานจริง |
+| Development | `https://gisp-mvp-development.insforge.site` | พัฒนาและใช้ข้อมูลทดสอบก่อนขึ้นระบบจริง |
 
-## Demo-first
+ให้ยึด [Environment Registry ENV2-v0.1](docs/active/ENVIRONMENT%20REGISTRY.md) เป็นรายการชื่อและลิงก์ระบบปัจจุบันเพียงจุดเดียว รหัส `kit6y4pj`, Demo, Preview และ branch ต่าง ๆ เป็นข้อมูลทางเทคนิคหรือหลักฐานเชิงประวัติ ไม่ใช่ระบบถาวรที่เจ้าของต้องเลือก
 
-- Demo ออนไลน์: `https://gisp-mvp-demo.insforge.site`
-- InsForge Project: `gisp-mvp-demo` (`ap-southeast`)
+## Demo-first (หลักฐานเชิงประวัติ)
+
+- Demo เดิม: `https://gisp-mvp-demo.insforge.site` — เก็บไว้เป็นหลักฐานการตรวจ UX ก่อน MVP ไม่ใช่ Environment หลัก
+- InsForge Project เดิม: `gisp-mvp-demo` (`ap-southeast`)
 - Story และชุดข้อมูลหลัก: `docs/active/DEMO STORY AND MOCK DATA.md`
 - Fixture และ Scene Engine: `src/demo`
 - Demo 1.4: `/v1-4`; Member Application: `/v1-4/member`; GISP Back Office: `/v1-4/admin`; Guided Overview: `/v1-4/overview`
@@ -54,15 +57,17 @@
 
 ให้อ่านและตัดสินข้อขัดแย้งตามลำดับนี้:
 
-1. [MVP Business Master Plan](docs/active/MVP%20BUSINESS%20MASTER%20PLAN.md)
-2. [Decision Log](docs/active/DECISION%20LOG.md)
-3. [MVP Implementation Plan](docs/active/MVP%20IMPLEMENTATION%20PLAN.md)
-4. [Database Schema](docs/active/DATABASE%20SCHEMA.md)
-5. UX/UI: [Volume 1](docs/active/UX-UI%20FLOW%20VOLUME%201.md), [Volume 2](docs/active/UX-UI%20FLOW%20VOLUME%202.md), [Volume 3-A](docs/active/VOLUME%203-A.md), [Volume 3-B](docs/active/VOLUME%203-B.md), [Volume 3-C](docs/active/VOLUME%203-C.md), [Volume 3-D](docs/active/VOLUME%203-D.md)
-6. [Requirement Traceability](docs/REQUIREMENT%20TRACEABILITY.md)
+1. [Environment Registry ENV2-v0.1](docs/active/ENVIRONMENT%20REGISTRY.md) สำหรับชื่อและลิงก์ Environment
+2. [MVP Business Master Plan](docs/active/MVP%20BUSINESS%20MASTER%20PLAN.md)
+3. [Decision Log](docs/active/DECISION%20LOG.md)
+4. [MVP Implementation Plan](docs/active/MVP%20IMPLEMENTATION%20PLAN.md)
+5. [Database Schema](docs/active/DATABASE%20SCHEMA.md)
+6. UX/UI: [Volume 1](docs/active/UX-UI%20FLOW%20VOLUME%201.md), [Volume 2](docs/active/UX-UI%20FLOW%20VOLUME%202.md), [Volume 3-A](docs/active/VOLUME%203-A.md), [Volume 3-B](docs/active/VOLUME%203-B.md), [Volume 3-C](docs/active/VOLUME%203-C.md), [Volume 3-D](docs/active/VOLUME%203-D.md)
+7. [Requirement Traceability](docs/REQUIREMENT%20TRACEABILITY.md)
 
 เอกสารสนับสนุนที่ยัง Active:
 
+- [Development Handoff Summary](docs/active/DEVELOPMENT%20HANDOFF%20SUMMARY.md) — สรุปแอปภาษาไทย สถานะถึง 11 กันยายน 2569 แผนที่โค้ด และแนวทางส่งต่อพัฒนา
 - [Current Project Status](docs/active/CURRENT%20PROJECT%20STATUS.md) — สถานะล่าสุด ช่องว่างเทียบแผน และลำดับงานที่แนะนำสำหรับเริ่มทำงานต่อ
 - [Demo 1.4 UAT Sign-off Evidence](docs/evidence/2026-08-18-demo-1.4-uat-signoff.pdf) — หลักฐาน Human UAT ผ่าน 8/8 และอนุมัติให้เริ่ม MVP Build
 - [Demo Story and Mock Data](docs/active/DEMO%20STORY%20AND%20MOCK%20DATA.md) — แยก Historical Demo 1.3 และ Deployed Demo 1.4 พร้อม UAT 8 หมวด

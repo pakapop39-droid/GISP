@@ -1,6 +1,6 @@
 # GISP — DECISION LOG
 
-**Document Version:** 3.1
+**Document Version:** 3.2
 **Status:** Approved Decisions
 **Last Updated:** 13 กันยายน 2569 (2026-09-13)
 **Authority:** อยู่ลำดับถัดจาก `MVP BUSINESS MASTER PLAN.md`
@@ -35,11 +35,11 @@
 | DEC-020 | Volume 3-C/3-D ส่วนขั้นสูงเป็น Post-MVP | Core คง Finance, Permission, Configuration, Backup และ Logging ขั้นต่ำ | Approved |
 | DEC-021 | Dashboard/Reports ใน MVP เป็นพื้นฐาน | คง Fixed Report: Order, Payment, Delay, Delivery และ Claim | Approved |
 | DEC-022 | Storage แบ่งตามระดับความลับ | Public, Member-private, Confidential พร้อม Signed URL/File Metadata | Approved |
-| DEC-023 | Environment แยก 3 ระดับ | Frontend และ Backend ใช้ InsForge Development, Staging/UAT และ Production ที่ตรงกัน | Approved — Revised by DEC-024 |
+| DEC-023 | Environment แยก 3 ระดับ | Frontend และ Backend ใช้ InsForge Development, Staging/UAT และ Production ที่ตรงกัน | Approved — Hosting revised by DEC-024; owner-facing environment model revised by DEC-069 |
 | DEC-024 | ใช้ InsForge ทั้ง Frontend Hosting และ Backend | Frontend Deploy ผ่าน InsForge Deployments; Auth/DB/RLS/Storage/Email/Migration/Backup ใช้ InsForge | Approved |
 | DEC-025 | Scheduled Jobs ใช้ InsForge Schedules | Notification Retry และงานตามเวลาไม่ผูกกับ Cron ของ Frontend Host แยก | Approved |
 | DEC-026 | ทำ Interactive Demo ก่อนพัฒนา Application จริงต่อ | ใช้ข้อมูลสมมติและ Guided Story เพื่อยืนยัน Workflow/UX ก่อนลงระบบจริง | Approved |
-| DEC-027 | Demo แยกจาก Development | ใช้ชื่อ `gisp-mvp-demo`, URL `gisp-mvp-demo.insforge.site` และห้ามเขียนข้อมูลเข้า `gisp-mvp-development` | Approved |
+| DEC-027 | Demo แยกจาก Development | ใช้ชื่อ `gisp-mvp-demo`, URL `gisp-mvp-demo.insforge.site` และห้ามเขียนข้อมูลเข้า `gisp-mvp-development` | Approved — owner-facing classification revised by DEC-069; isolation/no-write rule remains in force |
 | DEC-028 | Demo ระยะเตรียม MVP จำกัดเฉพาะงาน 1–8 ที่อนุมัติ | ต่อเติม Demo เดิมแบบ Browser-local เท่านั้น ไม่สร้าง Auth, Database, Migration, API หรือ Storage จริง และไม่เพิ่ม Feature นอก Core MVP | Approved |
 | DEC-029 | Demo Gate ต้องผ่าน Human UAT ครบ 8 หมวดก่อนเริ่ม MVP Build | รายการ `ต้องแก้` ไม่เป็น Approved Decision; Gate ปัจจุบันใช้ Target Demo 1.4 ตาม DEC-042 และต้องผ่านครบพร้อม Admin Sign-off จึงเปลี่ยนเป็น `APPROVED FOR MVP BUILD` | Approved — Revised by DEC-042 |
 | DEC-030 | Demo Version 1.3 ที่ Deploy อยู่เคยเป็น Baseline สำหรับ Demo Gate เดิม | คำตัดสินเดิมถูกปรับโดย DEC-042; Version 1.3 ยังคงเป็น Deployed Baseline เชิงประวัติ แต่ไม่เพียงพอสำหรับ Gate ใหม่ | Approved — Revised by DEC-042 |
@@ -76,10 +76,12 @@
 | DEC-061 | Customer Browse Catalog ทุกแบบต้องไม่แสดงราคา และ Member ส่งได้ทั้งลิงก์สินค้ารายชิ้น สินค้าใน Project Catalog ที่คัดเอง และสินค้าทั้งหมด | ต่อยอด Token/Snapshot ของ Slice 12; Product/Project/Curated ใช้ Snapshot, Full Catalog ใช้ Live Public-safe Products, ลูกค้าเก็บรายการสนใจใน Browser และติดต่อ Member โดยไม่สร้าง Lead/Checkout; ส่วนการแสดงราคาลูกค้าใน DEC-056 ถูกแทนที่ | Approved — 6 September 2026; implemented and accepted on Development |
 | DEC-062 | Slice 12.1 ผ่าน Human UAT และเจ้าของระบบอนุมัติปิดบน Development | เจ้าของระบบยืนยันว่า “ใช้ได้หมด”; รวม Schema/Migration, Deploy Development และ Post-merge Smoke ครบ 4 Scope โดย Production Release A ไม่เปลี่ยน | Approved and executed — 6 September 2026 |
 | DEC-063 | Slice 13 Visual Product Sourcing ผ่าน Human UAT และเจ้าของระบบอนุมัติปิดบน Development | เจ้าของระบบยืนยันว่า “ผ่านทั้งหมด”; กำหนดผลเป็น `SLICE_13_ACCEPTED` และ Slice 13 `DONE` หลัง Integration/RLS, Development Preview, Hosted Smoke และ Responsive Test ผ่าน การอนุมัตินี้ไม่รวม Production Release B | Approved — 8 September 2026 |
+| DEC-064 | ใช้ Synthetic Multi-tenant Rehearsal 5 บริษัทแทนบริษัทจริงสำหรับ Technical Pilot Gate | ใช้เฉพาะ Development/Rehearsal ตาม `SMTR-v1.0`; ไม่แทน Real-customer Feedback/Legal/Business Acceptance และไม่อนุญาต Production การตัดสินนี้ปรับเฉพาะวิธีพิสูจน์ Technical Pilot ของ DEC-049 โดยไม่แก้ประวัติ Release เดิม | Approved — 12 September 2026 |
 | DEC-065 | ย้ายเฉพาะ `PDF Catalog Import v1.0` ออกจาก Post-MVP และอนุมัติ Scope + Implementation บน Development | อนุญาต code, additive Migration/RLS, Confidential Storage 25 MB, Full Backend Branch, Custom Compute ไม่เกิน USD 20/เดือน และ AI ไม่เกิน USD 1/งาน / USD 50/เดือน; Schema + Test data เท่านั้น; Feature Flag เริ่มปิด; ไม่อนุญาต Production | Approved by ภคภพ ช.เจริญยิ่ง — 12 September 2026 19:24:35 +07:00 |
 | DEC-066 | แก้ provider ของ `PDF Catalog Import v1.0` เป็น `openai/gpt-4o-mini` ผ่าน Azure บน OpenRouter เท่านั้น | กำหนด Azure-only ด้วย `only/order`, ปิด fallback, บังคับ ZDR และ `data_collection=deny`; คงงบ AI USD 1/งาน และ USD 50/เดือน; แก้เฉพาะ Development และไม่อนุญาต Production; แทนที่เฉพาะ provider routing เดิมใน DEC-065 | Approved by ภคภพ ช.เจริญยิ่ง — 12 September 2026 21:07:09 +07:00 |
 | DEC-067 | เปลี่ยน provider routing ของ `PDF Catalog Import v1.0` บน Development จาก Azure-only เป็น OpenAI-only ผ่าน OpenRouter | ใช้ `openai/gpt-4o-mini` ผ่าน OpenAI ด้วย `only/order`, ปิด fallback, บังคับ ZDR และ `data_collection=deny`; คงงบ AI USD 1/งาน และ USD 50/เดือน; ไม่อนุญาต Production; แทนที่เฉพาะ provider routing ใน DEC-066 | Approved by ภคภพ ช.เจริญยิ่ง — 13 September 2026 08:47:44 +07:00 |
 | DEC-068 | เปลี่ยน provider routing ของ `PDF Catalog Import v1.0` บน Development กลับจาก OpenAI-only เป็น Azure-only ผ่าน OpenRouter | คงโมเดล `openai/gpt-4o-mini`; บังคับ `only/order` เป็น Azure เท่านั้น, ปิด fallback, ใช้ ZDR และ `data_collection=deny`; คงงบ AI USD 1/งาน และ USD 50/เดือน; Production=No; แทนที่เฉพาะ provider routing ใน DEC-067 | Approved by ภคภพ ช.เจริญยิ่ง — 13 September 2026 09:06:36 +07:00 |
+| DEC-069 | ใช้ ENV2-v0.1 ให้เจ้าของเห็นระบบถาวรเพียง Production และ Development | Production ใช้ `main` และ URL หลัก `m8ugbyak.insforge.site`; Development ใช้ `development` และ URL หลัก `gisp-mvp-development.insforge.site`; Preview/feature/backend branch เป็น sandbox ชั่วคราวภายใน Development ส่วน Demo เป็นหลักฐานเชิงประวัติที่ยังต้องแยกและห้ามเขียนเข้า Development/Production ตาม DEC-027 การตัดสินนี้ปรับเฉพาะ owner-facing classification ของ DEC-023/DEC-027 ไม่ลบหลักฐานเดิม ไม่อนุญาตฐานข้อมูล Deploy การลบ หรือการเปลี่ยน Production | Scope + Implementation approved by ภคภพ ช.เจริญยิ่ง; owner-authorized ratification receipt time `2026-09-13T10:34:04.756+07:00` is `approved_at` for both pre-existing approvals; Production=No |
 
 ---
 

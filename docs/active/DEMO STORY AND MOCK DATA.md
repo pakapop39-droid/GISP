@@ -10,11 +10,13 @@
 **Version 1.3 Deployed:** 1 สิงหาคม 2569 (2026-08-01)  
 **Business Authority:** `MVP BUSINESS MASTER PLAN.md`  
 **Decision Authority:** `DECISION LOG.md`  
-**Live Demo URL:** `https://gisp-mvp-demo.insforge.site`
+**Historical Demo Evidence URL:** `https://gisp-mvp-demo.insforge.site` — ไม่ใช่ Environment ถาวรตาม ENV2-v0.1
 
 ตาม DEC-042 และ DEC-043 Demo Version 1.3 เป็น Baseline เชิงประวัติ ส่วน Version 1.4 เป็น Target Demo Gate
 ที่แยก Member Application และ GISP Back Office คนละลิงก์ แต่ใช้ Shared Browser State Schema 4 ชุดเดียวกัน
 Sign-off ของ Version 1.3 ไม่เพียงพอสำหรับ `APPROVED FOR MVP BUILD`
+
+> เอกสารนี้เก็บหลักฐาน Demo เดิม ไม่ใช่รายการระบบปัจจุบัน สำหรับลิงก์ใช้งานให้ยึด [Environment Registry](ENVIRONMENT%20REGISTRY.md) ซึ่งมี Production และ Development เท่านั้น
 
 ---
 

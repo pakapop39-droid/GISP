@@ -1,0 +1,331 @@
+{
+  "inventory": {
+    "inspectedAt": "2026-09-08T14:46:52.085Z",
+    "project": "gisp-mvp-development",
+    "eligibleProducts": 634,
+    "eligibleImageRecords": 3568,
+    "imageMetadataBytes": 962543341,
+    "categories": [
+      {
+        "name": "เก้าอี้/สตูล",
+        "products": 116
+      },
+      {
+        "name": "ของตกแต่ง/ประติมากรรม",
+        "products": 1
+      },
+      {
+        "name": "โซฟา",
+        "products": 140
+      },
+      {
+        "name": "ตู้",
+        "products": 75
+      },
+      {
+        "name": "เตียง",
+        "products": 118
+      },
+      {
+        "name": "โต๊ะ",
+        "products": 165
+      },
+      {
+        "name": "ฟูก/ที่นอน",
+        "products": 17
+      },
+      {
+        "name": "อุปกรณ์/รถเข็น",
+        "products": 2
+      }
+    ],
+    "sampleProducts": 50,
+    "galleryProducts": 634,
+    "downloadedImages": 727,
+    "smallImages": 0,
+    "failures": [],
+    "duplicateGalleryGroups": [
+      [
+        "b3512bbc-3a00-4b3a-bbc3-b08d69ba331d",
+        "4a727104-68c3-4b3c-8059-05985ffd2380"
+      ],
+      [
+        "5e3da0d6-7b0c-4b98-b1bc-2f8bc361de1a",
+        "916cbbfe-ed37-482a-96f8-8b5571b11527"
+      ],
+      [
+        "b71bda93-48dd-4060-a019-10b90697f0e5",
+        "1198153d-fc6c-4e82-8801-d6d2c4a30742"
+      ],
+      [
+        "6f1a0d23-d217-40a8-86c3-cfd7b6d912f6",
+        "a843ef31-8615-4909-8b86-407164a98a2a"
+      ],
+      [
+        "423a0144-ebda-4aea-9276-85b8d7d03639",
+        "d362e55a-0156-450b-81ee-c63f4e25092b"
+      ],
+      [
+        "7c208cea-36b8-469a-b9a7-a82a5d25e246",
+        "5eef51b5-b767-4c9e-9d19-c5aa01526ced"
+      ]
+    ],
+    "queryCounts": {
+      "compressed": 50,
+      "alternate-proxy": 47
+    },
+    "limits": [
+      "Gallery uses one image per eligible product",
+      "Alternate catalog images are proxies, not verified customer photographs",
+      "No human relevance labels or verified absent-product negatives yet",
+      "Only selected image files decoded; metadata coverage is not full-file quality coverage"
+    ]
+  },
+  "vectorReadiness": {
+    "rows": [
+      {
+        "vector_version": "0.7.4"
+      }
+    ],
+    "rowCount": 1,
+    "fields": [
+      {
+        "name": "vector_version",
+        "dataTypeID": 25
+      }
+    ]
+  },
+  "models": [
+    {
+      "runAt": "2026-09-08T14:49:04.160Z",
+      "modelId": "Xenova/clip-vit-base-patch32",
+      "revision": "d15189d7028b43f1d3e65039190477f6af591c2a",
+      "dtype": "q8",
+      "dimension": 512,
+      "runtime": "@huggingface/transformers 3.8.1 / ONNX CPU",
+      "cpu": "Intel(R) Core(TM) Ultra 7 255H",
+      "logicalCores": 16,
+      "ramGiB": 15.443500518798828,
+      "modelLoadIncludingDownloadMs": 280.5843,
+      "galleryProducts": 634,
+      "queryCount": 97,
+      "metrics": [
+        {
+          "split": "calibration",
+          "kind": "compressed",
+          "total": 25,
+          "hit1": 20,
+          "hit5": 24,
+          "hit10": 24,
+          "categoryFilterHit10": 24,
+          "withoutByteLeakage": {
+            "total": 25,
+            "hit1": 20,
+            "hit5": 24,
+            "hit10": 24,
+            "categoryFilterHit10": 24
+          }
+        },
+        {
+          "split": "calibration",
+          "kind": "alternate-proxy",
+          "total": 23,
+          "hit1": 7,
+          "hit5": 10,
+          "hit10": 14,
+          "categoryFilterHit10": 17,
+          "withoutByteLeakage": {
+            "total": 23,
+            "hit1": 7,
+            "hit5": 10,
+            "hit10": 14,
+            "categoryFilterHit10": 17
+          }
+        },
+        {
+          "split": "holdout",
+          "kind": "compressed",
+          "total": 25,
+          "hit1": 23,
+          "hit5": 24,
+          "hit10": 25,
+          "categoryFilterHit10": 25,
+          "withoutByteLeakage": {
+            "total": 25,
+            "hit1": 23,
+            "hit5": 24,
+            "hit10": 25,
+            "categoryFilterHit10": 25
+          }
+        },
+        {
+          "split": "holdout",
+          "kind": "alternate-proxy",
+          "total": 24,
+          "hit1": 9,
+          "hit5": 15,
+          "hit10": 16,
+          "categoryFilterHit10": 17,
+          "withoutByteLeakage": {
+            "total": 24,
+            "hit1": 9,
+            "hit5": 15,
+            "hit10": 16,
+            "categoryFilterHit10": 17
+          }
+        }
+      ],
+      "freshEmbeddingCount": 25,
+      "warmLocalQueryMs": {
+        "n": 20,
+        "median": 31.50799999999981,
+        "p95": 38.614300000000185
+      },
+      "concurrentFiveLocalCompletionMs": 132.35249999999996,
+      "threshold": null,
+      "absentProductEvaluation": "NOT_RUN_NO_HUMAN_LABELS",
+      "similarProductEvaluation": "NOT_RUN_NO_HUMAN_LABELS",
+      "limitations": [
+        "Alternate-image results measure same-product retrieval only, not human-rated similarity",
+        "No calibrated rejection threshold; top10 results are diagnostic rankings",
+        "Timing excludes upload, remote AI, database, authentication and signed URLs",
+        "Gallery contains one image per product; exact/near duplicates can inflate results",
+        "Category-filter analysis is exploratory and assumes the user supplies the correct category; it is not automatic category recognition"
+      ]
+    },
+    {
+      "runAt": "2026-09-08T14:49:12.395Z",
+      "modelId": "Xenova/clip-vit-base-patch16",
+      "revision": "342fdf2f67aded64d138ff074745fb4a5d2bba5f",
+      "dtype": "q8",
+      "dimension": 512,
+      "runtime": "@huggingface/transformers 3.8.1 / ONNX CPU",
+      "cpu": "Intel(R) Core(TM) Ultra 7 255H",
+      "logicalCores": 16,
+      "ramGiB": 15.443500518798828,
+      "modelLoadIncludingDownloadMs": 281.8492,
+      "galleryProducts": 634,
+      "queryCount": 97,
+      "metrics": [
+        {
+          "split": "calibration",
+          "kind": "compressed",
+          "total": 25,
+          "hit1": 12,
+          "hit5": 20,
+          "hit10": 23,
+          "categoryFilterHit10": 23,
+          "withoutByteLeakage": {
+            "total": 25,
+            "hit1": 12,
+            "hit5": 20,
+            "hit10": 23,
+            "categoryFilterHit10": 23
+          }
+        },
+        {
+          "split": "calibration",
+          "kind": "alternate-proxy",
+          "total": 23,
+          "hit1": 7,
+          "hit5": 14,
+          "hit10": 14,
+          "categoryFilterHit10": 15,
+          "withoutByteLeakage": {
+            "total": 23,
+            "hit1": 7,
+            "hit5": 14,
+            "hit10": 14,
+            "categoryFilterHit10": 15
+          }
+        },
+        {
+          "split": "holdout",
+          "kind": "compressed",
+          "total": 25,
+          "hit1": 19,
+          "hit5": 22,
+          "hit10": 24,
+          "categoryFilterHit10": 24,
+          "withoutByteLeakage": {
+            "total": 25,
+            "hit1": 19,
+            "hit5": 22,
+            "hit10": 24,
+            "categoryFilterHit10": 24
+          }
+        },
+        {
+          "split": "holdout",
+          "kind": "alternate-proxy",
+          "total": 24,
+          "hit1": 10,
+          "hit5": 15,
+          "hit10": 15,
+          "categoryFilterHit10": 16,
+          "withoutByteLeakage": {
+            "total": 24,
+            "hit1": 10,
+            "hit5": 15,
+            "hit10": 15,
+            "categoryFilterHit10": 16
+          }
+        }
+      ],
+      "freshEmbeddingCount": 25,
+      "warmLocalQueryMs": {
+        "n": 20,
+        "median": 52.30340000000024,
+        "p95": 61.733400000000074
+      },
+      "concurrentFiveLocalCompletionMs": 272.3234000000002,
+      "threshold": null,
+      "absentProductEvaluation": "NOT_RUN_NO_HUMAN_LABELS",
+      "similarProductEvaluation": "NOT_RUN_NO_HUMAN_LABELS",
+      "limitations": [
+        "Alternate-image results measure same-product retrieval only, not human-rated similarity",
+        "No calibrated rejection threshold; top10 results are diagnostic rankings",
+        "Timing excludes upload, remote AI, database, authentication and signed URLs",
+        "Gallery contains one image per product; exact/near duplicates can inflate results",
+        "Category-filter analysis is exploratory and assumes the user supplies the correct category; it is not automatic category recognition"
+      ]
+    }
+  ],
+  "costs": {
+    "checkedAt": "2026-09-08T14:49:33.331Z",
+    "currency": "USD",
+    "providerBenchmarkRun": false,
+    "source": "https://docs.voyageai.com/docs/pricing",
+    "provider": "voyage-multimodal-3.5 direct API",
+    "assumptions": [
+      "Maximum 768x768 pixels, no text, before free credits, taxes, storage, network and worker cost",
+      "No API account or payment method provisioned"
+    ],
+    "perImageUpperUsd": 0.00035389439999999997,
+    "catalogFull3568UpperUsd": 1.2626952191999998,
+    "catalogPrimary634UpperUsd": 0.22436904959999998,
+    "queryMonthlyExamples": [
+      {
+        "count": 1000,
+        "upperUsd": 0.3538944
+      },
+      {
+        "count": 10000,
+        "upperUsd": 3.538944
+      },
+      {
+        "count": 100000,
+        "upperUsd": 35.38944
+      }
+    ],
+    "cpuHostingIllustration": {
+      "source": "https://huggingface.co/docs/inference-endpoints/pricing",
+      "type": "AWS intel-spr x2, 2 vCPU / 4GB",
+      "hourlyUsd": 0.067,
+      "hours": 730,
+      "monthlyUsd": 48.910000000000004,
+      "validatedOnThisHost": false
+    },
+    "localInferenceProviderChargeUsd": 0
+  }
+}

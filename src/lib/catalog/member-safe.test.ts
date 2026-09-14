@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   memberPayloadHasForbiddenKey,
   serializeMemberCatalogItem,
+  serializeMemberFinish,
   type MemberCatalogViewRow,
 } from "./member-safe";
 
@@ -52,5 +53,22 @@ describe("member catalog serializer", () => {
 
   it("detects forbidden keys recursively", () => {
     expect(memberPayloadHasForbiddenKey({ safe: { factoryCost: 100 } })).toBe(true);
+  });
+
+  it("projects a finish to code, label and signed swatch only", () => {
+    const finish = serializeMemberFinish({
+      code: "A9-6001",
+      name_th: "สี A9-6001",
+      name_zh: "颜色",
+      signed_url: "https://signed.example/swatch",
+    });
+    expect(finish).toEqual({
+      code: "A9-6001",
+      label: "สี A9-6001",
+      labelZh: "颜色",
+      swatchUrl: "https://signed.example/swatch",
+    });
+    expect(memberPayloadHasForbiddenKey(finish)).toBe(false);
+    expect(memberPayloadHasForbiddenKey({ sourceDocument: "confidential.pdf" })).toBe(true);
   });
 });

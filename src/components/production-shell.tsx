@@ -18,7 +18,7 @@ const adminNav: NavItem[]=[
   {href:"/admin/executive",label:"Executive Summary",icon:LineChart,permission:"reports.executive.read"},
   {href:"/admin/reports",label:"Fixed Reports",icon:FileBarChart2,permission:"reports.fixed.read"},
   {href:"/admin/catalog",label:"Catalog & Pricing",icon:Boxes,permission:"catalog.read"},
-  {href:"/admin/catalog/imports",label:"Import สินค้า",icon:FileUp,permission:"catalog.import"},
+  {href:"/admin/catalog/imports",label:"นำเข้า Catalog",icon:FileUp,permission:"catalog.import"},
   {href:"/admin/catalog/batch",label:"Batch Enrichment",icon:ListChecks,permission:"catalog.read"},
   {href:"/admin/custom-requests",label:"Custom RFQ Queue",icon:FileQuestion,permission:"rfq.manage"},
   {href:"/admin/sourcing-requests",label:"Product Sourcing",icon:ScanSearch,permission:"sourcing.manage",feature:"productSourcing"},

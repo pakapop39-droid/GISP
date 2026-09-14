@@ -84,7 +84,7 @@ export default function AdminGuidePage() {
         <section className={styles.section} id="access">
           <p className={styles.eyebrow}>Access control</p>
           <h2>เมนูขึ้นตามกลุ่มงาน</h2>
-          <p>พนักงานแต่ละคนเลือกหนึ่งกลุ่มงานและจะเห็นเฉพาะข้อมูลกับปุ่มที่จำเป็น หากเมนูไม่ปรากฏ ห้ามใช้บัญชีของผู้อื่น ให้เจ้าของระบบตรวจกลุ่มงานแทน</p>
+          <p>พนักงานแต่ละคนเลือกได้หลายกลุ่มงานตามหน้าที่และจะเห็นเฉพาะข้อมูลกับปุ่มที่จำเป็น หากเมนูไม่ปรากฏ ห้ามใช้บัญชีของผู้อื่น ให้เจ้าของระบบตรวจกลุ่มงานแทน</p>
           <table className={styles.roleTable}>
             <thead><tr><th>กลุ่มงาน</th><th>งานที่รับผิดชอบ</th><th>ข้อมูลที่จำกัด</th></tr></thead>
             <tbody>
@@ -190,7 +190,7 @@ export default function AdminGuidePage() {
           <p className={styles.eyebrow}>Account governance</p>
           <h2>สมาชิกและบัญชีพนักงาน</h2>
           <details className={styles.details} open><summary>คำขอสมาชิก</summary><div className={styles.detailsBody}><p>ตรวจบริษัทและผู้ติดต่อก่อนอนุมัติ หากปฏิเสธหรือระงับต้องระบุเหตุผล สามารถเปิดใช้อีกครั้ง, Force Logout หรือส่ง Reset Password ได้ ทุก Action มี Audit</p></div></details>
-          <details className={styles.details}><summary>ผู้ใช้ภายใน</summary><div className={styles.detailsBody}><p>เฉพาะเจ้าของระบบเปิดหน้า “ผู้ใช้ภายใน” กรอกชื่อ อีเมล รหัสผ่านชั่วคราวอย่างน้อย 10 ตัวอักษร แล้วเลือกหนึ่งในสามกลุ่มงาน แจ้งให้พนักงานเปลี่ยนรหัสหลังเข้าใช้งานครั้งแรก</p></div></details>
+          <details className={styles.details}><summary>ผู้ใช้ภายใน</summary><div className={styles.detailsBody}><p>เฉพาะเจ้าของระบบเปิดหน้า “ผู้ใช้ภายใน” กรอกชื่อ อีเมล รหัสผ่านเริ่มต้นอย่างน้อย 10 ตัวอักษร แล้วเลือกกลุ่มงานอย่างน้อยหนึ่งกลุ่ม การสร้างบัญชีไม่ได้ส่งอีเมลแจ้งอัตโนมัติ ให้แจ้งข้อมูลเข้าระบบแก่พนักงานทางช่องทางส่วนตัว</p><p>ค้นหาชื่อหรืออีเมลได้ในตารางรายชื่อพนักงานด้านล่าง รหัสเดิมไม่สามารถดูย้อนหลังได้ หากลืมรหัส ให้กด “ส่งลิงก์ตั้งรหัสใหม่” ตรวจชื่อและอีเมล แล้วกด “ยืนยันส่งลิงก์” พนักงานต้องตรวจกล่องจดหมายหรือจดหมายขยะ และเปิดลิงก์เพื่อตั้งรหัสใหม่ด้วยตนเอง</p></div></details>
           <details className={styles.details}><summary>สิทธิ์เทคนิคเบื้องหลัง</summary><div className={styles.detailsBody}><p>Role เทคนิคยังคงอยู่เพื่อควบคุมสิทธิ์อย่างละเอียด แต่เฉพาะ SUPER_ADMIN เท่านั้นที่เปิดและแก้ Permission Matrix ได้ พนักงานไม่สามารถเพิ่มสิทธิ์ให้ตัวเอง</p></div></details>
           <div className={`${styles.callout} ${styles.danger}`}><strong>Least privilege</strong>ให้สิทธิ์เท่าที่ต้องใช้ในการทำงาน ไม่ใช้ SUPER_ADMIN เป็นบัญชีประจำวัน และห้ามแชร์บัญชีร่วมกัน</div>
         </section>

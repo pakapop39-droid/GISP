@@ -18,6 +18,7 @@ const publicPaths = [
   "/api/health",
   "/api/public/catalogs",
   "/api/internal/notifications/process",
+  "/api/internal/image-search/process",
   "/api/internal/catalog-pdf-worker",
   "/catalog/share",
   "/_next",

@@ -31,6 +31,22 @@ export type MemberCatalogViewRow = {
 
 export type MemberCatalogItem = ReturnType<typeof serializeMemberCatalogItem>;
 
+export type MemberFinishProjection = {
+  code: string;
+  name_th: string;
+  name_zh: string | null;
+  signed_url: string;
+};
+
+export function serializeMemberFinish(row: MemberFinishProjection) {
+  return {
+    code: row.code,
+    label: row.name_th,
+    labelZh: row.name_zh,
+    swatchUrl: row.signed_url,
+  };
+}
+
 export function serializeMemberCatalogItem(
   row: MemberCatalogViewRow,
   imageUrl: string | null = null,
@@ -95,6 +111,12 @@ export const forbiddenMemberCatalogKeys = [
   "grossMargin",
   "marginPercent",
   "internalNote",
+  "sourceDocument",
+  "sourcePage",
+  "sourceVersion",
+  "materialCategory",
+  "metadata",
+  "swatchFileId",
 ] as const;
 
 export function memberPayloadHasForbiddenKey(value: unknown): boolean {

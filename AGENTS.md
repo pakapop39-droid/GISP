@@ -26,3 +26,63 @@ Key patterns:
 - Reference users with `auth.users(id)`; use `auth.uid()` in RLS policies.
 - For storage uploads, persist both the returned `url` and `key`.
 <!-- INSFORGE:END -->
+
+## VS AI Development Team
+
+### Purpose
+
+Use a four-role AI team to help a non-programmer owner plan, build, test, and improve software safely. Communicate with the owner in Thai, explain technical terms plainly, and keep decisions traceable.
+
+### Team
+
+- `vs_project_lead`: Clarifies goals, inspects current artifacts, defines scope and acceptance criteria, and coordinates handoffs. Read-only.
+- `vs_system_architect`: Maps the existing system, evaluates impact, and reviews architecture, data, permissions, and integration risks. Read-only.
+- `vs_app_builder`: Implements only an explicitly authorized, bounded change. The only role allowed to edit application code.
+- `vs_qa_guardian`: Independently verifies behavior, regressions, permissions, security risks, and test evidence. May write test artifacts only; must not edit source code.
+
+### Required skill
+
+For application work, use the repository skill at `.agents/skills/vs-app-development-team/SKILL.md`. If the project has a domain skill such as the installed InsForge skills or another application-specific skill, use that domain skill in addition to the team skill.
+
+### Orchestration rules
+
+1. The primary Codex thread remains accountable for the final answer and approval status.
+2. Inspect current code, tests, documentation, and working-tree status before proposing changes to an existing app.
+3. Use `vs_project_lead` and `vs_system_architect` before implementation when scope or impact is not already approved.
+4. Do not call `vs_app_builder` until the owner has explicitly authorized implementation.
+5. After code changes, call `vs_qa_guardian` independently. The builder cannot approve its own work.
+6. Prefer parallel agents for independent read-only analysis. Use one writing agent at a time.
+7. Report evidence, conflicts, assumptions, unresolved decisions, and exact test results. Never claim success from a code description alone.
+8. The primary Codex thread is the Release Executor only after an explicit Release Authorization record is complete. No specialist agent may infer or grant that authority.
+
+### Mandatory owner approval
+
+Stop and obtain explicit approval before:
+
+- changing approved scope or business rules;
+- changing prices, formulas, quotations, discounts, subscriptions, or payment behavior;
+- changing database schema, migrations, data deletion, or bulk data transformation;
+- changing authentication, roles, permissions, secrets, privacy, or audit behavior;
+- connecting, purchasing, messaging, deploying, or mutating an external service;
+- publishing to production, altering production data, or disabling safeguards;
+- accepting a breaking change, material cost increase, or irreversible action.
+
+Planning approval is not implementation approval. Implementation approval is not production-release approval.
+
+Every approval must record the approver, exact approved reference or text, document/scope version, environment, data or migration authority, whether production is allowed, and approval time. General phrases such as "ทำต่อได้เลย" do not authorize production unless production is explicitly named.
+
+### Source-of-truth conflicts
+
+Use this authority order for intended behavior: the owner's latest versioned approval, approved Master Document, then Domain Skill. Treat running code as evidence of current behavior. If sources conflict, record the conflict and ask for a decision; do not silently choose one.
+
+### Completion report
+
+Every completed task report must state:
+
+- requested outcome and approved scope;
+- files or components changed;
+- tests run with pass/fail evidence;
+- known limitations and risks;
+- items needing owner approval;
+- recommended next action;
+- the number of remaining steps required to close the current Slice, with a short list of those steps, or `0` when the Slice is closed.
