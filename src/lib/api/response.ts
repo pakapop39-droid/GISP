@@ -18,6 +18,7 @@ const databaseCodeMap: Record<string, string> = {
   ACCEPTED_QUOTATION_IMMUTABLE: "INVALID_TRANSITION",
   REJECTION_REASON_REQUIRED: "INVALID_INPUT",
   SUPPLIER_CANDIDATE_REQUIRED: "INVALID_INPUT",
+  CONFIDENTIAL_PAYMENT_EVIDENCE_REQUIRED: "INVALID_INPUT",
   QUOTATION_NOT_EXPIRED: "INVALID_TRANSITION",
 };
 
@@ -75,6 +76,10 @@ export function apiError(error: unknown) {
       FILE_LIMIT_REACHED: { message: "จำนวนไฟล์ถึงขีดจำกัดแล้ว", status: 409 },
       INVALID_FILE: { message: "ไฟล์ไม่ถูกต้องหรือไม่รองรับ", status: 400 },
       NOT_FOUND: { message: "ไม่พบข้อมูลที่ต้องการ", status: 404 },
+      CONFIDENTIAL_PAYMENT_EVIDENCE_REQUIRED: {
+        message: "หลักฐานจ่าย Supplier ไม่ตรงกับองค์กรหรือรายการจ่าย กรุณาแนบใหม่จากรายการที่อนุมัติแล้ว",
+        status: 409,
+      },
     };
     if (details[matched]) {
       return NextResponse.json(

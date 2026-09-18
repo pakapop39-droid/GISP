@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { internalUserCreateSchema } from "./internal-user-schema";
+import {
+  internalUserCreateSchema,
+  internalUserJobGroupsSchema,
+  internalUserLifecycleSchema,
+} from "./internal-user-schema";
 
 const validInput = {
   name: "Operations Staff",
@@ -31,6 +35,22 @@ describe("internal user create schema", () => {
     const identity = { name: validInput.name, email: validInput.email, temporaryPassword: validInput.temporaryPassword };
     expect(internalUserCreateSchema.safeParse({ ...identity, jobGroups: [] }).success).toBe(false);
     expect(internalUserCreateSchema.safeParse({ ...identity, jobGroups: ["FINANCE", "SUPER_ADMIN"] }).success).toBe(false);
+  });
+});
+
+describe("internal user management schemas", () => {
+  it("accepts only the three job groups and rejects raw roles", () => {
+    expect(internalUserJobGroupsSchema.parse({ jobGroups: ["FINANCE", "FINANCE"] })).toEqual({ jobGroups: ["FINANCE"] });
+    expect(internalUserJobGroupsSchema.safeParse({ jobGroups: [] }).success).toBe(false);
+    expect(internalUserJobGroupsSchema.safeParse({ jobGroups: ["SUPER_ADMIN"] }).success).toBe(false);
+    expect(internalUserJobGroupsSchema.safeParse({ jobGroups: ["FINANCE"], roles: ["SUPER_ADMIN"] }).success).toBe(false);
+  });
+
+  it("requires explicit confirmation and reasons for risky lifecycle actions", () => {
+    expect(internalUserLifecycleSchema.safeParse({ action: "suspend", reason: "ตรวจสอบบัญชี", confirmed: true }).success).toBe(true);
+    expect(internalUserLifecycleSchema.safeParse({ action: "suspend", reason: "", confirmed: true }).success).toBe(false);
+    expect(internalUserLifecycleSchema.safeParse({ action: "reactivate" }).success).toBe(false);
+    expect(internalUserLifecycleSchema.safeParse({ action: "deactivate", reason: "พ้นสภาพ", confirmationEmail: "staff@example.com", confirmed: true }).success).toBe(true);
   });
 });
 

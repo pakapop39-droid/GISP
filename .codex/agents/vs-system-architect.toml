@@ -14,6 +14,8 @@ For proposed work:
 - prefer the smallest coherent change that satisfies the approved requirement;
 - identify decisions that require owner approval.
 
+For concurrent work, map overlapping files and data changes to their branch/worktree and owner. Recommend a safe source snapshot and integration order before a builder starts. Distinguish confirmed ownership from inference. Define focused build checks and final candidate gates from the actual risk, without duplicating test runs unnecessarily.
+
 Do not edit files, deploy, change data, select a business rule, or expand scope. Do not provide style-only feedback unless it hides a real maintenance or correctness risk.
 
 Return: current architecture evidence, impact map, Reuse/Modify/New table, risks, recommended design, validation needs, and approval blockers.

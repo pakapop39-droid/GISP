@@ -90,6 +90,7 @@ export type AdminOrderCapabilities = {
   manageProduction: boolean;
   manageQc: boolean;
   manageLogistics: boolean;
+  manageWarehouseAndShipment: boolean;
   manageFreight: boolean;
 };
 
@@ -164,6 +165,15 @@ export type QcInspection = {
   checklist: QcChecklistItem[];
   files: OperationFile[];
   decisions: QcMemberDecision[];
+};
+
+export type QcReopenEvent = {
+  id: string;
+  order_item_id: string;
+  actor_user_id: string | null;
+  parent_inspection_id: string;
+  reason: string;
+  created_at: string;
 };
 
 export type DispatchGate = {
@@ -283,6 +293,31 @@ export type WarehouseReceipt = {
   items: WarehouseReceiptItem[];
 };
 
+export type LogisticsWarehouseOption = {
+  id: string;
+  warehouse_code: string;
+  warehouse_name: string;
+  country_code: string;
+};
+
+export type LogisticsReceiptSource = {
+  supplier_order_id: string;
+  supplier_order_item_id: string;
+  supplier_order_number: string;
+  po_number: string | null;
+  supplier_order_status: string;
+  order_item_id: string;
+  item_name: string;
+  expected_quantity: number;
+  received_quantity: number;
+  remaining_quantity: number;
+};
+
+export type LogisticsPrerequisites = {
+  warehouses: LogisticsWarehouseOption[];
+  receiptSources: LogisticsReceiptSource[];
+};
+
 export type ConsolidationGroup = {
   id: string;
   consolidation_number: string;
@@ -337,8 +372,18 @@ export type Delivery = {
   }>;
 };
 
+export type ShipmentCustomsEvidence = {
+  id: string;
+  file_id: string;
+  original_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+};
+
 export type Shipment = {
   id: string;
+  consolidation_group_id: string;
   shipment_number: string;
   shipment_name: string;
   shipment_type: "CONSOLIDATED" | "PARTIAL" | "DIRECT";
@@ -349,6 +394,7 @@ export type Shipment = {
   dispatched_at: string | null;
   items: Array<{ id: string; order_item_id: string; warehouse_receipt_item_id: string; quantity: number }>;
   history: ShipmentHistory[];
+  customsEvidence?: ShipmentCustomsEvidence[];
   deliveries: Delivery[];
   partialDecision: {
     id: string; reason: string; remaining_plan: string; additional_member_charge: number;
@@ -371,6 +417,7 @@ export type FreightInvoice = {
 };
 
 export type LogisticsDetail = {
+  prerequisites?: LogisticsPrerequisites;
   receipts: WarehouseReceipt[];
   consolidations: ConsolidationGroup[];
   shipments: Shipment[];
@@ -387,6 +434,7 @@ export type OrderDetail = {
   supplierOrders?: SupplierOrder[];
   productionUpdates: ProductionUpdate[];
   qcInspections: QcInspection[];
+  qcReopenEvents?: QcReopenEvent[];
   dispatchGates: DispatchGate[];
   logistics: LogisticsDetail;
   capabilities?: AdminOrderCapabilities;

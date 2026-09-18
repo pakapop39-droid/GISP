@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   rolesForStaffJobGroup,
+  staffJobGroupsForRoles,
   staffJobGroupLabelsForRoles,
 } from "./staff-job-groups";
 
@@ -25,5 +26,14 @@ describe("staff job groups", () => {
     expect(staffJobGroupLabelsForRoles(["FINANCE"])).toEqual(["การเงิน"]);
     expect(staffJobGroupLabelsForRoles(["SUPER_ADMIN"])).toEqual(["เจ้าของระบบ"]);
     expect(staffJobGroupLabelsForRoles(["PRODUCT_ADMIN"])).toEqual(["สิทธิ์เฉพาะ"]);
+    expect(staffJobGroupLabelsForRoles([])).toEqual(["ถอนสิทธิ์แล้ว"]);
+  });
+
+  it("recognizes only exact group-managed role sets", () => {
+    expect(staffJobGroupsForRoles(["FINANCE", "LOGISTICS"])).toEqual(["FINANCE", "LOGISTICS"]);
+    expect(staffJobGroupsForRoles(rolesForStaffJobGroup("OPERATIONS"))).toEqual(["OPERATIONS"]);
+    expect(staffJobGroupsForRoles(["PRODUCT_ADMIN"])).toBeNull();
+    expect(staffJobGroupsForRoles(["EXECUTIVE_VIEWER"])).toBeNull();
+    expect(staffJobGroupsForRoles(["FINANCE", "SUPER_ADMIN"])).toBeNull();
   });
 });

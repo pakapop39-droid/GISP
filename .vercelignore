@@ -10,6 +10,8 @@ coverage/
 outputs/
 output/
 tmp/
+tools_tmp/
+**/__pycache__/
 docs/
 scripts/
 migrations/
@@ -22,4 +24,5 @@ tsconfig.tsbuildinfo
 README.md
 AGENTS.md
 skills-lock.json
+pnpm-lock.yaml
 insforge*.toml

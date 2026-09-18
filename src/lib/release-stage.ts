@@ -54,7 +54,8 @@ export function isReleaseAEnabled() {
 }
 
 export function isStagedReleaseEnabled() {
-  return process.env.RELEASE_STAGE === "A" || process.env.RELEASE_STAGE === "B";
+  return ["A", "B", "C", "D"].includes(process.env.RELEASE_STAGE ?? "") ||
+    process.env.VERCEL_ENV === "production" || process.env.APP_ENV === "production";
 }
 
 // A hidden menu alone must not expose features whose database release is pending.
@@ -162,6 +163,62 @@ export function isReleaseBPathAllowed(pathname: string, staffOperations = false)
   return prefixes.some((prefix) => matchesPrefix(pathname, prefix));
 }
 
+// A positive route list is essential here: the Release A/B staff rehearsal
+// shortcut intentionally allows /api/admin/* and must not turn on D writes in C.
+const RELEASE_C_PAGE_PREFIXES = [
+  "/member/custom-requests", "/member/custom-quotations", "/member/orders",
+  "/admin/custom-requests", "/admin/custom-quotations",
+  "/admin/orders",
+];
+const RELEASE_C_API_PREFIXES = [
+  "/api/member/custom-requests", "/api/member/custom-quotations",
+  "/api/member/orders", "/api/member/payment-transfers", "/api/payment-evidence",
+  "/api/admin/custom-requests", "/api/admin/custom-quotations",
+  "/api/admin/orders", "/api/admin/supplier-payments",
+  "/api/admin/payment-transfers", "/api/admin/cancellations",
+  "/api/admin/supplier-disclosures", "/api/admin/dashboard",
+  "/api/custom-quotations",
+];
+
+export function isReleaseCPathAllowed(pathname: string) {
+  if (isReleaseBPathAllowed(pathname, false)) return true;
+  const prefixes = pathname.startsWith("/api/") ? RELEASE_C_API_PREFIXES : RELEASE_C_PAGE_PREFIXES;
+  return prefixes.some((prefix) => matchesPrefix(pathname, prefix));
+}
+
+const RELEASE_D_SLICE_PREFIXES: Record<number, { pages: string[]; apis: string[] }> = {
+  7: { pages: [], apis: ["/api/admin/production-updates", "/api/admin/qc-inspections", "/api/admin/operations-media", "/api/member/order-items"] },
+  8: { pages: [], apis: ["/api/admin/logistics", "/api/admin/deliveries", "/api/admin/shipments", "/api/member/logistics"] },
+  9: { pages: ["/member/claims", "/admin/claims"], apis: ["/api/member/claims", "/api/claims/evidence", "/api/admin/claims"] },
+  10: { pages: ["/member/reports", "/admin/reports", "/admin/executive"], apis: ["/api/member/reports", "/api/admin/reports", "/api/admin/executive"] },
+};
+
+// D is released slice-by-slice under DEC-049. Invalid or missing configuration
+// enables no D routes; gaps (for example 7,9) cannot skip an earlier gate.
+export function enabledReleaseDSlices(raw = process.env.RELEASE_D_ENABLED_SLICES): number[] {
+  if (!raw) return [];
+  const values = raw.split(",").map((value) => Number(value.trim()));
+  if (!values.length || values.length > 4 || values.some((value, index) => value !== index + 7)) return [];
+  return values;
+}
+
+export function isOrderOperationSliceVisible(slice: 7 | 8) {
+  const stage = process.env.RELEASE_STAGE;
+  if (stage === "D") return enabledReleaseDSlices().includes(slice);
+  if (stage === "C") return false;
+  if (stage === "A" || stage === "B") return process.env.ENABLE_STAFF_OPERATIONS === "true";
+  return process.env.VERCEL_ENV !== "production" && process.env.APP_ENV !== "production";
+}
+
+export function isReleaseDPathAllowed(pathname: string) {
+  if (isReleaseCPathAllowed(pathname)) return true;
+  return enabledReleaseDSlices().some((slice) => {
+    const prefixes = pathname.startsWith("/api/")
+      ? RELEASE_D_SLICE_PREFIXES[slice].apis : RELEASE_D_SLICE_PREFIXES[slice].pages;
+    return prefixes.some((prefix) => matchesPrefix(pathname, prefix));
+  });
+}
+
 export function isReleaseStagePathAllowed(
   pathname: string,
   stage = process.env.RELEASE_STAGE,
@@ -169,5 +226,8 @@ export function isReleaseStagePathAllowed(
 ) {
   if (stage === "A") return isReleaseAPathAllowed(pathname, staffOperations);
   if (stage === "B") return isReleaseBPathAllowed(pathname, staffOperations);
-  return true;
+  if (stage === "C") return isReleaseCPathAllowed(pathname);
+  if (stage === "D") return isReleaseDPathAllowed(pathname);
+  // Local Development remains unstaged, but hosted Production must fail closed.
+  return process.env.VERCEL_ENV !== "production" && process.env.APP_ENV !== "production";
 }

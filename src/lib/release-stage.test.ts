@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPendingProductionFeature, isReleaseAPathAllowed, isReleaseBPathAllowed, isReleaseStagePathAllowed } from "./release-stage";
+import { enabledReleaseDSlices, isOrderOperationSliceVisible, isPendingProductionFeature, isReleaseAPathAllowed, isReleaseBPathAllowed, isReleaseStagePathAllowed, isStagedReleaseEnabled } from "./release-stage";
 
 describe("Release A route gate", () => {
   it("allows the internal catalog and administration scope", () => {
@@ -20,6 +20,63 @@ describe("Release A route gate", () => {
     expect(isReleaseAPathAllowed("/admin/orders")).toBe(false);
     expect(isReleaseAPathAllowed("/api/admin/orders/1")).toBe(false);
     expect(isReleaseAPathAllowed("/payment")).toBe(false);
+  });
+});
+
+describe("Release C/D progressive gate", () => {
+  it("opens C transactions but blocks every D slice even with the staff rehearsal flag", () => {
+    for (const route of ["/member/orders/123", "/api/member/payment-transfers", "/admin/orders/123", "/api/admin/payment-transfers/123/evidence", "/api/admin/supplier-disclosures/123/revoke", "/api/admin/dashboard"]) {
+      expect(isReleaseStagePathAllowed(route, "C", true)).toBe(true);
+    }
+    for (const route of ["/api/admin/qc-inspections", "/api/admin/logistics/actions", "/api/member/claims", "/admin/reports", "/member/reports"]) {
+      expect(isReleaseStagePathAllowed(route, "C", true)).toBe(false);
+    }
+  });
+
+  it("only enables contiguous owner-authorized D slices", () => {
+    const previous = process.env.RELEASE_D_ENABLED_SLICES;
+    try {
+      process.env.RELEASE_D_ENABLED_SLICES = "7";
+      expect(isReleaseStagePathAllowed("/api/admin/qc-inspections", "D", true)).toBe(true);
+      expect(isReleaseStagePathAllowed("/api/admin/logistics/actions", "D", true)).toBe(false);
+      process.env.RELEASE_D_ENABLED_SLICES = "7,8";
+      expect(isReleaseStagePathAllowed("/api/admin/logistics/actions", "D", true)).toBe(true);
+      expect(isReleaseStagePathAllowed("/member/claims", "D", true)).toBe(false);
+      process.env.RELEASE_D_ENABLED_SLICES = "7,8,9";
+      expect(isReleaseStagePathAllowed("/member/claims", "D", true)).toBe(true);
+      expect(isReleaseStagePathAllowed("/member/reports", "D", true)).toBe(false);
+      process.env.RELEASE_D_ENABLED_SLICES = "7,8,9,10";
+      expect(isReleaseStagePathAllowed("/member/reports", "D", true)).toBe(true);
+      for (const invalid of ["", "8", "7,9", "7,8,8", "7,8,9,10,11"]) {
+        expect(enabledReleaseDSlices(invalid)).toEqual([]);
+      }
+    } finally {
+      if (previous === undefined) delete process.env.RELEASE_D_ENABLED_SLICES;
+      else process.env.RELEASE_D_ENABLED_SLICES = previous;
+    }
+  });
+
+  it("hides D order controls in C and fails closed for invalid hosted Production stages", () => {
+    const previousStage = process.env.RELEASE_STAGE;
+    const previousVercel = process.env.VERCEL_ENV;
+    const previousSlices = process.env.RELEASE_D_ENABLED_SLICES;
+    try {
+      process.env.VERCEL_ENV = "production";
+      process.env.RELEASE_STAGE = "C";
+      expect(isOrderOperationSliceVisible(7)).toBe(false);
+      expect(isOrderOperationSliceVisible(8)).toBe(false);
+      process.env.RELEASE_STAGE = "D";
+      process.env.RELEASE_D_ENABLED_SLICES = "7";
+      expect(isOrderOperationSliceVisible(7)).toBe(true);
+      expect(isOrderOperationSliceVisible(8)).toBe(false);
+      process.env.RELEASE_STAGE = "INVALID";
+      expect(isStagedReleaseEnabled()).toBe(true);
+      expect(isReleaseStagePathAllowed("/api/admin/orders", "INVALID", true)).toBe(false);
+    } finally {
+      if (previousStage === undefined) delete process.env.RELEASE_STAGE; else process.env.RELEASE_STAGE = previousStage;
+      if (previousVercel === undefined) delete process.env.VERCEL_ENV; else process.env.VERCEL_ENV = previousVercel;
+      if (previousSlices === undefined) delete process.env.RELEASE_D_ENABLED_SLICES; else process.env.RELEASE_D_ENABLED_SLICES = previousSlices;
+    }
   });
 });
 

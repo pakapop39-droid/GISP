@@ -1,7 +1,12 @@
 import { clearAuthCookies, createAuthActions } from "@insforge/sdk/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { attachAppSession, logAnonymousSecurityEvent, secureAuthCookieOptions } from "@/lib/auth/auth-route";
+import {
+  attachAppSession,
+  isAccountInactiveError,
+  logAnonymousSecurityEvent,
+  secureAuthCookieOptions,
+} from "@/lib/auth/auth-route";
 import { APP_SESSION_COOKIE } from "@/lib/auth/session";
 
 const inputSchema = z.object({ email: z.email(), password: z.string().min(10).max(128) });
@@ -27,8 +32,16 @@ export async function POST(request: NextRequest) {
   }
   try {
     await attachAppSession(response, request);
-  } catch {
+  } catch (error) {
     await auth.signOut();
+    clearAuthCookies(response.cookies, secureAuthCookieOptions);
+    response.cookies.delete(APP_SESSION_COOKIE);
+    if (isAccountInactiveError(error)) {
+      return NextResponse.json(
+        { code: "ACCOUNT_INACTIVE", message: "บัญชีนี้ถูกปิดใช้งานถาวร" },
+        { status: 403, headers: response.headers },
+      );
+    }
     return NextResponse.json(
       { code: "SESSION_REVOKED", message: "สร้างเซสชันความปลอดภัยไม่สำเร็จ กรุณาลองอีกครั้ง" },
       { status: 503, headers: response.headers },

@@ -14,6 +14,15 @@ import { secureAuthCookieOptions } from "@/lib/auth/cookies";
 
 export { secureAuthCookieOptions } from "@/lib/auth/cookies";
 
+export function isAccountInactiveError(error: unknown) {
+  if (typeof error === "string") return error.includes("ACCOUNT_INACTIVE");
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as Record<string, unknown>;
+  return [candidate.code, candidate.message, candidate.details].some(
+    (value) => typeof value === "string" && value.includes("ACCOUNT_INACTIVE"),
+  );
+}
+
 export function requestNetworkData(request: NextRequest) {
   return {
     ip:

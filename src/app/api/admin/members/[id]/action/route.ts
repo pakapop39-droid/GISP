@@ -32,18 +32,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (result.error) throw result.error;
     } else if (parsed.data.action === "suspend") {
       await requireAppAccess({ permissions: ["members.suspend"] });
+      const target = await insforge.database.rpc("assert_member_management_target", { target_user_id_input: id });
+      if (target.error) throw target.error;
       const result = await insforge.database.rpc("suspend_user", { target_user_id_input: id, reason_input: parsed.data.reason });
       if (result.error) throw result.error;
     } else if (parsed.data.action === "reactivate") {
       await requireAppAccess({ permissions: ["members.suspend"] });
+      const target = await insforge.database.rpc("assert_member_management_target", { target_user_id_input: id });
+      if (target.error) throw target.error;
       const result = await insforge.database.rpc("reactivate_user", { target_user_id_input: id });
       if (result.error) throw result.error;
     } else if (parsed.data.action === "force-logout") {
       await requireAppAccess({ permissions: ["sessions.force_logout"] });
+      const target = await insforge.database.rpc("assert_member_management_target", { target_user_id_input: id });
+      if (target.error) throw target.error;
       const result = await insforge.database.rpc("revoke_all_app_sessions", { target_user_id_input: id, reason_input: "ADMIN_FORCE_LOGOUT" });
       if (result.error) throw result.error;
     } else {
       await requireAppAccess({ permissions: ["members.reset_password"] });
+      const target = await insforge.database.rpc("assert_member_management_target", { target_user_id_input: id });
+      if (target.error) throw target.error;
       const emailResult = await insforge.database.rpc("admin_get_user_email", { target_user_id_input: id });
       if (emailResult.error || !emailResult.data) throw emailResult.error ?? new Error("USER_NOT_FOUND");
       const auth = createServerClient();

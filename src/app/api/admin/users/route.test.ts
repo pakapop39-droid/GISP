@@ -8,7 +8,11 @@ vi.mock("@/lib/insforge/admin", () => ({ createInsForgeAdminClient: vi.fn() }));
 vi.mock("@/lib/insforge/server", () => ({ createInsForgeServerClient: vi.fn() }));
 vi.mock("@/lib/api/response", () => ({ apiError: (error: { status?: number }) => Response.json({}, { status: error.status ?? 500 }), invalidInput: vi.fn() }));
 import { GET } from "./route";
-beforeEach(() => { vi.resetAllMocks(); mocks.list.mockResolvedValue([{ id: "staff", email: "staff@example.test" }]); });
+beforeEach(() => {
+  vi.resetAllMocks();
+  mocks.guard.mockResolvedValue({ userId: "admin" });
+  mocks.list.mockResolvedValue([{ id: "staff", email: "staff@example.test" }]);
+});
 it.each([401, 403])("blocks listing before any data access (%s)", async (status) => {
   mocks.guard.mockRejectedValue({ status });
   expect((await GET()).status).toBe(status);
@@ -17,7 +21,7 @@ it.each([401, 403])("blocks listing before any data access (%s)", async (status)
 it("returns the list without allowing caches", async () => {
   const response = await GET();
   expect(response.headers.get("cache-control")).toBe("no-store");
-  expect(await response.json()).toEqual({ data: [{ id: "staff", email: "staff@example.test" }] });
+  expect(await response.json()).toEqual({ data: [{ id: "staff", email: "staff@example.test" }], currentUserId: "admin" });
 });
 it("reports a database failure instead of an empty list", async () => {
   mocks.list.mockRejectedValue(new Error("offline"));

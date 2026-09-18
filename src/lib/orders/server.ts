@@ -4,9 +4,13 @@ import { AppAccessError, requireAppAccess } from "@/lib/auth/session";
 import {
   adminOrderAccessPermissions,
   adminOrderCapabilitiesForPermissions,
+  projectLogisticsReceiptSources,
 } from "@/lib/orders/admin-access";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
+import { projectQcReopenEvents, type QcReopenAuditRow } from "@/lib/orders/qc-reopen-history";
+import { projectOrderDetailForRelease } from "@/lib/orders/release-projection";
+import { isOrderOperationSliceVisible } from "@/lib/release-stage";
 import type {
   CancellationRequest,
   AdminOrderListData,
@@ -120,6 +124,12 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   const order = take(await orderQuery.maybeSingle(), "load order");
   if (!order) throw new AppAccessError("PERMISSION_DENIED", 404, "ไม่พบ Order");
   const orderRow = order as unknown as Record<string, unknown>;
+  const canManageQcForOrder = mode === "admin" && Boolean(capabilities?.manageQc)
+    ? take(await (await createInsForgeServerClient()).database.rpc("has_permission", {
+      permission_code: "qc.manage",
+      target_organization_id: String(orderRow.organization_id),
+    }), "check organization-scoped QC permission") === true
+    : false;
   const [itemsResult, schedulesResult, cancellationsResult, eventsResult, projectResult, memberResult] = await Promise.all([
     database.from("order_items").select(itemColumns).eq("order_id", id).order("created_at").limit(200),
     mode === "member" || capabilities?.viewCustomerPaymentStatus
@@ -155,9 +165,13 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
     events: (take(eventsResult, "load order events") ?? []) as unknown as StatusEvent[],
     productionUpdates: [],
     qcInspections: [],
+    qcReopenEvents: [],
     dispatchGates: [],
-    logistics: { receipts: [], consolidations: [], shipments: [], costs: [], invoice: null },
-    ...(capabilities ? { capabilities } : {}),
+    logistics: {
+      prerequisites: { warehouses: [], receiptSources: [] },
+      receipts: [], consolidations: [], shipments: [], costs: [], invoice: null,
+    },
+    ...(capabilities ? { capabilities: { ...capabilities, manageQc: canManageQcForOrder } } : {}),
   };
 
   if (mode === "admin" && !capabilities?.viewSalesAmounts) {
@@ -183,22 +197,28 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   const itemIds = detail.items.map((item) => item.id);
   const needsSupplierOperations = mode === "member" || Boolean(
     capabilities?.requestSupplierPayment || capabilities?.manageSupplierPayments
-      || capabilities?.manageProduction || capabilities?.manageQc,
+      || capabilities?.manageProduction || canManageQcForOrder,
   );
-  const supplierLinksResult = itemIds.length && needsSupplierOperations
+  const needsLogisticsPrerequisites = mode === "admin" && Boolean(capabilities?.manageWarehouseAndShipment);
+  const supplierLinksResult = itemIds.length && (needsSupplierOperations || needsLogisticsPrerequisites)
     ? await adminForOperations.database.from("supplier_order_items")
-      .select("supplier_order_id,order_item_id").in("order_item_id", itemIds).limit(200)
+      .select("id,supplier_order_id,order_item_id,quantity").in("order_item_id", itemIds).limit(200)
     : { data: [], error: null };
   const supplierLinks = take(supplierLinksResult, "load operation item links") ?? [];
   const operationSupplierOrderIds = [...new Set(supplierLinks.map((row) => row.supplier_order_id))];
-  const [productionResult, qcResult, gateResults] = await Promise.all([
-    operationSupplierOrderIds.length && (mode === "member" || Boolean(capabilities?.manageProduction || capabilities?.manageQc)) ? adminForOperations.database.from("production_updates")
+  const [productionResult, qcResult, qcReopenResult, gateResults] = await Promise.all([
+    operationSupplierOrderIds.length && (mode === "member" || Boolean(capabilities?.manageProduction || canManageQcForOrder)) ? adminForOperations.database.from("production_updates")
       .select("id,supplier_order_id,status,note,estimated_completion_at,progress_percent,started_at,actual_completed_at,delay_reason,created_at")
       .in("supplier_order_id", operationSupplierOrderIds).order("created_at").limit(500) : Promise.resolve({ data: [], error: null }),
-    itemIds.length && (mode === "member" || Boolean(capabilities?.manageQc)) ? adminForOperations.database.from("qc_inspections")
+    itemIds.length && (mode === "member" || canManageQcForOrder) ? adminForOperations.database.from("qc_inspections")
       .select("id,order_item_id,result,checklist_version,inspection_type,parent_inspection_id,note,defect_note,rework_note,inspected_at")
-      .in("order_item_id", itemIds).order("inspected_at").limit(500) : Promise.resolve({ data: [], error: null }),
-    mode === "member" || capabilities?.manageQc || capabilities?.manageLogistics
+      .in("order_item_id", itemIds).order("inspected_at").order("id").limit(500) : Promise.resolve({ data: [], error: null }),
+    mode === "admin" && canManageQcForOrder && itemIds.length ? adminForOperations.database.from("audit_events")
+      .select("id,organization_id,entity_type,entity_id,action,actor_user_id,after_data,created_at")
+      .eq("organization_id", String(orderRow.organization_id)).eq("entity_type", "order_item")
+      .eq("action", "QC_REOPENED").in("entity_id", itemIds).order("created_at").limit(500)
+      : Promise.resolve({ data: [], error: null }),
+    mode === "member" || canManageQcForOrder || capabilities?.manageLogistics
       ? Promise.all(itemIds.map((itemId) => authenticatedOperations.database.rpc("get_dispatch_gate", { order_item_id_input: itemId })))
       : Promise.resolve([]),
   ]);
@@ -236,6 +256,11 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
     files: qcFileLinks.filter((link) => link.inspection_id === row.id).map((link) => fileMap.get(link.file_id)).filter(Boolean),
     decisions: decisions.filter((decision) => decision.inspection_id === row.id),
   })) as unknown as QcInspection[];
+  detail.qcReopenEvents = projectQcReopenEvents(
+    (take(qcReopenResult, "load QC reopen audit") ?? []) as QcReopenAuditRow[],
+    itemIds,
+    String(orderRow.organization_id),
+  );
   detail.dispatchGates = gateResults.flatMap((result) => {
     if (result.error) throw new Error(`load dispatch gate: ${result.error.message}`);
     return result.data ? [result.data as unknown as DispatchGate] : [];
@@ -251,7 +276,7 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
       .select("id,consolidation_number,warehouse_id,strategy,status,reason")
       .eq("customer_order_id", id).order("created_at").limit(100) : Promise.resolve({ data: [], error: null }),
     canLoadLogistics ? logisticsDatabase.from("shipments")
-      .select("id,shipment_number,shipment_name,shipment_type,shipping_method,status,tracking_number,estimated_arrival_at,dispatched_at")
+      .select("id,consolidation_group_id,shipment_number,shipment_name,shipment_type,shipping_method,status,tracking_number,estimated_arrival_at,dispatched_at")
       .eq("customer_order_id", id).order("created_at").limit(100) : Promise.resolve({ data: [], error: null }),
     (mode === "member" || capabilities?.manageFreight) ? logisticsDatabase.from("freight_invoices")
       .select("id,payment_schedule_id,invoice_number,currency,subtotal,vat_rate_snapshot,vat_amount,grand_total,status,due_at,issued_at")
@@ -265,7 +290,7 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   const shipmentIds = shipments.map((row) => row.id);
   const invoice = take(invoiceResult, "load freight invoice");
   const [receiptItemsResult, consolidationItemsResult, shipmentItemsResult, historyResult,
-    partialDecisionsResult, deliveriesResult, costsResult, invoiceItemsResult] = await Promise.all([
+    shipmentDocumentsResult, partialDecisionsResult, deliveriesResult, costsResult, invoiceItemsResult] = await Promise.all([
     receiptIds.length ? logisticsDatabase.from("warehouse_receipt_items")
       .select("id,warehouse_receipt_id,supplier_order_item_id,order_item_id,expected_quantity,received_quantity,released_quantity,blocked_quantity,condition")
       .in("warehouse_receipt_id", receiptIds).limit(500) : Promise.resolve({ data: [], error: null }),
@@ -278,6 +303,11 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
     shipmentIds.length ? logisticsDatabase.from("shipment_status_history")
       .select("id,shipment_id,status,location_text,event_at,note,is_delay,eta_at")
       .in("shipment_id", shipmentIds).order("event_at").limit(500) : Promise.resolve({ data: [], error: null }),
+    mode === "admin" && capabilities?.manageWarehouseAndShipment && shipmentIds.length
+      ? logisticsDatabase.from("shipment_documents")
+        .select("id,shipment_id,file_id,document_type,is_member_visible,created_at")
+        .in("shipment_id", shipmentIds).eq("document_type", "CUSTOMS_ENTRY").limit(100)
+      : Promise.resolve({ data: [], error: null }),
     shipmentIds.length ? logisticsDatabase.from("partial_shipment_decisions")
       .select("id,shipment_id,reason,remaining_plan,additional_member_charge,charge_bearer,member_acknowledgement_required,member_acknowledged_at")
       .in("shipment_id", shipmentIds).limit(100) : Promise.resolve({ data: [], error: null }),
@@ -307,16 +337,63 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   const consolidationItems = take(consolidationItemsResult, "load consolidation items") ?? [];
   const shipmentItems = take(shipmentItemsResult, "load shipment items") ?? [];
   const history = take(historyResult, "load shipment history") ?? [];
+  const shipmentDocuments = take(shipmentDocumentsResult, "load customs shipment documents") ?? [];
+  const customsFileIds = [...new Set(shipmentDocuments.map((document) => document.file_id))];
+  const customsFilesResult = customsFileIds.length
+    ? await adminForOperations.database.from("file_metadata")
+      .select("id,original_name,mime_type,size_bytes").in("id", customsFileIds).limit(100)
+    : { data: [], error: null };
+  const customsFileMap = new Map((take(customsFilesResult, "load customs evidence files") ?? [])
+    .map((file) => [file.id, file]));
   const partialDecisions = take(partialDecisionsResult, "load partial decisions") ?? [];
   const deliveryItems = take(deliveryItemsResult, "load delivery items") ?? [];
   const evidence = take(evidenceResult, "load delivery evidence") ?? [];
   const reschedules = take(reschedulesResult, "load delivery reschedules") ?? [];
+  const logisticsSupplierOrderIds = needsLogisticsPrerequisites
+    ? [...new Set(supplierLinks.map((row) => row.supplier_order_id))]
+    : [];
+  const [warehouseOptionsResult, logisticsSupplierOrdersResult] = await Promise.all([
+    needsLogisticsPrerequisites ? adminForOperations.database.from("warehouses")
+      .select("id,warehouse_code,warehouse_name,country_code")
+      .eq("status", "ACTIVE").order("warehouse_code").limit(100) : Promise.resolve({ data: [], error: null }),
+    logisticsSupplierOrderIds.length ? adminForOperations.database.from("supplier_orders")
+      .select("id,supplier_order_number,po_number,status")
+      .in("id", logisticsSupplierOrderIds).limit(100) : Promise.resolve({ data: [], error: null }),
+  ]);
+  const receiptStatusById = new Map(receipts.map((receipt) => [receipt.id, receipt.status]));
+  const receiptSources = needsLogisticsPrerequisites ? projectLogisticsReceiptSources({
+    orderItems: detail.items,
+    supplierItems: supplierLinks,
+    supplierOrders: take(logisticsSupplierOrdersResult, "load logistics supplier order references") ?? [],
+    receivedItems: receiptItems
+      .filter((item) => receiptStatusById.get(item.warehouse_receipt_id) !== "CANCELLED")
+      .map((item) => ({
+        supplier_order_item_id: item.supplier_order_item_id,
+        received_quantity: item.received_quantity,
+      })),
+  }) : [];
   detail.logistics = {
+    prerequisites: {
+      warehouses: take(warehouseOptionsResult, "load active warehouse options") ?? [],
+      receiptSources,
+    },
     receipts: receipts.map((row) => ({ ...row, items: receiptItems.filter((item) => item.warehouse_receipt_id === row.id) })),
     consolidations: consolidations.map((row) => ({ ...row, items: consolidationItems.filter((item) => item.consolidation_group_id === row.id) })),
     shipments: shipments.map((row) => ({ ...row,
       items: shipmentItems.filter((item) => item.shipment_id === row.id),
       history: history.filter((event) => event.shipment_id === row.id),
+      customsEvidence: shipmentDocuments.filter((document) => document.shipment_id === row.id)
+        .map((document) => {
+          const file = customsFileMap.get(document.file_id);
+          return file ? {
+            id: document.id,
+            file_id: document.file_id,
+            original_name: file.original_name,
+            mime_type: file.mime_type,
+            size_bytes: file.size_bytes,
+            created_at: document.created_at,
+          } : null;
+        }).filter(Boolean),
       partialDecision: partialDecisions.find((decision) => decision.shipment_id === row.id) ?? null,
       deliveries: deliveries.filter((delivery) => delivery.shipment_id === row.id).map((delivery) => ({ ...delivery,
         items: deliveryItems.filter((item) => item.delivery_id === delivery.id),
@@ -354,7 +431,10 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
       productionUpdates: detail.productionUpdates.filter((update) => update.supplier_order_id === row.id),
     })) as unknown as SupplierOrder[];
   }
-  return detail;
+  return projectOrderDetailForRelease(detail, {
+    productionQc: isOrderOperationSliceVisible(7),
+    logistics: isOrderOperationSliceVisible(8),
+  });
 }
 
 export function loadMemberOrderDetail(id: string) {

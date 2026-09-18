@@ -36,8 +36,22 @@ export function rolesForStaffJobGroup(group: StaffJobGroup): ProductionRole[] {
   return [...staffJobGroupDefinitions[group].roles];
 }
 
+export function staffJobGroupsForRoles(roles: readonly ProductionRole[]): StaffJobGroup[] | null {
+  if (!roles.length || roles.includes("SUPER_ADMIN") || roles.includes("MEMBER")) return null;
+  const roleSet = new Set(roles);
+  const groups = staffJobGroups.filter((group) =>
+    staffJobGroupDefinitions[group].roles.every((role) => roleSet.has(role)),
+  );
+  const expected = new Set(groups.flatMap(rolesForStaffJobGroup));
+  return expected.size === roleSet.size && [...roleSet].every((role) => expected.has(role))
+    ? groups
+    : null;
+}
+
 export function staffJobGroupLabelsForRoles(roles: readonly ProductionRole[]): string[] {
   if (roles.includes("SUPER_ADMIN")) return ["เจ้าของระบบ"];
+
+  if (!roles.length) return ["ถอนสิทธิ์แล้ว"];
 
   const roleSet = new Set(roles);
   const labels = staffJobGroups

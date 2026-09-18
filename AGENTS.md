@@ -54,6 +54,13 @@ For application work, use the repository skill at `.agents/skills/vs-app-develop
 6. Prefer parallel agents for independent read-only analysis. Use one writing agent at a time.
 7. Report evidence, conflicts, assumptions, unresolved decisions, and exact test results. Never claim success from a code description alone.
 8. The primary Codex thread is the Release Executor only after an explicit Release Authorization record is complete. No specialist agent may infer or grant that authority.
+9. Independent read-only analysis may run in parallel. Before a writing task starts, identify its branch/worktree, the owner of any existing uncommitted files, and the exact file scope. Use separate Git worktrees for independent writing tasks; never discard or overwrite another task's uncommitted work. Integrate and review one change set at a time.
+10. The builder runs focused checks while editing. For an integrated release candidate, run the relevant regression tests, typecheck, build, and user-flow checks once against the exact candidate. Repeat a gate only when a change or unresolved risk makes the previous result stale. QA independently verifies the final candidate.
+11. The project lead maintains one concise Go Live readiness summary: approved scope, environment, test/UAT evidence, open blockers, data and migration status, rollback, and owner decisions. Bundle related decisions so the owner can answer them together. This coordination does not create a new release authority.
+
+### Development test data
+
+The owner has stated that current app data is test data and may be changed or deleted when that speeds up Production readiness. Treat this as data classification and planning context. Before a specific write or deletion, verify the target is the Development environment, identify affected records and dependencies, and record the bounded data authority in an Implementation Approval Record. A record may cover a defined batch of Development cleanup; do not request a separate approval for every row already covered by that record. This statement does not authorize Production data changes or Production release.
 
 ### Mandatory owner approval
 

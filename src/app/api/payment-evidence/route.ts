@@ -13,22 +13,24 @@ export async function POST(request: NextRequest) {
     const form = await request.formData();
     const file = form.get("file");
     const purpose = String(form.get("purpose") ?? "CUSTOMER");
-    const isSupplier = purpose === "SUPPLIER";
+    if (purpose !== "CUSTOMER") {
+      return NextResponse.json({
+        code: "INVALID_INPUT",
+        message: "หลักฐาน Supplier ต้องอัปโหลดจากรายการ Supplier Payment ที่อนุมัติแล้ว",
+      }, { status: 400 });
+    }
     if (!(file instanceof File) || !allowedTypes.has(file.type) || file.size <= 0 || file.size > maxBytes) {
       return NextResponse.json({ code: "INVALID_FILE", message: "รองรับ PDF, JPEG, PNG ขนาดไม่เกิน 10 MB" }, { status: 400 });
     }
-    if (isSupplier && !context.permissions.includes("supplier_payments.manage")) {
-      throw new AppAccessError("PERMISSION_DENIED", 403, "ไม่มีสิทธิ์อัปโหลดหลักฐาน Supplier Payment");
-    }
-    if (!isSupplier && !context.roles.includes("MEMBER")) {
+    if (!context.roles.includes("MEMBER")) {
       throw new AppAccessError("PERMISSION_DENIED", 403, "หลักฐานนี้สำหรับสมาชิก");
     }
-    const profileId = isSupplier ? null : context.memberProfileId;
-    if (!isSupplier && !profileId) throw new AppAccessError("PERMISSION_DENIED", 403, "ไม่พบข้อมูลสมาชิก");
+    const profileId = context.memberProfileId;
+    if (!profileId) throw new AppAccessError("PERMISSION_DENIED", 403, "ไม่พบข้อมูลสมาชิก");
     const admin = createInsForgeAdminClient();
-    const bucket = isSupplier ? "gisp-confidential" : "gisp-member-private";
+    const bucket = "gisp-member-private";
     const extension = file.type === "application/pdf" ? "pdf" : file.type === "image/png" ? "png" : "jpg";
-    const key = `payments/${isSupplier ? "supplier" : profileId}/${randomUUID()}.${extension}`;
+    const key = `payments/${profileId}/${randomUUID()}.${extension}`;
     const uploaded = await admin.storage.from(bucket).upload(key, file);
     if (uploaded.error || !uploaded.data) throw uploaded.error ?? new Error("UPLOAD_FAILED");
     const storageData = uploaded.data as unknown as { url?: string; key?: string };
@@ -41,8 +43,8 @@ export async function POST(request: NextRequest) {
       original_name: file.name,
       mime_type: file.type,
       size_bytes: file.size,
-      visibility: isSupplier ? "CONFIDENTIAL" : "MEMBER_PRIVATE",
-      entity_type: isSupplier ? "SUPPLIER_PAYMENT_EVIDENCE" : "CUSTOMER_PAYMENT_EVIDENCE",
+      visibility: "MEMBER_PRIVATE",
+      entity_type: "CUSTOMER_PAYMENT_EVIDENCE",
       uploaded_by: context.userId,
     }]).select("id,original_name,mime_type,size_bytes,visibility").single();
     if (inserted.error) throw inserted.error;

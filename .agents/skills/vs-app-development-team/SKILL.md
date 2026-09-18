@@ -26,6 +26,9 @@ description: วางแผน พัฒนา ตรวจแก้ และ�
 7. งานอ่านและตรวจที่เป็นอิสระอาจทำคู่ขนานได้ แต่งานเขียนให้มี Builder เพียงตัวเดียวในแต่ละขอบเขต
 8. Builder ห้ามตรวจรับงานตัวเอง ต้องส่ง QA ตรวจอย่างอิสระ
 9. ห้ามสรุปว่าเสร็จโดยไม่มีผลทดสอบหรือหลักฐานที่ตรวจซ้ำได้
+10. ก่อนเริ่มงานเขียนใน repo ที่มีหลายแชต ให้บันทึก branch/worktree, ผู้รับผิดชอบไฟล์ที่แก้ค้าง และขอบเขตไฟล์ของ Slice; งานเขียนอิสระใช้คนละ Git worktree และรวมงานทีละชุดโดยไม่ทับ uncommitted changes
+11. Builder ใช้การทดสอบเฉพาะส่วนระหว่างพัฒนา; เมื่อได้ candidate ที่จะปล่อย ให้ตรวจ regression ที่เกี่ยวข้อง, typecheck, build และ user flow บน candidate เดียวกัน แล้วให้ QA ตรวจอิสระ ไม่รัน gate ซ้ำโดยไม่มีการเปลี่ยนแปลงหรือความเสี่ยงที่ต้องตรวจเพิ่ม
+12. Project Lead รวมสถานะ Go Live และคำตัดสินของเจ้าของไว้ในสรุปเดียวตาม [delivery-workflow.md](references/delivery-workflow.md) โดยไม่มีอำนาจอนุมัติ Release แทนเจ้าของ
 
 ## จุดอนุมัติ 3 ระดับ
 
@@ -38,6 +41,8 @@ description: วางแผน พัฒนา ตรวจแก้ และ�
 ทุกการอนุมัติต้องมี Approval Record ตาม [approval-matrix.md](references/approval-matrix.md) คำทั่วไป เช่น `ทำต่อได้เลย` ไม่ถือเป็นการอนุญาต Production หากไม่ได้ระบุ Production โดยตรง
 
 ก่อนเปลี่ยนฐานข้อมูล ราคา สูตรคำนวณ สิทธิ์ผู้ใช้ Authentication ข้อมูลจำนวนมาก ระบบภายนอก หรือ Production ให้อ่าน [approval-matrix.md](references/approval-matrix.md) และหยุดขออนุมัติที่กำหนด
+
+เจ้าของระบุว่าข้อมูลใน App ปัจจุบันเป็นข้อมูลทดสอบที่แก้หรือลบได้เพื่อเร่ง Go Live ให้ใช้ข้อเท็จจริงนี้ในการวางแผน Development cleanup แต่ก่อนเปลี่ยนข้อมูลจริงต้องยืนยันสภาพแวดล้อมและมี Approval Record แบบระบุชุดข้อมูล/ขอบเขตตาม [approval-matrix.md](references/approval-matrix.md); หนึ่ง Record ครอบคลุม batch ที่กำหนดได้ ไม่ต้องถามซ้ำทีละแถว และไม่ครอบคลุม Production
 
 เมื่อต้องส่งงานระหว่าง Agent ให้อ่าน [handoff-contracts.md](references/handoff-contracts.md)
 

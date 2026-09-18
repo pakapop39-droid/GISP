@@ -5,6 +5,7 @@ export function isStaffRole(role: ProductionRole) {
 }
 
 export function accessHome(context: AppAccessContext) {
+  if (context.userStatus === "INACTIVE") return "/login";
   if (context.userStatus === "SUSPENDED") return "/account-suspended";
   if (context.applicationStatus === "REJECTED") return "/application-rejected";
   const staff = context.roles.some(isStaffRole);
@@ -23,4 +24,3 @@ export function hasAllPermissions(
 ) {
   return required.every((permission) => context.permissions.includes(permission));
 }
-

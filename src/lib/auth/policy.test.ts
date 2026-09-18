@@ -15,6 +15,7 @@ describe("Slice 1 access policy",()=>{
     expect(accessHome({...base,memberProfileId:"p",applicationStatus:"PENDING"})).toBe("/pending-approval");
     expect(accessHome({...base,memberProfileId:"p",applicationStatus:"REJECTED"})).toBe("/application-rejected");
     expect(accessHome({...base,userStatus:"SUSPENDED",applicationStatus:"APPROVED",roles:["MEMBER"]})).toBe("/account-suspended");
+    expect(accessHome({...base,userStatus:"INACTIVE",applicationStatus:"APPROVED",roles:["SUPER_ADMIN"]})).toBe("/login");
     expect(accessHome({...base,userStatus:"ACTIVE",applicationStatus:"APPROVED",roles:["MEMBER"]})).toBe("/member/dashboard");
     expect(accessHome({...base,userStatus:"ACTIVE",roles:["FINANCE"]})).toBe("/admin/dashboard");
   });

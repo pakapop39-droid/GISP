@@ -7,6 +7,7 @@
 - Requirement/CR/Acceptance Criteria IDs
 - แหล่งที่ตรวจแล้ว แหล่งที่ไม่พบ และสิ่งที่ยังไม่ได้ตรวจ
 - Approval Record ที่เกี่ยวข้อง หรือระบุชัดว่า `Not yet approved`
+- Branch/worktree, source snapshot และเจ้าของไฟล์ที่แก้ค้างซึ่งอาจชนกับงานนี้
 
 ## Project Lead → Architect
 
@@ -23,6 +24,7 @@
 - Interfaces, Data, Permissions และ Migration impact
 - Constraints และสิ่งที่ห้ามเปลี่ยน
 - Tests ที่จำเป็นและ Rollback expectation
+- Focused checks ระหว่าง build และ final candidate gates ที่ต้องผ่าน โดยอิงความเสี่ยงจริง
 - Approval Record ของ Implementation Authorization ที่มีผู้อนุมัติ ขอบเขต เวอร์ชัน Environment สิทธิ์ด้านข้อมูล และ Production allowed
 
 ## Builder → QA

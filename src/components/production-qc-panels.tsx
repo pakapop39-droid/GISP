@@ -20,11 +20,13 @@ import {
 } from "@/lib/orders/qc-review-request";
 import {
   isMemberReviewEvent,
+  qcHistoryTimeline,
   qcHistoryTitle,
   qcReworkNoteLabel,
 } from "@/lib/orders/qc-history-presentation";
+import { isQcReopenPending } from "@/lib/orders/qc-reopen-history";
 import { allAdminOrderCapabilities } from "@/lib/orders/admin-access";
-import type { AdminOrderCapabilities, DispatchGate, OrderDetail, OrderItem, QcInspection, SupplierOrder } from "@/lib/orders/types";
+import type { AdminOrderCapabilities, DispatchGate, OrderDetail, OrderItem, QcInspection, QcReopenEvent, SupplierOrder } from "@/lib/orders/types";
 
 const productionLabels: Record<string, string> = {
   ACKNOWLEDGED: "โรงงานยืนยันแล้ว", MATERIAL_PREPARATION: "เตรียมวัสดุ",
@@ -84,14 +86,17 @@ function ProductionForm({ supplierOrder, busy, post }: { supplierOrder: Supplier
 
 function QcForm({ item, inspections, busy, canInspect, blockedReason, post }: { item: OrderItem; inspections: QcInspection[]; busy: boolean; canInspect: boolean; blockedReason?: string; post: (path: string, payload: Record<string, unknown>) => Promise<boolean> }) {
   const [error, setError] = useState<string>();
+  const [showReopenForm, setShowReopenForm] = useState(false);
+  const [reopenReason, setReopenReason] = useState("");
   const [checkResults, setCheckResults] = useState<QcChecklistResult[]>(newQcChecklistResults);
   const [failedDisposition, setFailedDisposition] = useState<QcFailedDisposition>("FAILED");
   const latestInspection = inspections.at(-1);
   const failed = latestInspection?.result !== "PASSED" ? latestInspection : undefined;
+  const reopenPending = isQcReopenPending(item.qc_status, latestInspection?.result);
   const [isEditing, setIsEditing] = useState(() => !latestInspection);
   const overallResult = deriveQcOverallResult(checkResults, failedDisposition);
 
-  if (!isEditing && latestInspection) {
+  if (!isEditing && latestInspection && !reopenPending) {
     const passed = latestInspection.result === "PASSED";
     return <div className={`qc-next-action qc-next-action--${passed ? "passed" : "failed"}`}>
       <span>
@@ -103,7 +108,13 @@ function QcForm({ item, inspections, busy, canInspect, blockedReason, post }: { 
           : "ผลที่บันทึกอยู่ในประวัติด้านบน เมื่อแก้ไขสินค้าเสร็จจึงเริ่มตรวจซ้ำ"}</small>
         {!passed && latestInspection.rework_note ? <small className="qc-next-action__request"><b>รายละเอียดที่ต้องตรวจเพิ่ม:</b>{latestInspection.rework_note}</small> : null}
       </span>
-      {!passed ? <button type="button" disabled={busy || !canInspect} onClick={() => { setError(undefined); setIsEditing(true); }} className="v14-button v14-button--outline"><RotateCcw size={14}/>เริ่มตรวจซ้ำ</button> : null}
+      {!passed ? <button type="button" disabled={busy || !canInspect} onClick={() => { setError(undefined); setIsEditing(true); }} className="v14-button v14-button--outline"><RotateCcw size={14}/>เริ่มตรวจซ้ำ</button> : <button type="button" disabled={busy || !canInspect} onClick={() => { setError(undefined); setShowReopenForm(true); }} className="v14-button v14-button--outline"><RotateCcw size={14}/>เปิดตรวจ QC ใหม่ก่อน Dispatch</button>}
+      {showReopenForm ? <form className="operation-form" onSubmit={async (event) => {
+        event.preventDefault(); setError(undefined);
+        const saved = await post("/api/admin/qc-inspections/reopen", { order_item_id: item.id, reason: reopenReason.trim() });
+        if (saved) { setShowReopenForm(false); setReopenReason(""); }
+      }}><label>เหตุผลที่เปิดตรวจใหม่<textarea value={reopenReason} onChange={(event) => setReopenReason(event.target.value)} minLength={3} maxLength={1200} rows={2} required placeholder="ระบุสิ่งที่พบหลัง QC ผ่านและเหตุผลที่ต้องตรวจอีกครั้ง"/></label><small>เมื่อยืนยัน ระบบจะพัก Dispatch Gate ทันที และเก็บเหตุผลใน Audit</small><div className="v14-actions"><button disabled={busy || !canInspect || reopenReason.trim().length < 3} className="v14-button v14-button--dark">ยืนยันเปิดตรวจใหม่</button><button type="button" disabled={busy} onClick={() => setShowReopenForm(false)} className="v14-button v14-button--outline">ยกเลิก</button></div></form> : null}
+      {error ? <p className="v14-alert">{error}</p> : null}
       {!canInspect ? <p className="v14-alert">{blockedReason}</p> : null}
     </div>;
   }
@@ -119,14 +130,14 @@ function QcForm({ item, inspections, busy, canInspect, blockedReason, post }: { 
         order_item_id: item.id, result: overallResult, checklist, note: form.get("note") || undefined,
         defect_note: overallResult === "PASSED" ? undefined : form.get("defectNote"),
         rework_note: overallResult === "PASSED" ? undefined : form.get("reworkNote"),
-        inspection_type: failed ? "REINSPECTION" : "INITIAL",
-        parent_inspection_id: failed?.id, file_ids: fileIds,
+        inspection_type: failed || reopenPending ? "REINSPECTION" : "INITIAL",
+        parent_inspection_id: failed?.id ?? (reopenPending ? latestInspection?.id : undefined), file_ids: fileIds,
       });
       if (!saved) return;
       formElement.reset(); setCheckResults(newQcChecklistResults()); setFailedDisposition("FAILED"); setIsEditing(false);
     } catch (caught) { setError(caught instanceof Error ? caught.message : "บันทึก QC ไม่สำเร็จ"); }
   }}>
-    <div className="qc-form-title"><span><b>{item.item_name_snapshot}</b><small>{item.item_type} · {qcLabels[item.qc_status] ?? item.qc_status}</small></span><span className="v14-status v14-status--pending">{failed ? <><RotateCcw size={13}/>ตรวจซ้ำ</> : "ตรวจครั้งแรก"}</span></div>
+    <div className="qc-form-title"><span><b>{item.item_name_snapshot}</b><small>{item.item_type} · {qcLabels[item.qc_status] ?? item.qc_status}</small></span><span className="v14-status v14-status--pending">{failed || reopenPending ? <><RotateCcw size={13}/>ตรวจซ้ำ{reopenPending ? "หลังผ่าน" : ""}</> : "ตรวจครั้งแรก"}</span></div>
     {qcChecklistLabels.map((label, index) => <div className="qc-check-row" key={label}><b>{label}</b><select name={`check-${index}`} required value={checkResults[index]} onChange={(event) => { const next = [...checkResults]; next[index] = event.target.value as QcChecklistResult; setCheckResults(next); }}><option value="NOT_INSPECTED">ยังไม่ตรวจ</option><option value="PASSED">ผ่าน</option><option value="FAILED">ไม่ผ่าน</option></select><input name={`note-${index}`} placeholder="หมายเหตุรายการ"/></div>)}
     <div className="operation-form__grid"><label>ผลรวม<select name="result" value={overallResult ?? ""} disabled={!overallResult || overallResult === "PASSED"} onChange={(event) => setFailedDisposition(event.target.value as QcFailedDisposition)}><option value="">รอตรวจให้ครบ</option><option value="PASSED">ผ่าน QC อัตโนมัติ</option><option value="FAILED">ไม่ผ่าน QC</option><option value="REWORK_REQUIRED">ต้องแก้ไข</option></select><small className="operation-form__hint">ระบบสรุป “ผ่าน QC” ให้อัตโนมัติเมื่อ Checklist ผ่านครบทุกข้อ</small></label><label>หลักฐาน<input name="file" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf"/></label></div><label>สรุปผล<textarea name="note" rows={2}/></label><label>ข้อบกพร่อง<input name="defectNote"/></label><label>คำสั่งแก้ไข<input name="reworkNote"/></label>{!canInspect ? <p className="v14-alert">{blockedReason}</p> : null}{error ? <p className="v14-alert">{error}</p> : null}<button disabled={busy || !canInspect || !overallResult} className="v14-button v14-button--dark"><BadgeCheck size={15}/>บันทึกผล QC</button>
   </form>;
@@ -142,13 +153,28 @@ export function AdminProductionQcPanel({ data, busy, post, capabilities = allAdm
       const blockedReason = supplierOrder
         ? `ยังบันทึก QC ไม่ได้: สถานะการผลิตปัจจุบันคือ “${productionLabels[productionStatus ?? ""] ?? "ยังไม่มีข้อมูล"}” กรุณาบันทึก “ผลิตเสร็จ 100%” ก่อน`
         : "ยังบันทึก QC ไม่ได้: ไม่พบ Supplier Order ของสินค้านี้";
-      return <article key={item.id} className="operation-card"><GateChecklist gate={data.dispatchGates.find((gate) => gate.order_item_id === item.id)} itemName={item.item_name_snapshot} itemType={item.item_type}/><QcHistory item={item} inspections={data.qcInspections.filter((inspection) => inspection.order_item_id === item.id)}/><QcForm item={item} inspections={data.qcInspections.filter((inspection) => inspection.order_item_id === item.id)} busy={busy} canInspect={canInspect} blockedReason={blockedReason} post={post}/></article>;
+      return <article key={item.id} className="operation-card"><GateChecklist gate={data.dispatchGates.find((gate) => gate.order_item_id === item.id)} itemName={item.item_name_snapshot} itemType={item.item_type}/><QcHistory item={item} inspections={data.qcInspections.filter((inspection) => inspection.order_item_id === item.id)} reopenEvents={data.qcReopenEvents?.filter((reopen) => reopen.order_item_id === item.id) ?? []}/><QcForm item={item} inspections={data.qcInspections.filter((inspection) => inspection.order_item_id === item.id)} busy={busy} canInspect={canInspect} blockedReason={blockedReason} post={post}/></article>;
     })}</section> : null}
   </>;
 }
 
-function QcHistory({ item, inspections, showItemName = true }: { item: OrderItem; inspections: QcInspection[]; showItemName?: boolean }) {
-  return <div className="qc-history">{showItemName ? <h3>{item.item_name_snapshot}</h3> : null}{inspections.length ? inspections.map((inspection) => <article key={inspection.id}><header><span className={`v14-status v14-status--${inspection.result === "PASSED" ? "good" : "bad"}`}>{qcHistoryTitle(inspection)}</span><small>{new Date(inspection.inspected_at).toLocaleString("th-TH")}</small></header>{!isMemberReviewEvent(inspection) ? <div className="qc-result-grid">{inspection.checklist.map((check) => <div key={check.id} className={check.result === "PASSED" ? "passed" : check.result === "FAILED" ? "failed" : "pending"}><span>{check.result === "PASSED" ? "✓" : check.result === "FAILED" ? "×" : "○"}</span><b>{check.label}</b><small>{check.note}</small></div>)}</div> : null}{inspection.defect_note ? <p><b>ข้อบกพร่อง:</b> {inspection.defect_note}</p> : null}{inspection.rework_note ? <p><b>{qcReworkNoteLabel(inspection)}</b> {inspection.rework_note}</p> : null}<div className="operation-files">{inspection.files.map((file) => <a key={file.id} href={`/api/files/${file.id}/download?redirect=1`} target="_blank" rel="noreferrer"><ExternalLink size={12}/>{file.original_name}</a>)}</div></article>) : <p className="v14-empty">ยังไม่มีผล QC</p>}</div>;
+function QcHistory({ item, inspections, reopenEvents = [], showItemName = true }: { item: OrderItem; inspections: QcInspection[]; reopenEvents?: QcReopenEvent[]; showItemName?: boolean }) {
+  const timeline = qcHistoryTimeline(inspections, reopenEvents);
+  const inspectionsById = new Map(inspections.map((inspection) => [inspection.id, inspection]));
+  return <div className="qc-history">
+    {showItemName ? <h3>{item.item_name_snapshot}</h3> : null}
+    {!timeline.length ? <p className="v14-empty">ยังไม่มีผล QC</p> : timeline.map((entry) => {
+      if (entry.kind === "reopen") {
+        const reopen = entry.reopen;
+        return <article key={`reopen-${reopen.id}`}><header><span className="v14-status v14-status--pending">เปิดตรวจ QC ใหม่ก่อน Dispatch</span><small>{new Date(reopen.created_at).toLocaleString("th-TH")}</small></header><p><b>เหตุผล:</b> {reopen.reason}</p><p><b>ผู้ดำเนินการ:</b> {reopen.actor_user_id ?? "ไม่ทราบผู้ใช้"}</p><small>อ้างอิงผลตรวจที่ผ่าน: {reopen.parent_inspection_id}</small></article>;
+      }
+      const inspection = entry.inspection;
+      const parentResult = inspection.parent_inspection_id
+        ? inspectionsById.get(inspection.parent_inspection_id)?.result
+        : undefined;
+      return <article key={`inspection-${inspection.id}`}><header><span className={`v14-status v14-status--${inspection.result === "PASSED" ? "good" : "bad"}`}>{qcHistoryTitle(inspection, parentResult)}</span><small>{new Date(inspection.inspected_at).toLocaleString("th-TH")}</small></header>{!isMemberReviewEvent(inspection) ? <div className="qc-result-grid">{inspection.checklist.map((check) => <div key={check.id} className={check.result === "PASSED" ? "passed" : check.result === "FAILED" ? "failed" : "pending"}><span>{check.result === "PASSED" ? "✓" : check.result === "FAILED" ? "×" : "○"}</span><b>{check.label}</b><small>{check.note}</small></div>)}</div> : null}{inspection.defect_note ? <p><b>ข้อบกพร่อง:</b> {inspection.defect_note}</p> : null}{inspection.rework_note ? <p><b>{qcReworkNoteLabel(inspection)}</b> {inspection.rework_note}</p> : null}<div className="operation-files">{inspection.files.map((file) => <a key={file.id} href={`/api/files/${file.id}/download?redirect=1`} target="_blank" rel="noreferrer"><ExternalLink size={12}/>{file.original_name}</a>)}</div></article>;
+    })}
+  </div>;
 }
 
 function MemberQcDecision({ item, busy, post }: { item: OrderItem; busy: boolean; post: (path: string, payload: Record<string, unknown>) => Promise<boolean> }) {

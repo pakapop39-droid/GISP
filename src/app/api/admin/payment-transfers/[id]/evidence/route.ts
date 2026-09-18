@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiError } from "@/lib/api/response";
 import { requireAppAccess } from "@/lib/auth/session";
+import { loadBoundCustomerPaymentEvidence } from "@/lib/payments/bound-evidence";
+import { currentFinanceSessionHash, loadAuthorizedFinanceTransfer } from "@/lib/payments/finance-access";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
+import { isOrderOperationSliceVisible } from "@/lib/release-stage";
 
 export async function GET(
   _request: Request,
@@ -18,41 +21,38 @@ export async function GET(
       );
     }
 
+    const transfer = await loadAuthorizedFinanceTransfer(id);
+    if (!transfer) {
+      return NextResponse.json({ code: "EVIDENCE_NOT_VERIFIED", message: "ไม่พบหลักฐานที่เปิดดูได้" }, { status: 404 });
+    }
+    if (transfer.scheduleType === "FREIGHT" && !isOrderOperationSliceVisible(8)) {
+      return NextResponse.json({ code: "RELEASE_NOT_ENABLED", message: "งวดค่าขนส่งยังไม่เปิดใช้งาน" }, { status: 404 });
+    }
+    const evidence = await loadBoundCustomerPaymentEvidence(id, transfer.organizationId);
+    if (!evidence) {
+      return NextResponse.json(
+        { code: "EVIDENCE_NOT_VERIFIED", message: "ไม่พบไฟล์หลักฐานที่ผูกกับรายการนี้หรือไฟล์ไม่สมบูรณ์" },
+        { status: 404 },
+      );
+    }
     const admin = createInsForgeAdminClient();
-    const transfer = await admin.database
-      .from("payment_transfers")
-      .select("id,evidence_file_id")
-      .eq("id", id)
-      .maybeSingle();
-    if (transfer.error) throw transfer.error;
-    if (!transfer.data?.evidence_file_id) {
-      return NextResponse.json(
-        { code: "NOT_FOUND", message: "ไม่พบหลักฐานการโอน" },
-        { status: 404 },
-      );
-    }
-
-    const file = await admin.database
-      .from("file_metadata")
-      .select("id,bucket,object_key,entity_type")
-      .eq("id", transfer.data.evidence_file_id)
-      .eq("entity_type", "CUSTOMER_PAYMENT_EVIDENCE")
-      .maybeSingle();
-    if (file.error) throw file.error;
-    if (!file.data) {
-      return NextResponse.json(
-        { code: "NOT_FOUND", message: "ไม่พบไฟล์หลักฐานการโอน" },
-        { status: 404 },
-      );
-    }
-
-    const signed = await admin.storage
-      .from(file.data.bucket)
-      .createSignedUrl(file.data.object_key, 300);
-    if (signed.error || !signed.data) {
-      throw signed.error ?? new Error("SIGNED_URL_FAILED");
-    }
-    return NextResponse.redirect(signed.data.signedUrl);
+    const receipt = await admin.database.rpc("record_customer_payment_evidence_preview", {
+      transfer_id_input: id,
+      session_token_hash_input: await currentFinanceSessionHash(),
+      evidence_file_id_input: evidence.fileId,
+      sha256_input: evidence.sha256,
+      size_bytes_input: evidence.byteSize,
+      mime_type_input: evidence.mimeType,
+    });
+    if (receipt.error || !receipt.data) throw receipt.error ?? new Error("PREVIEW_RECEIPT_FAILED");
+    return new NextResponse(evidence.blob, {
+      headers: {
+        "Content-Type": evidence.mimeType,
+        "Content-Disposition": "inline",
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
   } catch (error) {
     return apiError(error);
   }

@@ -9,18 +9,21 @@ import { listInternalUsers } from "@/lib/auth/internal-users";
 
 export async function GET() {
   try {
-    await requireSuperAdmin();
-    return NextResponse.json({ data: await listInternalUsers() }, { headers: { "Cache-Control": "no-store" } });
+    const context = await requireSuperAdmin();
+    return NextResponse.json(
+      { data: await listInternalUsers(), currentUserId: context.userId },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (error) {
     return apiError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
-  const parsed = internalUserCreateSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return invalidInput(parsed.error.flatten().fieldErrors);
   try {
     await requireSuperAdmin();
+    const parsed = internalUserCreateSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) return invalidInput(parsed.error.flatten().fieldErrors);
     const admin = createInsForgeAdminClient();
     const created = await admin.auth.signUp({ email: parsed.data.email, password: parsed.data.temporaryPassword, name: parsed.data.name, autoConfirm: true });
     if (created.error) throw created.error;

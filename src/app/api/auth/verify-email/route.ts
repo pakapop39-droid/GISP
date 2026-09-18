@@ -1,7 +1,8 @@
-import { createAuthActions } from "@insforge/sdk/ssr";
+import { clearAuthCookies, createAuthActions } from "@insforge/sdk/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { attachAppSession, secureAuthCookieOptions } from "@/lib/auth/auth-route";
+import { attachAppSession, isAccountInactiveError, secureAuthCookieOptions } from "@/lib/auth/auth-route";
+import { APP_SESSION_COOKIE } from "@/lib/auth/session";
 
 const schema = z.object({ email: z.email(), otp: z.string().regex(/^\d{6}$/) });
 
@@ -18,9 +19,20 @@ export async function POST(request: NextRequest) {
   }
   try {
     await attachAppSession(response, request);
-  } catch {
-    return NextResponse.json({ code: "SESSION_REVOKED", message: "ยืนยันอีเมลสำเร็จ แต่สร้างเซสชันไม่สำเร็จ กรุณาเข้าสู่ระบบ" }, { status: 503 });
+  } catch (error) {
+    await auth.signOut();
+    clearAuthCookies(response.cookies, secureAuthCookieOptions);
+    response.cookies.delete(APP_SESSION_COOKIE);
+    if (isAccountInactiveError(error)) {
+      return NextResponse.json(
+        { code: "ACCOUNT_INACTIVE", message: "บัญชีนี้ถูกปิดใช้งานถาวร" },
+        { status: 403, headers: response.headers },
+      );
+    }
+    return NextResponse.json(
+      { code: "SESSION_REVOKED", message: "ยืนยันอีเมลสำเร็จ แต่สร้างเซสชันไม่สำเร็จ กรุณาเข้าสู่ระบบ" },
+      { status: 503, headers: response.headers },
+    );
   }
   return NextResponse.json({ ok: true, next: "/onboarding" }, { headers: response.headers });
 }
-
