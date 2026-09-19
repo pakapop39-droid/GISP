@@ -3,6 +3,7 @@ import type { LogisticsDetail, OrderDetail, OrderItem } from "./types";
 function emptyLogistics(): LogisticsDetail {
   return {
     prerequisites: { warehouses: [], receiptSources: [] },
+    productionTimeline: [],
     receipts: [], consolidations: [], shipments: [], costs: [], invoice: null,
   };
 }
@@ -35,6 +36,7 @@ export function projectOrderDetailForRelease(
     capabilities: detail.capabilities ? {
       ...detail.capabilities,
       manageProduction: enabled.productionQc && detail.capabilities.manageProduction,
+      viewProductionTimeline: enabled.logistics && detail.capabilities.viewProductionTimeline,
       manageQc: enabled.productionQc && detail.capabilities.manageQc,
       manageLogistics: enabled.logistics && detail.capabilities.manageLogistics,
       manageWarehouseAndShipment: enabled.logistics && detail.capabilities.manageWarehouseAndShipment,

@@ -44,6 +44,7 @@ describe("DR-019 logistics presentation helpers", () => {
     const data = {
       order: { id: "order-1", order_number: "ORD-2026-000001", currency: "THB" },
       logistics: {
+        productionTimeline: [{ supplier_order_id: "supplier-order-1", supplier_order_number: "SO-1", po_number: "PO-1", status: "IN_PRODUCTION", updates: [{ id: "update-1", status: "DELAYED", note: "รอวัสดุ", estimated_completion_at: null, progress_percent: 40, started_at: null, actual_completed_at: null, delay_reason: "วัสดุล่าช้า", created_at: "2026-09-19T00:00:00Z", files: [{ id: "file-1", original_name: "progress.jpg", mime_type: "image/jpeg" }] }] }],
         prerequisites: { warehouses: [], receiptSources: [] }, receipts: [],
         consolidations: [{ id: "group-1", status: "CONFIRMED", strategy: "CONSOLIDATE_ALL", items: [] }],
         shipments: [shipment, { ...shipment, id: "shipment-2", status: "OUT_FOR_DELIVERY", deliveries: [delivery] },
@@ -53,12 +54,15 @@ describe("DR-019 logistics presentation helpers", () => {
     } as unknown as OrderDetail;
     const markup = renderToStaticMarkup(createElement(AdminLogisticsPanel, {
       data, busy: false, post: async () => true,
-      capabilities: { manageLogistics: true, manageWarehouseAndShipment: true, manageFreight: true } as never,
+      capabilities: { manageLogistics: true, manageWarehouseAndShipment: true, manageFreight: true, viewProductionTimeline: true } as never,
     }));
     for (const field of ["shipmentName", "etd", "eta", "scheduledAt", "scheduledEnd", "contact", "phone", "recipient", "supplierCost", "memberCharge"]) {
       expect(markup).toContain(`name="${field}"`);
     }
     expect(markup).not.toMatch(/DRYRUN|UAT|0800000000|0811111111|value="8000"|value="10000"/);
+    expect(markup).toContain("Timeline การผลิตสำหรับ Logistics");
+    expect(markup).toContain("/api/admin/logistics/production-media/supplier-order-1/file-1");
+    expect(markup).not.toContain("factory_cost");
   });
   it("describes IMPORT_CUSTOMS as in progress for admin and member views", () => {
     expect(trackingStatusLabel("IMPORT_CUSTOMS")).toBe("อยู่ระหว่างพิธีการนำเข้า");
@@ -72,6 +76,7 @@ describe("DR-019 logistics presentation helpers", () => {
 
   it("groups released and unallocated quantities by warehouse", () => {
     const logistics: LogisticsDetail = {
+      productionTimeline: [],
       prerequisites: { warehouses: [], receiptSources: [] },
       receipts: [{
         id: "receipt-1",

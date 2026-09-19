@@ -1,10 +1,22 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
   adminOrderCapabilitiesForPermissions,
+  projectLogisticsProductionTimeline,
   projectLogisticsReceiptSources,
 } from "./admin-access";
 
 describe("admin order capabilities", () => {
+  it("resolves target-organization permissions before loading private order operations", () => {
+    const server = readFileSync(path.join(process.cwd(), "src", "lib", "orders", "server.ts"), "utf8");
+    const permissionCheck = server.indexOf("targetOrganizationPermissions(");
+    const operationsLoad = server.indexOf("const adminForOperations");
+    expect(permissionCheck).toBeGreaterThan(-1);
+    expect(permissionCheck).toBeLessThan(operationsLoad);
+    expect(server).toContain("capabilities = adminOrderCapabilitiesForPermissions(targetPermissions)");
+    expect(server).toContain('throw new AppAccessError("PERMISSION_DENIED", 404, "ไม่พบ Order")');
+  });
   it("keeps operations away from approvals and logistics actions", () => {
     const result = adminOrderCapabilitiesForPermissions([
       "orders.manage",
@@ -54,8 +66,22 @@ describe("admin order capabilities", () => {
       manageSupplierPayments: false,
       manageLogistics: true,
       manageWarehouseAndShipment: true,
+      viewProductionTimeline: true,
       manageFreight: false,
     });
+  });
+
+  it("projects a read-only production timeline without supplier or finance fields", () => {
+    const supplierOrder = { id: "so-1", supplier_order_number: "SO-1", po_number: "PO-1", status: "IN_PRODUCTION", supplier_id: "secret" };
+    const update = { id: "up-1", supplier_order_id: "so-1", status: "DELAYED", note: "รอวัสดุ", estimated_completion_at: null, progress_percent: 40, started_at: null, actual_completed_at: null, delay_reason: "วัสดุล่าช้า", created_at: "2026-09-19T00:00:00Z", files: [{ id: "file-1", original_name: "progress.jpg", mime_type: "image/jpeg", bucket: "secret" }], factory_cost: 999 };
+    const result = projectLogisticsProductionTimeline({
+      supplierOrders: [supplierOrder],
+      updates: [update],
+    });
+    expect(result[0]).toMatchObject({ supplier_order_number: "SO-1", updates: [expect.objectContaining({ delay_reason: "วัสดุล่าช้า" })] });
+    expect(result[0]).not.toHaveProperty("supplier_id");
+    expect(result[0].updates[0]).not.toHaveProperty("factory_cost");
+    expect(result[0].updates[0].files[0]).not.toHaveProperty("bucket");
   });
 
   it("lets delivery-only staff view delivery logistics without warehouse write actions", () => {

@@ -24,9 +24,11 @@ describe("QC reopen UI integration", () => {
   });
 
   it("hides QC controls and audit projection when this order's organization lacks qc.manage", () => {
-    expect(loader).toContain('database.rpc("has_permission", {');
-    expect(loader).toContain('permission_code: "qc.manage"');
-    expect(loader).toContain('target_organization_id: String(orderRow.organization_id)');
+    expect(loader).toContain("targetOrganizationPermissions(");
+    expect(loader).toContain("adminOrderAccessPermissions");
+    expect(loader).toContain("String(orderRow.organization_id)");
+    expect(loader).toContain("capabilities = adminOrderCapabilitiesForPermissions(targetPermissions)");
+    expect(loader).toContain('const canManageQcForOrder = mode === "admin" && Boolean(capabilities?.manageQc)');
     expect(loader).toContain('capabilities: { ...capabilities, manageQc: canManageQcForOrder }');
     expect(loader).toContain('mode === "admin" && canManageQcForOrder && itemIds.length');
     expect(source).toContain("capabilities.manageQc ? <section");

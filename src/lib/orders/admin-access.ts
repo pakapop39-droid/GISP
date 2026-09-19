@@ -23,6 +23,7 @@ export const allAdminOrderCapabilities: AdminOrderCapabilities = {
   requestSupplierPayment: true,
   manageSupplierPayments: true,
   manageProduction: true,
+  viewProductionTimeline: true,
   manageQc: true,
   manageLogistics: true,
   manageWarehouseAndShipment: true,
@@ -43,11 +44,39 @@ export function adminOrderCapabilitiesForPermissions(
     requestSupplierPayment: has("supplier_payments.request"),
     manageSupplierPayments: has("supplier_payments.manage"),
     manageProduction: has("production.manage"),
+    viewProductionTimeline: has("shipments.manage"),
     manageQc: has("qc.manage"),
     manageLogistics: has("shipments.manage") || has("deliveries.manage"),
     manageWarehouseAndShipment: has("shipments.manage"),
     manageFreight: has("freight.manage"),
   };
+}
+
+export function projectLogisticsProductionTimeline(input: {
+  supplierOrders: Array<{ id: string; supplier_order_number: string; po_number: string | null; status: string }>;
+  updates: Array<{
+    id: string; supplier_order_id: string; status: string; note: string | null;
+    estimated_completion_at: string | null; progress_percent: number | null;
+    started_at: string | null; actual_completed_at: string | null;
+    delay_reason: string | null; created_at: string; files: Array<{ id: string; original_name: string; mime_type: string | null }>;
+  }>;
+}) {
+  return input.supplierOrders.map((order) => ({
+    supplier_order_id: order.id,
+    supplier_order_number: order.supplier_order_number,
+    po_number: order.po_number,
+    status: order.status,
+    updates: input.updates.filter((update) => update.supplier_order_id === order.id).map((update) => ({
+      id: update.id, status: update.status, note: update.note,
+      estimated_completion_at: update.estimated_completion_at,
+      progress_percent: update.progress_percent,
+      started_at: update.started_at,
+      actual_completed_at: update.actual_completed_at,
+      delay_reason: update.delay_reason,
+      created_at: update.created_at,
+      files: update.files.map((file) => ({ id: file.id, original_name: file.original_name, mime_type: file.mime_type })),
+    })),
+  }));
 }
 
 type LogisticsOrderItemProjection = {

@@ -4,10 +4,12 @@ import { AppAccessError, requireAppAccess } from "@/lib/auth/session";
 import {
   adminOrderAccessPermissions,
   adminOrderCapabilitiesForPermissions,
+  projectLogisticsProductionTimeline,
   projectLogisticsReceiptSources,
 } from "@/lib/orders/admin-access";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
+import { targetOrganizationPermissions } from "@/lib/orders/organization-access";
 import { projectQcReopenEvents, type QcReopenAuditRow } from "@/lib/orders/qc-reopen-history";
 import { projectOrderDetailForRelease } from "@/lib/orders/release-projection";
 import { isOrderOperationSliceVisible } from "@/lib/release-stage";
@@ -117,19 +119,22 @@ export async function loadAdminOrders(): Promise<AdminOrderListData> {
 async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promise<OrderDetail> {
   const adminAccess = mode === "admin" ? await requireOrderAdmin() : null;
   const context = mode === "member" ? await requireOrderMember() : adminAccess!.context;
-  const capabilities = adminAccess?.capabilities;
+  let capabilities = adminAccess?.capabilities;
   const database = mode === "admin" ? createInsForgeAdminClient().database : (await createInsForgeServerClient()).database;
   let orderQuery = database.from("customer_orders").select(orderColumns).eq("id", id);
   if (mode === "member") orderQuery = orderQuery.eq("member_profile_id", context.memberProfileId ?? "");
   const order = take(await orderQuery.maybeSingle(), "load order");
   if (!order) throw new AppAccessError("PERMISSION_DENIED", 404, "ไม่พบ Order");
   const orderRow = order as unknown as Record<string, unknown>;
-  const canManageQcForOrder = mode === "admin" && Boolean(capabilities?.manageQc)
-    ? take(await (await createInsForgeServerClient()).database.rpc("has_permission", {
-      permission_code: "qc.manage",
-      target_organization_id: String(orderRow.organization_id),
-    }), "check organization-scoped QC permission") === true
-    : false;
+  if (mode === "admin") {
+    const targetPermissions = await targetOrganizationPermissions(
+      adminOrderAccessPermissions,
+      String(orderRow.organization_id),
+    );
+    if (!targetPermissions.length) throw new AppAccessError("PERMISSION_DENIED", 404, "ไม่พบ Order");
+    capabilities = adminOrderCapabilitiesForPermissions(targetPermissions);
+  }
+  const canManageQcForOrder = mode === "admin" && Boolean(capabilities?.manageQc);
   const [itemsResult, schedulesResult, cancellationsResult, eventsResult, projectResult, memberResult] = await Promise.all([
     database.from("order_items").select(itemColumns).eq("order_id", id).order("created_at").limit(200),
     mode === "member" || capabilities?.viewCustomerPaymentStatus
@@ -169,7 +174,7 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
     dispatchGates: [],
     logistics: {
       prerequisites: { warehouses: [], receiptSources: [] },
-      receipts: [], consolidations: [], shipments: [], costs: [], invoice: null,
+      productionTimeline: [], receipts: [], consolidations: [], shipments: [], costs: [], invoice: null,
     },
     ...(capabilities ? { capabilities: { ...capabilities, manageQc: canManageQcForOrder } } : {}),
   };
@@ -195,10 +200,11 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   const adminForOperations = createInsForgeAdminClient();
   const authenticatedOperations = await createInsForgeServerClient();
   const itemIds = detail.items.map((item) => item.id);
-  const needsSupplierOperations = mode === "member" || Boolean(
+  const needsConfidentialSupplierOperations = mode === "member" || Boolean(
     capabilities?.requestSupplierPayment || capabilities?.manageSupplierPayments
       || capabilities?.manageProduction || canManageQcForOrder,
   );
+  const needsSupplierOperations = needsConfidentialSupplierOperations || Boolean(capabilities?.viewProductionTimeline);
   const needsLogisticsPrerequisites = mode === "admin" && Boolean(capabilities?.manageWarehouseAndShipment);
   const supplierLinksResult = itemIds.length && (needsSupplierOperations || needsLogisticsPrerequisites)
     ? await adminForOperations.database.from("supplier_order_items")
@@ -207,7 +213,7 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   const supplierLinks = take(supplierLinksResult, "load operation item links") ?? [];
   const operationSupplierOrderIds = [...new Set(supplierLinks.map((row) => row.supplier_order_id))];
   const [productionResult, qcResult, qcReopenResult, gateResults] = await Promise.all([
-    operationSupplierOrderIds.length && (mode === "member" || Boolean(capabilities?.manageProduction || canManageQcForOrder)) ? adminForOperations.database.from("production_updates")
+    operationSupplierOrderIds.length && (mode === "member" || Boolean(capabilities?.manageProduction || capabilities?.viewProductionTimeline || canManageQcForOrder)) ? adminForOperations.database.from("production_updates")
       .select("id,supplier_order_id,status,note,estimated_completion_at,progress_percent,started_at,actual_completed_at,delay_reason,created_at")
       .in("supplier_order_id", operationSupplierOrderIds).order("created_at").limit(500) : Promise.resolve({ data: [], error: null }),
     itemIds.length && (mode === "member" || canManageQcForOrder) ? adminForOperations.database.from("qc_inspections")
@@ -241,15 +247,21 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   const fileMap = new Map(files.map((file) => [file.id, file]));
   const checklist = take(qcChecklistResult, "load QC checklist") ?? [];
   const decisions = take(decisionsResult, "load QC member decisions") ?? [];
-  detail.productionUpdates = productionRows.map((row) => ({
+  const projectedProductionUpdates = productionRows.map((row) => ({
     id: row.id, status: row.status, note: row.note,
+    supplier_order_id: row.supplier_order_id,
     estimated_completion_at: row.estimated_completion_at,
     progress_percent: row.progress_percent, started_at: row.started_at,
     actual_completed_at: row.actual_completed_at, delay_reason: row.delay_reason,
     created_at: row.created_at,
-    ...(mode === "admin" ? { supplier_order_id: row.supplier_order_id } : {}),
-    files: productionFileLinks.filter((link) => link.production_update_id === row.id).map((link) => fileMap.get(link.file_id)).filter(Boolean),
-  })) as unknown as ProductionUpdate[];
+    files: productionFileLinks.filter((link) => link.production_update_id === row.id).flatMap((link) => {
+      const file = fileMap.get(link.file_id);
+      return file ? [{ id: file.id, original_name: file.original_name, mime_type: file.mime_type }] : [];
+    }),
+  }));
+  detail.productionUpdates = mode === "member"
+    ? projectedProductionUpdates.map(({ supplier_order_id: _supplierOrderId, ...update }) => update)
+    : capabilities?.manageProduction || canManageQcForOrder ? projectedProductionUpdates : [];
   detail.qcInspections = qcRows.map((row) => ({
     ...row,
     checklist: checklist.filter((item) => item.inspection_id === row.id),
@@ -373,6 +385,10 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
       })),
   }) : [];
   detail.logistics = {
+    productionTimeline: capabilities?.viewProductionTimeline ? projectLogisticsProductionTimeline({
+      supplierOrders: take(logisticsSupplierOrdersResult, "load logistics supplier order references") ?? [],
+      updates: projectedProductionUpdates,
+    }) : [],
     prerequisites: {
       warehouses: take(warehouseOptionsResult, "load active warehouse options") ?? [],
       receiptSources,
@@ -405,7 +421,7 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
     invoice: invoice ? { ...invoice, items: take(invoiceItemsResult, "load invoice items") ?? [] } as unknown as LogisticsDetail["invoice"] : null,
   } as unknown as LogisticsDetail;
 
-  if (mode === "admin" && needsSupplierOperations) {
+  if (mode === "admin" && needsConfidentialSupplierOperations) {
     const admin = createInsForgeAdminClient();
     const supplierOrdersResult = await admin.database.from("supplier_orders")
       .select("id,customer_order_id,supplier_id,supplier_order_number,po_number,status,supplier_currency,total_factory_cost,paid_factory_amount,po_issued_at")

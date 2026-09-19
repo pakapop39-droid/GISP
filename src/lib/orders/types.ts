@@ -88,6 +88,7 @@ export type AdminOrderCapabilities = {
   requestSupplierPayment: boolean;
   manageSupplierPayments: boolean;
   manageProduction: boolean;
+  viewProductionTimeline: boolean;
   manageQc: boolean;
   manageLogistics: boolean;
   manageWarehouseAndShipment: boolean;
@@ -418,11 +419,31 @@ export type FreightInvoice = {
 
 export type LogisticsDetail = {
   prerequisites?: LogisticsPrerequisites;
+  productionTimeline: LogisticsProductionTimeline[];
   receipts: WarehouseReceipt[];
   consolidations: ConsolidationGroup[];
   shipments: Shipment[];
   costs: LogisticsCost[];
   invoice: FreightInvoice | null;
+};
+
+export type LogisticsProductionTimeline = {
+  supplier_order_id: string;
+  supplier_order_number: string;
+  po_number: string | null;
+  status: string;
+  updates: Array<{
+    id: string;
+    status: string;
+    note: string | null;
+    estimated_completion_at: string | null;
+    progress_percent: number | null;
+    started_at: string | null;
+    actual_completed_at: string | null;
+    delay_reason: string | null;
+    created_at: string;
+    files: OperationFile[];
+  }>;
 };
 
 export type OrderDetail = {
