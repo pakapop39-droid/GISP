@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const sql = readFileSync(resolve(
   process.cwd(), "migrations/20260918211000_payment-evidence-binding.sql",
-), "utf8");
+), "utf8").replace(/\r\n?/g, "\n");
 const submit = sql.split("CREATE OR REPLACE FUNCTION public.submit_payment_transfer(")[1]
   ?.split("CREATE OR REPLACE FUNCTION public.verify_payment_transfer(")[0] ?? "";
 const verify = sql.split("CREATE OR REPLACE FUNCTION public.verify_payment_transfer(")[1] ?? "";
