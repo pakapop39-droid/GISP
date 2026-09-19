@@ -1,6 +1,6 @@
 # GISP Release C Controlled Production Pilot — Prepared Package v0.1
 
-Status: **PREPARED WITH FOUR RECORDED INPUTS/DECISIONS REQUIRED / NOT AUTHORIZED FOR PRODUCTION**
+Status: **PACKAGE AND FRESH BACKUP PREPARED; MEMBER SIGNUP REQUIRED / NOT AUTHORIZED FOR PRODUCTION**
 
 Approval basis: `docs/GISP-APR-CONTROLLED-PRODUCTION-PILOT-01-20260919-v1.0.md`
 
@@ -29,7 +29,7 @@ Fresh local candidate verification on 19 September 2026:
 - Database migration baseline: 26 applied; head `20260908170000_release-b-member-pilot`.
 - Business counts before Release C: 0 Orders, 0 Payment Transfers, 0 Shipments and 0 Notification Jobs. Existing File and Audit counts are 3,942 and 5,859 respectively.
 - Production notification Schedule `aefecf8b-5b02-4649-a9b2-47aa448af0e8` remains active and points to the Production backend. It was not changed.
-- No Production write, backup creation, migration or deploy was performed during preparation.
+- The only Production mutation during preparation was the explicitly authorized Backup rotation recorded below. No Migration, Deploy, Release Stage, Schedule, Role, Permission or transaction was changed.
 
 ## Release C migrations — exact allow-list
 
@@ -75,18 +75,18 @@ These are canonical UTF-8/LF hashes. Raw Windows worktree hashes can differ beca
 
 Emergency SQL is not pre-authorized for Production by this package. The final Release Authorization may authorize `stop-c.sql` only under the named stop conditions; Resume or Restore after real transactions requires incident-specific reconciliation and approval.
 
-## Backup inventory and required decision
+## Backup inventory after authorized rotation
 
 - Latest scheduled completed backup: `81ecaeac-41a7-436b-ac5e-c82284991ab0`, triggered `2026-09-19T01:00:07.291Z`.
-- Manual backup slots are full at 5/5.
-- Existing manual backups, newest first:
+- The owner authorized deletion of exact manual Backup `9479ed9d-966e-4c63-9231-ea6b9618ec30` after local archive/hash verification. That Backup is now absent.
+- Fresh manual Backup `e613b75c-ad3a-4f09-8bc5-82671576ce33`, named `pre-release-c-controlled-pilot`, completed at `2026-09-19T14:33:45.429Z`.
+- Other manual backups remain unchanged:
   1. `4ceb701e-fed3-4ee6-95e0-e821093526dd` — `pre-release-b-20260909`
   2. `7fc7db66-0ca1-4640-aa47-c9c6e7736940` — `cn01-catalog-ready-20260906`
   3. `e7a630a4-571b-4f4f-96f9-6e7faf0d0e55` — `pre-cn01-load-20260906`
   4. `7d82d2a6-b131-4e00-bed7-0022802f53b5` — `pre-mvp-upgrade-20260906`
-  5. `9479ed9d-966e-4c63-9231-ea6b9618ec30` — `pre-production-completion-20260906`
 
-No backup was deleted. Before Release C, the owner must authorize deletion of one exact manual Backup ID, then creation and completion verification of a fresh named `pre-release-c-controlled-pilot` backup.
+The fresh Backup predates the new Member signup. If it is used for Restore, the Member must be onboarded again. The final Release C Authorization must either accept this bounded recovery limitation or authorize a new post-onboarding Backup action; no additional Backup deletion is authorized by this package.
 
 ## Real Member requirement
 
@@ -96,9 +96,16 @@ For reliable cross-organization isolation, use a distinct real Member email for 
 
 ## Final Release C authorization inputs still required
 
-1. Distinct real Member email for `vs innovation.co.,ltd`.
-2. Exact manual Backup ID authorized for deletion so a fresh completed pre-C backup can be created.
-3. Written acceptance or remediation decision for the unchanged Next.js/Sharp dependency risk.
-4. Final Production Release C Authorization naming this Candidate, the four SQL hashes, the fresh Backup ID, `RELEASE_STAGE=C`, empty D flags, the approved Member, Finance verifier, first-Order owner, monitoring window, smoke checks and stop conditions.
+Completed preparation decisions:
 
-Until all four inputs are recorded, status remains **NO-GO** and Production is unchanged.
+- Distinct Member email selected: `vsmodular@gmail.com`; signup, email verification, onboarding submission and bounded approval remain to be completed.
+- Exact old Backup deletion was authorized and completed after archive/hash verification.
+- Fresh Backup `e613b75c-ad3a-4f09-8bc5-82671576ce33` (`pre-release-c-controlled-pilot`) is `completed`.
+- The owner accepted the unchanged Next.js/Sharp dependency risk for the one-Member/one-Order pilot with AVIF/HEIF not used.
+
+Still required:
+
+1. Verified and approved Member IDs for `vsmodular@gmail.com` / `vs innovation.co.,ltd`, with Member-only role isolation.
+2. Final Production Release C Authorization naming this Candidate, the four SQL hashes, Backup `e613b75c-ad3a-4f09-8bc5-82671576ce33`, `RELEASE_STAGE=C`, empty D flags, the approved Member, Finance verifier, first-Order owner, monitoring window, smoke checks and stop conditions.
+
+Until both remaining items are recorded, status remains **NO-GO**. Production preparation changed only the explicitly authorized Backup; no Migration, Deploy, Stage, Schedule, Role, Permission or transaction was changed.
