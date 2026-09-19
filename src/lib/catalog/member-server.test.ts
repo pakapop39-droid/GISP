@@ -4,6 +4,7 @@ const fixture = vi.hoisted(() => ({
   media: [] as Array<{ id: string; product_id: string; file_id: string }>,
   batches: [] as string[][],
   failBatch: false,
+  signingDelay: {} as Record<string, number>,
 }));
 
 vi.mock("server-only", () => ({}));
@@ -27,7 +28,10 @@ vi.mock("@/lib/insforge/admin", () => ({
         return query;
       },
     },
-    storage: { from: () => ({ createSignedUrl: async (key: string) => ({ data: { signedUrl: `https://signed.example/${key}` }, error: null }) }) },
+    storage: { from: () => ({ createSignedUrl: async (key: string) => {
+      await new Promise((resolve) => setTimeout(resolve, fixture.signingDelay[key] ?? 0));
+      return { data: { signedUrl: `https://signed.example/${key}` }, error: null };
+    } }) },
   }),
 }));
 
@@ -37,6 +41,7 @@ describe("member catalog media metadata", () => {
   beforeEach(() => {
     fixture.batches = [];
     fixture.failBatch = false;
+    fixture.signingDelay = {};
     fixture.media = Array.from({ length: 125 }, (_, i) => ({ id: `media-${i}`, product_id: `product-${i % 24}`, file_id: `file-${i}` }));
   });
 
@@ -55,5 +60,20 @@ describe("member catalog media metadata", () => {
   it("preserves metadata failures instead of reporting a successful empty catalog", async () => {
     fixture.failBatch = true;
     await expect(signedMemberProductMedia(["product-0"])).rejects.toThrow("502 Bad Gateway");
+  });
+
+  it("keeps the database primary-first order when signing finishes out of order", async () => {
+    fixture.media = [
+      { id: "primary-media", product_id: "product-0", file_id: "primary-file" },
+      { id: "secondary-media", product_id: "product-0", file_id: "secondary-file" },
+    ];
+    fixture.signingDelay = { "primary-file": 20, "secondary-file": 0 };
+
+    const result = await signedMemberProductMedia(["product-0"]);
+
+    expect(result.get("product-0")).toEqual([
+      { id: "primary-media", url: "https://signed.example/primary-file" },
+      { id: "secondary-media", url: "https://signed.example/secondary-file" },
+    ]);
   });
 });

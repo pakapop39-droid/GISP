@@ -41,25 +41,32 @@ export async function signedMemberProductMedia(productIds: string[]) {
     .select("id,product_id,file_id,is_primary,sort_order")
     .in("product_id", productIds)
     .eq("media_type", "IMAGE")
+    .order("is_primary", { ascending: false })
     .order("sort_order")
     .limit(5000);
   if (mediaResult.error) throw mediaResult.error;
   const fileIds = [...new Set((mediaResult.data ?? []).map((item) => item.file_id))];
   if (!fileIds.length) return result;
   const files = await memberFileRecords(admin, fileIds);
-  await Promise.all(
+  const signedMedia = await Promise.all(
     (mediaResult.data ?? []).map(async (media) => {
       const file = files.get(media.file_id);
-      if (!file) return;
+      if (!file) return null;
       const signed = await admin.storage
         .from(file.bucket)
         .createSignedUrl(file.object_key, 300);
-      if (signed.error || !signed.data) return;
-      const items = result.get(media.product_id) ?? [];
-      items.push({ id: media.id, url: signed.data.signedUrl });
-      result.set(media.product_id, items);
+      if (signed.error || !signed.data) return null;
+      return { productId: media.product_id, item: { id: media.id, url: signed.data.signedUrl } };
     }),
   );
+  // Promise.all preserves the database order even when individual signing
+  // requests finish out of order. This keeps the primary image first.
+  for (const signed of signedMedia) {
+    if (!signed) continue;
+    const items = result.get(signed.productId) ?? [];
+    items.push(signed.item);
+    result.set(signed.productId, items);
+  }
   return result;
 }
 
