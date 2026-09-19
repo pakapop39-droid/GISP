@@ -1,7 +1,9 @@
 # GISP Release C/D Hosted Rehearsal — Execution Evidence
 
-Date: 2026-09-19  
-Environment: Child `pay-seq-02-rehearsal-20260918` (`e902393a-ffe7-433d-96d8-a37256948959`)  
+Date: 2026-09-19
+
+Environment: Child `pay-seq-02-rehearsal-20260918` (`e902393a-ffe7-433d-96d8-a37256948959`)
+
 Production allowed: No
 
 ## Frozen source and hosted deployment
