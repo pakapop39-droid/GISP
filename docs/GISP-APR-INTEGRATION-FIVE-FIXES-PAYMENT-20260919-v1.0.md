@@ -50,10 +50,10 @@ This section records completed work under the approvals above; it grants no addi
 - **Development environment:** `RELEASE_STAGE=D` with `RELEASE_D_ENABLED_SLICES=7,8,9,10`, limited to project `db09b94e-fc37-4f90-9530-3289afef0b79`
 - **Development backup and migrations:** the 19 September backup was completed and verified; migrations `20260920010000` through `20260920011100` were applied once, in order, 12/12
 - **Automated gate:** independent QA passed 532 tests; typecheck, optimized build and affected ESLint checks passed
-- **Development deployment:** application deployment reference `0d7a2641...`; provider deployment `dpl_7U8...`; deployment reported ready and both `/api/health` and login returned HTTP 200
+- **Development deployment:** application deployment reference `0d7a2641-ed83-4014-b5a7-6d737b7b9e8f`; provider deployment `dpl_7U8bJJx7CpugmAhAxx18gmCDkHXi`; deployment reported ready and both `/api/health` and login returned HTTP 200
 - **Authenticated Hosted UAT:** **PASS** on the Development domain for the integrated five-fix and Payment candidate
 - **Hydration correction:** React #418 on Admin Order Detail was traced to server/client Release D navigation drift, fixed in `4e64c44`, and retested with browser errors `[]`
-- **Role evidence limitation:** the shared Hosted credential exercises the available hosted role only. Role-specific deny/allow and cross-organization cases retain their prior local authenticated and automated evidence; this closure does not claim separate Hosted credentials for every role
+- **Role evidence limitation:** Hosted UAT used separate shared credentials for Super Admin and Member. No Finance-only, Purchasing-only or Logistics-only Hosted credentials were available. Role-specific deny/allow and cross-organization cases retain their prior local authenticated and automated evidence
 - **Performance observation:** Member Catalog generally completed in about 10–12 seconds and one automation probe timed out. Functional UAT passed, but this remains a Development performance observation for monitoring
 - **Production:** **No / NO-GO**; no Production action occurred
 - **Development Slice remaining steps:** **0**

@@ -69,12 +69,12 @@ Blob OIDs below are from final source revision `4e64c44f355ee742262cb89607bef3a5
 - Target project: `db09b94e-fc37-4f90-9530-3289afef0b79` only.
 - Environment: `RELEASE_STAGE=D`, `RELEASE_D_ENABLED_SLICES=7,8,9,10`.
 - Backup verified complete before migrations; `20260920010000` through `20260920011100` applied once and in order, 12/12.
-- Final deployment references: application `0d7a2641...`; provider `dpl_7U8...`.
+- Final deployment references: application `0d7a2641-ed83-4014-b5a7-6d737b7b9e8f`; provider `dpl_7U8bJJx7CpugmAhAxx18gmCDkHXi`.
 - `/api/health` and login returned HTTP 200.
 - Final Hosted authenticated UAT: **PASS**.
 - Admin Order Detail hydration fix retest: browser errors `[]`.
 - Independent QA: 532 tests passed; typecheck, optimized build and affected ESLint checks passed.
-- Hosted role limitation: the shared Hosted credential covers the available hosted role only. Earlier local authenticated and automated evidence remains the basis for role-specific allow/deny and cross-organization cases.
+- Hosted credential limitation: UAT used separate shared credentials for Super Admin and Member. No Finance-only, Purchasing-only or Logistics-only Hosted credentials were available. Earlier local authenticated and automated evidence remains the basis for those role-specific allow/deny and cross-organization cases.
 - Member Catalog performance observation: usual completion about 10–12 seconds; one automation probe timed out. Functional UAT passed; monitor this latency separately.
 - Development Slice remaining steps: **0**.
 - Production: **No / NO-GO**.
@@ -85,9 +85,9 @@ Approval and readiness Git blob OIDs below are calculated from the exact documen
 
 | Git blob OID (SHA-1) | Path | Revision provenance |
 | --- | --- | --- |
-| `ad0e779dd0ec9a9efd09faee58cbeb3298ec0a54` | `docs/GISP-APR-INTEGRATION-FIVE-FIXES-PAYMENT-20260919-v1.0.md` | Development closure documentation commit reported in handoff |
-| `f4fbb14e1aee12b11d140c506f6c44669df9943e` | `docs/GISP-RELEASE-CD-GO-LIVE-READINESS-20260919-v0.1.md` | Development closure documentation commit reported in handoff |
-| `N/A — self-referential` | `docs/GISP-INTEGRATED-FIVE-FIXES-PAYMENT-CANDIDATE-MANIFEST-20260919-v1.0.md` | Development closure documentation commit reported in handoff |
+| `3280b9f7ef02a5ec55fdd02b86933f60d22a3abe` | `docs/GISP-APR-INTEGRATION-FIVE-FIXES-PAYMENT-20260919-v1.0.md` | Traceability correction documentation commit reported in handoff |
+| `90d1615b0aa9dc016bc411e81ed9a63dbbb5ea3b` | `docs/GISP-RELEASE-CD-GO-LIVE-READINESS-20260919-v0.1.md` | Traceability correction documentation commit reported in handoff |
+| `N/A — self-referential` | `docs/GISP-INTEGRATED-FIVE-FIXES-PAYMENT-CANDIDATE-MANIFEST-20260919-v1.0.md` | Traceability correction documentation commit reported in handoff |
 
 ## Exclusions and Production status
 
