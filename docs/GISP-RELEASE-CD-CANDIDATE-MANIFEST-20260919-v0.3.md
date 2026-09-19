@@ -5,6 +5,7 @@
 ## ขอบเขตที่ตรึง
 
 - Emergency Stop/Resume/Reconcile และ security triage: commit `9901c04` (`feat: add release c d emergency rollback drafts`).
+- Integrated Payment + readiness freeze: commit `195880d1416be98ccfef53f46bac744675fa48fe` (`fix: freeze payment and release readiness candidate`).
 - Payment Verify presentation fix: `EVIDENCE_PREVIEW_REQUIRED` ตอบ HTTP 409 โดยไม่เปลี่ยนกฎการเงินหรือ SQL.
   - `src/app/api/admin/payment-transfers/[id]/verify/route.ts`: SHA-256 `ecea79e228e32b98e5a01f62ab9036b4cb93c774da1542afd94b2982f3d7045a`
   - `src/app/api/admin/payment-transfers/[id]/verify/route.test.ts`: SHA-256 `595044765b35ae6dfbb2d294cdf5bc384773da66f40ffb831eaee883c19d2f36`
@@ -27,4 +28,4 @@
 - Production Backup manual slots เต็ม 5/5 และยังไม่มี fresh named pre-C backup.
 - ห้าม Apply, Deploy, เปลี่ยนสิทธิ์/ข้อมูล Production หรือเปิด C/D จาก Manifest นี้.
 
-หลังบันทึกการรวม Payment fix แล้ว ให้ใช้ commit ที่รายงานใน Completion Record เป็น source commit คู่กับ Manifest นี้; หากไฟล์ข้างต้นเปลี่ยนแม้แต่ไฟล์เดียว Candidate ต้องสร้าง hash และ QA ใหม่เฉพาะส่วนที่ได้รับผลกระทบ.
+ให้ใช้ commit `9901c04` และ `195880d1416be98ccfef53f46bac744675fa48fe` เป็น Source Candidate คู่กับ Manifest นี้; หากไฟล์ข้างต้นเปลี่ยนแม้แต่ไฟล์เดียว Candidate ต้องสร้าง hash และ QA ใหม่เฉพาะส่วนที่ได้รับผลกระทบ.
