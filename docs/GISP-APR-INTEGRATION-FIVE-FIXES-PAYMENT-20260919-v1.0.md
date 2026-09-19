@@ -51,6 +51,26 @@ named Development actions and PDF gate code. It does not authorize any Productio
 deployment, Production migration, Production data mutation, or any other route,
 role, permission, environment flag, or external-service change.
 
+## Recorded execution outcome
+
+This section records results under the addendum; it grants no additional authority.
+
+- **Frozen source candidate:** HEAD
+  `684477c23c5b94e460b55f23bdd7298b46183a20`, tree
+  `921fc8a43296423ec4f568bf10dab038c88bd00e`
+- **Independent QA:** 530 automated tests passed; typecheck and optimized build
+  passed; lint reported 0 errors
+- **Development backup:** completed and verified before migration execution
+- **Development migrations:** `20260920010000` through `20260920011100` applied
+  in order, 12/12, to project `db09b94e-fc37-4f90-9530-3289afef0b79`
+- **Authenticated UAT:** passed from the local candidate against the Development
+  backend, including the final permission/media hardening checks
+- **Development deployments:** deployment references beginning `551...` and
+  `23bb...` report `READY`; their configured domains still return HTTP 404
+- **Hosted blocker:** recorded with feedback reference beginning `c1794...`;
+  hosted-domain UAT and Development closure remain pending
+- **Production allowed:** **No**
+
 ## Bounded implementation
 
 This record authorizes a clean integration branch based on five-fix commit
@@ -69,9 +89,9 @@ Release Executor; this App Builder changed local source and documentation only.
 
 ## Stop conditions
 
-- Before applying the 12 SQL migrations, verify the 19 September Development
-  backup completed and the target project ID matches the addendum exactly.
+- The authorized 12-file Development migration run is complete; do not reapply it
+  or apply further migrations under this record.
 - Do not broaden the PDF route patterns, alter another gate or change an
   environment flag under this approval.
-- A successful Local build is candidate evidence only; it is not Development
-  deployment evidence or Production Release Authorization.
+- `READY` deployment artifacts whose domains return HTTP 404 do not complete
+  hosted Development UAT and are not Production Release Authorization.

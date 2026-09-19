@@ -6,8 +6,10 @@
 
 | Area | Verified state | Decision impact |
 | --- | --- | --- |
-| Source | Clean integration branch `codex/integration-five-fixes-payment` is based on five-fix `6d43b0278348dad4038f0408b76d87d8f94d9bf2`; Payment, media-link hardening and the pre-authorization manifest end at `01c3064d1b7ec352402ca407dfa37e9e7d8a3aec`. The final commit adds only exact Supplier PO/Warehouse Receipt PDF release gates, tests and approval/readiness records. | QA and deployment tooling must record the final commit/tree from the updated manifest; never deploy the dirty root checkout. |
-| SQL | `PAY-RPC-GATE-001` has 12 ordered SQL files. On Production B, read-only migration history remains 26 applied, latest `20260908170000_release-b-member-pilot`; no C/D SQL was applied there. The owner now authorizes these 12 files for the named **Development** project only after its 19 September backup is verified complete. | Development execution evidence is pending. C and D Production remain separately gated; do not use `migrations up --all` or apply this authority to Production. |
+| Source | Final source candidate HEAD `684477c23c5b94e460b55f23bdd7298b46183a20`, tree `921fc8a43296423ec4f568bf10dab038c88bd00e`, on clean branch `codex/integration-five-fixes-payment`. Independent QA passed 530 tests, typecheck, optimized build and lint with 0 errors. | Preserve this exact source identity; this documentation-only closure commit does not replace it. Never deploy the dirty root checkout. |
+| SQL | After the 19 September Development backup was verified complete, migrations `20260920010000` through `20260920011100` were applied in order, 12/12, to Development project `db09b94e-fc37-4f90-9530-3289afef0b79`. No C/D SQL was applied to Production. | Development migration gate passed. This evidence grants no Production migration authority. |
+| Development UAT | Authenticated local frontend + Development-backend UAT passed, including target-organization access, PDF routes, production media and malformed-ID behavior. | Backend-integrated behavior is verified; hosted-domain access remains separate. |
+| Development deploy | Deployments beginning `551...` and `23bb...` report `READY`, but their configured domains return HTTP 404. Feedback reference `c1794...` records the issue. | **Development closure blocker:** resolve domain routing/alias and rerun authenticated UAT through the hosted URL. A `READY` artifact alone is not hosted UAT evidence. |
 | Payment gap test | **Independent QA PASS for this bounded child rehearsal only.** A missing object and a mislabeled PDF whose bytes lack the `%PDF-` signature were denied at GET/Verify; this does **not** prove that every malformed PDF with a valid header is rejected. Simulated partial 20.00 + 33.50 settled exactly, while 54.50 against 53.50 due entered `OVERPAYMENT_REVIEW` and did not open the Order deposit gate. A genuine preview older than 11 minutes returned HTTP 409 `EVIDENCE_PREVIEW_REQUIRED`; the transfer stayed `SUBMITTED`, with no approval Audit or Notification. Four Notification Jobs are queued only (`PENDING`) to approved test aliases; delivery was not proven. These are not bank settlement tests. Updated candidate: 95 test files/496 tests, typecheck and optimized build passed. QA verified 28/28 manifest paths and 12/12 SQL package hashes. | Require human Finance to open/read the document and verify bank receipt before real money. This PASS is not Production Release Authorization. |
 | Production business data | Read-only query on Production project `865860c2-49fa-4e53-908f-9396b2f75233`: 0 Member Profiles, 0 Member Applications, 0 Organizations, 0 Orders, 0 Payment Transfers; 4 ACTIVE internal users. FINANCE, ORDER_ADMIN, PURCHASING, QC, LOGISTICS and SUPER_ADMIN each have one active assignee. Signup is enabled with email-code verification and SMTP configured; private Member Storage bucket is non-public. Actual email delivery has not been tested in this review. | **Blocker:** no real Member can place the first Pilot Order. Owner must nominate one real Member/company; that person registers/verifies and is approved via Release B. No simulated identity substitutes. |
 | Backup | Latest listed completed scheduled backup triggered `2026-09-18T01:00:04Z`. Manual backups occupy 5 slots; the latest named manual point is `pre-release-b-20260909`. No fresh named pre-C point exists. | **Blocker at cutover:** create/check completed fresh Production backup only after separate exact authorization; do not delete an old backup merely to free capacity without specifying its ID and retention decision. |
@@ -24,15 +26,23 @@ and perform Development UAT with test-data mutation. The owner also authorized
 source gate changes only for the exact Supplier PO PDF route at C and Warehouse
 Receipt PDF route at D8, with tests that keep broader routes closed.
 
-The App Builder produced local source and test evidence only. No migration,
-Development deployment, UAT data mutation, external-service mutation or
-Production action was performed in this build step. Production is explicitly
-prohibited and the verdict above remains NO-GO.
+Execution under that authorization is now recorded: Development backup complete;
+12/12 migrations applied in order; independent QA passed 530 tests, typecheck,
+build and lint with 0 errors; and authenticated local + Development-backend UAT
+passed. Deployments `551...` and `23bb...` are `READY`, while their domains remain
+HTTP 404 under feedback `c1794...`. No Production action occurred. Production is
+explicitly prohibited and the verdict above remains NO-GO.
 
-The final local working tree passed the focused Payment/PDF/media/release-gate
-suite (7 files, 41 tests), typecheck, the full Vitest suite (103 files, 525 tests),
-and the optimized Next.js build (128 static pages). These results are builder
-evidence pending independent QA against the committed HEAD/tree.
+## Development closure evidence
+
+- **Passed:** frozen candidate identity, backup prerequisite, 12/12 migrations,
+  automated QA, authenticated local + Development-backend UAT, and deployment
+  artifact status.
+- **Open blocker:** hosted Development domains return HTTP 404 despite both
+  deployment artifacts reporting `READY`.
+- **Remaining Development closure steps: 2** — resolve the domain routing/alias
+  under feedback `c1794...`; rerun and record authenticated hosted-domain UAT.
+- **Production:** excluded from this Development closure and still prohibited.
 
 ## Required gates, in order
 
