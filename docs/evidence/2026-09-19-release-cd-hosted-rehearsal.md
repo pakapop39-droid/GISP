@@ -57,3 +57,16 @@ Production allowed: No
 - `RCD-HR-09`: pending independent QA verdict.
 
 This rehearsal evidence is not Production Release Authorization.
+
+## Independent QA verdict
+
+Independent QA completed its read-only review on 2026-09-19 with verdict **FAIL**. The Hosted Rehearsal Slice remains open and Production Release C/D remains **NO-GO**.
+
+- `RCD-HR-02A` blocker: the Child schedule metadata is still active and retains the Production notification URL. The Child has no observed execution and its underlying cron job appears absent, but the approved acceptance criterion required an observably inactive Child schedule before backup and after restore.
+- `RCD-HR-06` blocker: Forward Resume restored the intended permission semantics but did not restore the exact combined function-definition/ACL hash. The exact SQL used to produce the recorded combined MD5 was not retained as a reproducible artifact, so the post-Restore hash claim cannot be independently recomputed.
+- `RCD-HR-07` major: the fresh Advisor scan completed without suppression, but its raw immutable output was not retained before Restore returned the Advisor store to the inherited scan. Exact-candidate hosted negative tests for anonymous, no-role, cross-organization and trusted internal execution were not retained as a complete evidence set.
+- `RCD-HR-03` major evidence gap: the hosted deployment is READY and its health endpoint reports configuration presence, but the retained evidence does not independently bind encrypted environment values and deployed source identity to the Child.
+
+QA independently verified the completed backup and restore, restored migration head and business counts, absence of both sentinels, the live 54-function semantic ACL matrix, hosted authentication redirect, and unchanged Production B state. These passing checks do not waive the blockers above.
+
+Remaining actions before another QA decision: obtain persistent Child schedule isolation; make Forward Resume deterministic and retain a reproducible hash query/output; retain durable Advisor, deployment-binding, role and tenant-negative evidence and submit the exact candidate for independent QA again.
