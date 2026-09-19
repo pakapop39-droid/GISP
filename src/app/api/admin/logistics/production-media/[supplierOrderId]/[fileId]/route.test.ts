@@ -8,11 +8,13 @@ const fixtures = vi.hoisted(() => ({
   matchingUpdateIds: ["up-1"] as string[],
 }));
 const permission = vi.hoisted(() => vi.fn(async (_permission: string, targetOrg: string) => targetOrg === fixtures.authorizedOrg));
+const databaseFrom = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/auth/session", () => ({ requireAppAccess: vi.fn(async () => ({ active: true })) }));
 vi.mock("@/lib/orders/organization-access", () => ({ hasTargetOrganizationPermission: permission }));
 vi.mock("@/lib/api/response", async () => { const { NextResponse } = await import("next/server"); return { apiError: (error: { status?: number; code?: string; message?: string }) => NextResponse.json({ code: error.code, message: error.message }, { status: error.status ?? 500 }) }; });
 vi.mock("@/lib/insforge/admin", () => ({ createInsForgeAdminClient: () => ({
   database: { from: (table: string) => {
+    databaseFrom(table);
     const query = {
       select: () => query,
       eq: () => query,
@@ -33,6 +35,9 @@ vi.mock("@/lib/insforge/admin", () => ({ createInsForgeAdminClient: () => ({
 }) }));
 import { GET, productionMediaReferencesMatch } from "./route";
 
+const supplierOrderId = "11111111-1111-4111-8111-111111111111";
+const fileId = "22222222-2222-4222-8222-222222222222";
+
 describe("Logistics production media", () => {
   beforeEach(() => {
     fixtures.authorizedOrg = "org-1";
@@ -41,6 +46,7 @@ describe("Logistics production media", () => {
     fixtures.linkUpdateIds = ["up-1"];
     fixtures.matchingUpdateIds = ["up-1"];
     permission.mockClear();
+    databaseFrom.mockClear();
   });
 
   it("requires every related record and a linked update for the target Supplier Order", () => {
@@ -49,7 +55,7 @@ describe("Logistics production media", () => {
   });
 
   it("redirects when shipments.manage is granted for the target organization", async () => {
-    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ supplierOrderId: "so-1", fileId: "file-1" }) });
+    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ supplierOrderId, fileId }) });
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("https://signed.example/progress.jpg");
     expect(permission).toHaveBeenCalledWith("shipments.manage", "org-1");
@@ -58,27 +64,38 @@ describe("Logistics production media", () => {
   it("selects the target Supplier Order safely when the same file has multiple links", async () => {
     fixtures.linkUpdateIds = ["up-other-order", "up-1"];
     fixtures.matchingUpdateIds = ["up-1"];
-    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ supplierOrderId: "so-1", fileId: "file-1" }) });
+    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ supplierOrderId, fileId }) });
     expect(response.status).toBe(307);
   });
 
   it("returns 404 when none of a file's links belongs to the requested Supplier Order", async () => {
     fixtures.linkUpdateIds = ["up-other-1", "up-other-2"];
     fixtures.matchingUpdateIds = [];
-    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ supplierOrderId: "so-1", fileId: "file-1" }) });
+    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ supplierOrderId, fileId }) });
     expect(response.status).toBe(404);
   });
 
   it("does not let an org A logistics role download an org B file", async () => {
     fixtures.supplierOrg = "org-b";
-    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ supplierOrderId: "so-1", fileId: "file-1" }) });
+    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ supplierOrderId, fileId }) });
     expect(response.status).toBe(404);
     expect(permission).toHaveBeenCalledWith("shipments.manage", "org-b");
   });
 
   it("returns 404 for file metadata from another organization", async () => {
     fixtures.fileOrg = "org-2";
-    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ supplierOrderId: "so-1", fileId: "file-1" }) });
+    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ supplierOrderId, fileId }) });
     expect(response.status).toBe(404);
+  });
+
+  it.each([
+    { supplierOrderId: "not-a-uuid", fileId },
+    { supplierOrderId, fileId: "not-a-uuid" },
+  ])("returns 404 before a database query for malformed resource identifiers", async (params) => {
+    const response = await GET(new Request("http://localhost"), { params: Promise.resolve(params) });
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toMatchObject({ code: "NOT_FOUND" });
+    expect(databaseFrom).not.toHaveBeenCalled();
+    expect(permission).not.toHaveBeenCalled();
   });
 });

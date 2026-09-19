@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { apiError } from "@/lib/api/response";
 import { requireAppAccess } from "@/lib/auth/session";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
@@ -8,15 +9,22 @@ export function productionMediaReferencesMatch(input: { supplierOrderOrganizatio
   return input.customerOrderOrganizationId === input.supplierOrderOrganizationId && input.hasMatchingProductionUpdate && input.fileOrganizationId === input.supplierOrderOrganizationId;
 }
 
+function notFound() {
+  return NextResponse.json({ code: "NOT_FOUND", message: "ไม่พบไฟล์ Timeline ที่มีสิทธิ์ดู" }, { status: 404 });
+}
+
 export async function GET(_request: Request, { params }: { params: Promise<{ supplierOrderId: string; fileId: string }> }) {
   try {
     await requireAppAccess({ active: true });
     const { supplierOrderId, fileId } = await params;
+    if (!z.string().uuid().safeParse(supplierOrderId).success || !z.string().uuid().safeParse(fileId).success) {
+      return notFound();
+    }
     const admin = createInsForgeAdminClient();
     const supplierOrder = await admin.database.from("supplier_orders").select("id,organization_id,customer_order_id").eq("id", supplierOrderId).maybeSingle();
     if (supplierOrder.error) throw supplierOrder.error;
     if (!supplierOrder.data || !await hasTargetOrganizationPermission("shipments.manage", supplierOrder.data.organization_id)) {
-      return NextResponse.json({ code: "NOT_FOUND", message: "ไม่พบไฟล์ Timeline ที่มีสิทธิ์ดู" }, { status: 404 });
+      return notFound();
     }
     const customerOrder = supplierOrder.data ? await admin.database.from("customer_orders").select("id,organization_id").eq("id", supplierOrder.data.customer_order_id).maybeSingle() : { data: null, error: null };
     if (customerOrder.error) throw customerOrder.error;
@@ -31,7 +39,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sup
     if (matchingUpdates.error) throw matchingUpdates.error;
     const file = await admin.database.from("file_metadata").select("id,organization_id,bucket,object_key").eq("id", fileId).maybeSingle();
     if (file.error) throw file.error;
-    if (!customerOrder.data || !file.data || !productionMediaReferencesMatch({ supplierOrderOrganizationId: supplierOrder.data.organization_id, customerOrderOrganizationId: customerOrder.data.organization_id, hasMatchingProductionUpdate: (matchingUpdates.data ?? []).length > 0, fileOrganizationId: file.data.organization_id })) return NextResponse.json({ code: "NOT_FOUND", message: "ไม่พบไฟล์ Timeline ที่มีสิทธิ์ดู" }, { status: 404 });
+    if (!customerOrder.data || !file.data || !productionMediaReferencesMatch({ supplierOrderOrganizationId: supplierOrder.data.organization_id, customerOrderOrganizationId: customerOrder.data.organization_id, hasMatchingProductionUpdate: (matchingUpdates.data ?? []).length > 0, fileOrganizationId: file.data.organization_id })) return notFound();
     const signed = await admin.storage.from(file.data.bucket).createSignedUrl(file.data.object_key, 300);
     if (signed.error || !signed.data) throw signed.error ?? new Error("SIGNED_URL_FAILED");
     return NextResponse.redirect(signed.data.signedUrl);
