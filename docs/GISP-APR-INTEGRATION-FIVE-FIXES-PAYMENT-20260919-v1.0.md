@@ -9,89 +9,64 @@
 - **Scope document version:** `GISP-INTEGRATION-FIVE-FIXES-PAYMENT-v1.0`
 - **Approval recorded at:** `2026-09-19 07:54 ICT`
 
-## Environment and authority (original record)
+## Development execution addendum
 
-- **Local integration workspace:** Authorized
-- **Development frontend deployment and UAT:** Authorized by the owner, but excluded from this App Builder handoff; it must be executed separately against the frozen candidate
-- **Development database migration authority:** **No — pending separate exact approval**
-- **PAY-RPC-GATE-001 12-migration apply:** **Not authorized**
-- **Production allowed:** **No**
-- **Production data or configuration mutation:** **Not authorized**
-- **Release-stage route allowlist change:** **Not authorized in this record** because it changes a Production permission gate
-- **Other external service mutation:** None authorized for this local integration build
-
-## Authorization addendum — Development execution + exact PDF gates
-
-- **Approval level:** Scope + Implementation + Development migration/deploy/UAT
-  execution + bounded Release Stage gate change
+- **Approval level:** Scope + Implementation + Development migration/deploy/UAT execution + bounded Release Stage gate change
 - **Approved by:** ภคภพ ช.เจริญยิ่ง (owner/user)
-- **Exact approval text:** `Apply migrations 20260920010000 through
-  20260920011100 (12 in order) to Development project
-  db09b94e-fc37-4f90-9530-3289afef0b79 after 19 Sep backup completed;
-  Development UAT test data mutation; deploy integrated candidate; change Release
-  Stage allowlist only for Supplier PO PDF and Warehouse Receipt PDF with tests;
-  Production prohibited.`
+- **Exact approval text:** `Apply migrations 20260920010000 through 20260920011100 (12 in order) to Development project db09b94e-fc37-4f90-9530-3289afef0b79 after 19 Sep backup completed; Development UAT test data mutation; deploy integrated candidate; change Release Stage allowlist only for Supplier PO PDF and Warehouse Receipt PDF with tests; Production prohibited.`
 - **Scope document version:** `GISP-INTEGRATION-FIVE-FIXES-PAYMENT-v1.1`
 - **Approval recorded at:** `2026-09-19 08:16:16 +07:00`
-- **Environment:** Development project
-  `db09b94e-fc37-4f90-9530-3289afef0b79` only
-- **Data migration authorized:** Yes, limited to the 12 named migration files from
-  `20260920010000` through `20260920011100`, applied once and in order, after the
-  19 September Development backup is verified complete
-- **Development UAT test-data mutation:** Authorized within this candidate's UAT
-  flows; current app data remains classified as test data
-- **Development deployment:** Authorized for the exact frozen integrated candidate
-- **Release-stage route gate:** Authorized only for the exact Supplier PO PDF route
-  at C and exact Warehouse Receipt PDF route at D8, with broader parent/child routes
-  kept closed
+- **Environment:** Development project `db09b94e-fc37-4f90-9530-3289afef0b79` only
+- **Migration authority:** the 12 named files `20260920010000` through `20260920011100`, once and in order, after the 19 September Development backup was verified complete
+- **Development test data:** mutation authorized for the bounded UAT flows; current app data is classified as test data
+- **Development deployment/UAT:** authorized for the integrated candidate and its QA corrections
+- **Release Stage source gate:** only the exact Supplier PO PDF route at C and Warehouse Receipt PDF route at D8; broader routes remain closed
 - **Production allowed:** **No**
 
-This addendum supersedes the original record's pending status for these narrowly
-named Development actions and PDF gate code. It does not authorize any Production
-deployment, Production migration, Production data mutation, or any other route,
-role, permission, environment flag, or external-service change.
+The original record did not authorize migrations or Release Stage gate changes. This addendum superseded those two pending items only for the exact Development project and routes above. It does not authorize Production deployment, Production migration, Production data/configuration mutation, or any additional route, role, permission or external-service change.
 
-## Recorded execution outcome
+## Hosted Development configuration and final redeploy approvals
 
-This section records results under the addendum; it grants no additional authority.
+### Development Release D UAT configuration
 
-- **Frozen source candidate:** HEAD
-  `684477c23c5b94e460b55f23bdd7298b46183a20`, tree
-  `921fc8a43296423ec4f568bf10dab038c88bd00e`
-- **Independent QA:** 530 automated tests passed; typecheck and optimized build
-  passed; lint reported 0 errors
-- **Development backup:** completed and verified before migration execution
-- **Development migrations:** `20260920010000` through `20260920011100` applied
-  in order, 12/12, to project `db09b94e-fc37-4f90-9530-3289afef0b79`
-- **Authenticated UAT:** passed from the local candidate against the Development
-  backend, including the final permission/media hardening checks
-- **Development deployments:** deployment references beginning `551...` and
-  `23bb...` report `READY`; their configured domains still return HTTP 404
-- **Hosted blocker:** recorded with feedback reference beginning `c1794...`;
-  hosted-domain UAT and Development closure remain pending
+- **Approved by:** ภคภพ ช.เจริญยิ่ง (owner/user)
+- **Exact approval text:** “อนุมัติให้ตั้ง `RELEASE_STAGE=D` และ `RELEASE_D_ENABLED_SLICES=7,8,9,10` เฉพาะ Development project `db09b94e-fc37-4f90-9530-3289afef0b79` แล้ว Redeploy source commit `684477c23c5b94e460b55f23bdd7298b46183a20` และทำ Hosted authenticated UAT โดยไม่อนุญาต Production”
+- **Approval date:** `2026-09-19`, Asia/Bangkok
+- **Exact client timestamp:** unavailable in the retained UI history; no minute was inferred
 - **Production allowed:** **No**
 
-## Bounded implementation
+### Final hydration-fix redeploy and UAT
 
-This record authorizes a clean integration branch based on five-fix commit
-`6d43b0278348dad4038f0408b76d87d8f94d9bf2`, containing only:
+- **Approved by:** ภคภพ ช.เจริญยิ่ง (owner/user)
+- **Exact approval text:** “อนุมัติให้ Deploy commit `4e64c44f355ee742262cb89607bef3a521b718f9` ไป Development project `db09b94e-fc37-4f90-9530-3289afef0b79` โดยคง `RELEASE_STAGE=D` และ `RELEASE_D_ENABLED_SLICES=7,8,9,10` แล้วทำ Hosted authenticated UAT รอบสุดท้าย โดยไม่อนุญาต Production”
+- **Approval date:** `2026-09-19`, Asia/Bangkok
+- **Exact client timestamp:** unavailable in the retained UI history; no minute was inferred
+- **Production allowed:** **No**
+## Recorded Development execution and closure
 
-1. the explicitly named Payment/Release files copied from the owner’s existing local checkout;
-2. a test-only line-ending normalization for the Payment evidence-binding migration contract;
-3. a safe fix for Production media files linked to more than one Production update;
-4. this approval record and an immutable candidate manifest.
+This section records completed work under the approvals above; it grants no additional authority.
 
-It does not authorize copying the dirty checkout, `pnpm-lock`, tools, caches,
-environment files, Production deployment, Production backend mutation, or opening
-any route beyond the two exact PDF paths named in the addendum. The migration,
-Development deploy and UAT authority in the addendum is execution authority for the
-Release Executor; this App Builder changed local source and documentation only.
+- **Final source candidate:** HEAD `4e64c44f355ee742262cb89607bef3a521b718f9`, tree `1d66c8ac30de2680ed783914fe4083c54381c791`
+- **Development environment:** `RELEASE_STAGE=D` with `RELEASE_D_ENABLED_SLICES=7,8,9,10`, limited to project `db09b94e-fc37-4f90-9530-3289afef0b79`
+- **Development backup and migrations:** the 19 September backup was completed and verified; migrations `20260920010000` through `20260920011100` were applied once, in order, 12/12
+- **Automated gate:** independent QA passed 532 tests; typecheck, optimized build and affected ESLint checks passed
+- **Development deployment:** application deployment reference `0d7a2641...`; provider deployment `dpl_7U8...`; deployment reported ready and both `/api/health` and login returned HTTP 200
+- **Authenticated Hosted UAT:** **PASS** on the Development domain for the integrated five-fix and Payment candidate
+- **Hydration correction:** React #418 on Admin Order Detail was traced to server/client Release D navigation drift, fixed in `4e64c44`, and retested with browser errors `[]`
+- **Role evidence limitation:** the shared Hosted credential exercises the available hosted role only. Role-specific deny/allow and cross-organization cases retain their prior local authenticated and automated evidence; this closure does not claim separate Hosted credentials for every role
+- **Performance observation:** Member Catalog generally completed in about 10–12 seconds and one automation probe timed out. Functional UAT passed, but this remains a Development performance observation for monitoring
+- **Production:** **No / NO-GO**; no Production action occurred
+- **Development Slice remaining steps:** **0**
+
+## Bounded implementation history
+
+The clean integration branch began from five-fix commit `6d43b0278348dad4038f0408b76d87d8f94d9bf2` and imported only the explicitly named Payment/Release files from the owner’s checkout. Later bounded candidate corrections covered line-ending contract verification, Production-media multi-link and malformed-ID behavior, target-organization checks, exact transient read retry, and the Release D navigation hydration fix. No schema beyond the authorized 12 migrations, price/payment formula, Dispatch rule or Production configuration was changed.
+
+Excluded throughout: the dirty root checkout, `pnpm-lock`, tools, caches, environment files, secrets, unrelated files and all Production mutations.
 
 ## Stop conditions
 
-- The authorized 12-file Development migration run is complete; do not reapply it
-  or apply further migrations under this record.
-- Do not broaden the PDF route patterns, alter another gate or change an
-  environment flag under this approval.
-- `READY` deployment artifacts whose domains return HTTP 404 do not complete
-  hosted Development UAT and are not Production Release Authorization.
+- Do not reapply the completed 12 Development migrations or apply additional migrations under this record.
+- Do not broaden the two exact PDF route patterns or change another Production gate under this record.
+- Development closure is evidence only. It is not Production Release Authorization.
+- Production remains **NO-GO** until separate, exact Production C and staged D authorizations are recorded after their readiness gates pass.
