@@ -97,4 +97,12 @@ describe("Finance private payment verification", () => {
     expect((await POST(request(true, { confirmed: true }), { params: Promise.resolve({ id }) })).status).toBe(403);
     expect(mocks.notificationRpc).not.toHaveBeenCalled();
   });
+
+  it("returns a conflict when Finance has not previewed this evidence", async () => {
+    mocks.privateRpc.mockResolvedValueOnce({ data: null, error: { message: "EVIDENCE_PREVIEW_REQUIRED" } });
+    const response = await POST(request(true, { confirmed: true }), { params: Promise.resolve({ id }) });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: "EVIDENCE_PREVIEW_REQUIRED" });
+    expect(mocks.notificationRpc).not.toHaveBeenCalled();
+  });
 });

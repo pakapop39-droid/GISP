@@ -69,7 +69,16 @@ export async function POST(
       sha256_input: evidence?.sha256 ?? null,
       size_bytes_input: evidence?.byteSize ?? null,
     });
-    if (result.error || !result.data) return apiError(result.error ?? new Error("PAYMENT_VERIFICATION_FAILED"));
+    if (result.error) {
+      if (String(result.error.message ?? "").includes("EVIDENCE_PREVIEW_REQUIRED")) {
+        return NextResponse.json({
+          code: "EVIDENCE_PREVIEW_REQUIRED",
+          message: "กรุณาเปิดตรวจหลักฐานรายการนี้ก่อนยืนยันรับเงิน",
+        }, { status: 409 });
+      }
+      return apiError(result.error);
+    }
+    if (!result.data) return apiError(new Error("PAYMENT_VERIFICATION_FAILED"));
 
     let notificationWarning: string | undefined;
     try {
