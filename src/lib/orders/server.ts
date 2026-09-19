@@ -10,6 +10,7 @@ import {
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { targetOrganizationPermissions } from "@/lib/orders/organization-access";
+import { readOnlyRpcWithSocketRetry } from "@/lib/orders/read-only-rpc";
 import { projectQcReopenEvents, type QcReopenAuditRow } from "@/lib/orders/qc-reopen-history";
 import { projectOrderDetailForRelease } from "@/lib/orders/release-projection";
 import { isOrderOperationSliceVisible } from "@/lib/release-stage";
@@ -212,7 +213,7 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
     : { data: [], error: null };
   const supplierLinks = take(supplierLinksResult, "load operation item links") ?? [];
   const operationSupplierOrderIds = [...new Set(supplierLinks.map((row) => row.supplier_order_id))];
-  const [productionResult, qcResult, qcReopenResult, gateResults] = await Promise.all([
+  const [productionResult, qcResult, qcReopenResult] = await Promise.all([
     operationSupplierOrderIds.length && (mode === "member" || Boolean(capabilities?.manageProduction || capabilities?.viewProductionTimeline || canManageQcForOrder)) ? adminForOperations.database.from("production_updates")
       .select("id,supplier_order_id,status,note,estimated_completion_at,progress_percent,started_at,actual_completed_at,delay_reason,created_at")
       .in("supplier_order_id", operationSupplierOrderIds).order("created_at").limit(500) : Promise.resolve({ data: [], error: null }),
@@ -224,10 +225,16 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
       .eq("organization_id", String(orderRow.organization_id)).eq("entity_type", "order_item")
       .eq("action", "QC_REOPENED").in("entity_id", itemIds).order("created_at").limit(500)
       : Promise.resolve({ data: [], error: null }),
-    mode === "member" || canManageQcForOrder || capabilities?.manageLogistics
-      ? Promise.all(itemIds.map((itemId) => authenticatedOperations.database.rpc("get_dispatch_gate", { order_item_id_input: itemId })))
-      : Promise.resolve([]),
   ]);
+  const gateResults = [];
+  if (mode === "member" || canManageQcForOrder || capabilities?.manageLogistics) {
+    for (const itemId of itemIds) {
+      gateResults.push(await readOnlyRpcWithSocketRetry(() => authenticatedOperations.database.rpc(
+        "get_dispatch_gate",
+        { order_item_id_input: itemId },
+      )));
+    }
+  }
   const productionRows = take(productionResult, "load production timeline") ?? [];
   const qcRows = take(qcResult, "load QC inspections") ?? [];
   const productionIds = productionRows.map((row) => row.id);
