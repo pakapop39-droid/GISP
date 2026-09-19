@@ -32,6 +32,7 @@ const RELEASE_A_PUBLIC_PATHS = new Set([
   "/member-guide.html",
   "/account-suspended",
   "/api/health",
+  "/api/health/release-attestation",
   "/demo-assets/riverstone-lobby.png",
   "/demo-assets/riverstone-product-board.png",
 ]);

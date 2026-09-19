@@ -2,6 +2,15 @@
 
 Authorization: `docs/GISP-APR-PAY-RPC-GATE-001-IMPLEMENTATION-20260918-v1.0.md` and bounded gap continuation `docs/GISP-APR-GLR-C-GAPS-20260919-v0.1.md`; AC `PAY-RPC-01`–`04` and `PAY-SEQ-02`. This directory remains a **local candidate package**, not a Production release. Its 12 SQL files were applied in order only to isolated rehearsal child `e902393a-ffe7-433d-96d8-a37256948959` on 2026-09-18; none were applied to Production. See `docs/GISP-PAY-SEQ-02-REHEARSAL-STATUS-20260918-v0.1.md`. Preserve the original `migrations/` history and unrelated working-tree files.
 
+HR-FIX-02/03 local implementation is additionally authorized by
+`docs/GISP-APR-HR-FIX-01-03-IMPLEMENTATION-20260919-v1.0.md`. It adds the
+read-only exact-54 routine snapshot at `emergency/function-snapshot.sql`, makes
+the private Payment Forward Resume body byte-identical to its frozen migration,
+and provides non-secret hosted attestation/evidence helpers under
+`hosted-rehearsal/`. These files do not authorize Apply, Deploy, Backup/Restore,
+Schedule mutation, or any Production action. HR-FIX-01 remains a platform repair
+prerequisite outside this local package.
+
 Read-only Production B check reported by the primary thread: latest applied migration `20260908170000 release-b-member-pilot` (prior `20260906020000 restrict-sequence-helper-rpc`). That is a point-in-time observation, **not** a complete lineage, signature, dependency, or ACL validation. The 20260920 candidate versions are provisional until an independent reviewer checks the exact target baseline and may need new numbers in a new isolated package. Never run `up --all` from the shared worktree. In an independently authorized clean rehearsal workspace, validate this package's lineage and apply only the explicitly selected next migration at each gate; no command is authorized by this document.
 
 ## Ordered SQL files and SHA-256

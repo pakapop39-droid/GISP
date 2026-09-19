@@ -24,6 +24,13 @@ describe("Release A route gate", () => {
 });
 
 describe("Release C/D progressive gate", () => {
+  it("allows only the exact release attestation health route at every staged gate", () => {
+    for (const stage of ["A", "B", "C", "D"]) {
+      expect(isReleaseStagePathAllowed("/api/health/release-attestation", stage, false)).toBe(true);
+      expect(isReleaseStagePathAllowed("/api/health/release-attestation-extra", stage, false)).toBe(false);
+    }
+  });
+
   it("opens C transactions but blocks every D slice even with the staff rehearsal flag", () => {
     for (const route of ["/member/orders/123", "/api/member/payment-transfers", "/admin/orders/123", "/api/admin/payment-transfers/123/evidence", "/api/admin/supplier-disclosures/123/revoke", "/api/admin/dashboard"]) {
       expect(isReleaseStagePathAllowed(route, "C", true)).toBe(true);

@@ -108,8 +108,11 @@ BEGIN
   IF ps.schedule_type = 'FREIGHT' AND NOT public.freight_payment_enabled() THEN
     RAISE EXCEPTION 'FREIGHT_PAYMENT_NOT_RELEASED';
   END IF;
+
   IF NOT approve_input THEN
-    IF NULLIF(BTRIM(finance_note_input), '') IS NULL THEN RAISE EXCEPTION 'REJECTION_REASON_REQUIRED'; END IF;
+    IF NULLIF(BTRIM(finance_note_input), '') IS NULL THEN
+      RAISE EXCEPTION 'REJECTION_REASON_REQUIRED';
+    END IF;
     UPDATE public.payment_transfers SET status='REJECTED', finance_verified_by=finance_actor,
       finance_verified_at=NOW(), finance_note=BTRIM(finance_note_input) WHERE id=t.id;
     INSERT INTO public.payment_verification_logs(organization_id,payment_transfer_id,action,
@@ -121,6 +124,7 @@ BEGIN
       jsonb_build_object('note',BTRIM(finance_note_input)));
     RETURN t.id;
   END IF;
+
   SELECT * INTO fm FROM public.file_metadata WHERE id = t.evidence_file_id FOR UPDATE;
   IF fm.id IS NULL
     OR fm.id IS DISTINCT FROM evidence_file_id_input
@@ -153,6 +157,7 @@ BEGIN
     AND ae.after_data->>'mimeType' = fm.mime_type
   ORDER BY ae.created_at DESC LIMIT 1;
   IF preview_id IS NULL THEN RAISE EXCEPTION 'EVIDENCE_PREVIEW_REQUIRED'; END IF;
+
   UPDATE public.payment_transfers SET status='VERIFIED', finance_verified_by=finance_actor,
     finance_verified_at=NOW(), finance_note=NULLIF(BTRIM(finance_note_input),'') WHERE id=t.id;
   SELECT COALESCE(ROUND(SUM(amount),2),0) INTO verified_total FROM public.payment_transfers

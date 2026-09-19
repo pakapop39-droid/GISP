@@ -11,6 +11,17 @@ const request = (path: string) => new NextRequest(`https://gisp.example.test${pa
 describe("hosted Release C/D proxy gate", () => {
   afterEach(() => vi.unstubAllEnvs());
 
+  it("allows the exact attestation route and gates a lookalike path", async () => {
+    vi.stubEnv("APP_MODE", "app");
+    vi.stubEnv("RELEASE_STAGE", "C");
+    vi.stubEnv("NEXT_PUBLIC_INSFORGE_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_INSFORGE_ANON_KEY", "");
+    expect((await proxy(request("/api/health/release-attestation"))).status).toBe(200);
+    const blocked = await proxy(request("/api/health/release-attestation-extra"));
+    expect(blocked.status).toBe(404);
+    expect(await blocked.json()).toMatchObject({ code: "RELEASE_NOT_ENABLED" });
+  });
+
   it("opens C Payment and Order routes but blocks D actions even with staff rehearsal enabled", async () => {
     vi.stubEnv("APP_MODE", "app");
     vi.stubEnv("RELEASE_STAGE", "C");

@@ -137,8 +137,37 @@ describe("Release C/D emergency stop-write package", () => {
     const resume = read("resume-c.sql");
     for (const name of ["record_customer_payment_evidence_preview", "verify_payment_transfer_private"]) {
       const pattern = new RegExp(`CREATE OR REPLACE FUNCTION public\\.${name}\\([\\s\\S]*?\\n\\$\\$;`);
-      expect(normalized(resume.match(pattern)?.[0] ?? "")).toBe(normalized(frozen.match(pattern)?.[0] ?? ""));
+      const frozenBytes = (frozen.match(pattern)?.[0] ?? "").replace(/\r\n?/g, "\n");
+      const resumedBytes = (resume.match(pattern)?.[0] ?? "").replace(/\r\n?/g, "\n");
+      expect(resumedBytes, `${name} exact LF-normalized bytes`).toBe(frozenBytes);
     }
+    const verifyPattern = /CREATE OR REPLACE FUNCTION public\.verify_payment_transfer_private\([\s\S]*?\n\$\$;/;
+    expect(canonicalLfSha256(frozen.match(verifyPattern)?.[0] ?? "")).toBe("c6cc867fa84d31af1d5d6d291599932340111c1ba19e74acd4d20185b71bdc1b");
+  });
+
+  it("snapshots the exact 54 touched routines with deterministic definitions, config and expanded ACL", () => {
+    const snapshotSql = read("function-snapshot.sql");
+    const targetBlock = snapshotSql.match(/WITH target\(signature\) AS \([\s\S]*?\n\), resolved AS \(/)?.[0] ?? "";
+    const snapshotTargets = [...targetBlock.matchAll(/\('([^']+)'\)/g)].map((match) => match[1].toLowerCase());
+    const stoppedTargets = ["stop-c.sql", "stop-d7.sql", "stop-d8.sql", "stop-d9.sql", "stop-d10.sql"]
+      .flatMap((name) => [...read(name).matchAll(/REVOKE ALL ON FUNCTION (public\.[^(]+\([^;]*\))/g)]
+        .map((match) => match[1].toLowerCase().replaceAll("timestamptz", "timestamp with time zone")));
+    expect(snapshotTargets).toHaveLength(54);
+    expect(new Set(snapshotTargets).size).toBe(54);
+    expect(new Set(stoppedTargets).size).toBe(54);
+    expect(snapshotTargets.slice().sort()).toEqual([...new Set(stoppedTargets)].sort());
+    expect(snapshotSql).toContain("pg_get_functiondef(p.oid)");
+    expect(snapshotSql).toContain("JOIN pg_roles owner_role");
+    expect(snapshotSql).toContain("JOIN pg_language language_row");
+    expect(snapshotSql).toContain("'volatility'");
+    expect(snapshotSql).toContain("'securityDefiner', p.prosecdef");
+    expect(snapshotSql).toContain("unnest(p.proconfig)");
+    expect(snapshotSql).toContain("aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner)))");
+    expect(snapshotSql).toMatch(/jsonb_agg\([\s\S]*ORDER BY[\s\S]*acl\.privilege_type/);
+    expect(snapshotSql).toContain("md5(snapshot::text) AS row_md5");
+    expect(snapshotSql).toContain("md5(jsonb_agg(snapshot ORDER BY signature)::text) AS combined_md5");
+    expect(snapshotSql).toMatch(/expected_count = 54 AND actual_count = expected_count/);
+    expect(withoutComments(snapshotSql)).not.toMatch(/\b(INSERT|UPDATE|DELETE|TRUNCATE|CREATE|ALTER|DROP|GRANT|REVOKE|SET)\b/i);
   });
 
   it("is deterministic/idempotent at apply time and reconcile is SELECT-only", () => {
