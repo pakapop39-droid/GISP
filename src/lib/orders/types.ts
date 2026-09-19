@@ -385,6 +385,7 @@ export type ShipmentCustomsEvidence = {
 export type Shipment = {
   id: string;
   consolidation_group_id: string;
+  consolidation_number: string;
   shipment_number: string;
   shipment_name: string;
   shipment_type: "CONSOLIDATED" | "PARTIAL" | "DIRECT";

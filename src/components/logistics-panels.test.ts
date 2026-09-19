@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 vi.mock("@/lib/orders/admin-access", () => ({
   allAdminOrderCapabilities: {},
@@ -12,7 +14,9 @@ vi.mock("@/lib/orders/types", () => ({
 
 import {
   AdminLogisticsPanel,
+  MemberLogisticsPanel,
   consolidationReadyBatches,
+  defaultShipmentName,
   shipmentStatusLabel,
   trackingStatusLabel,
   warehouseReleaseAvailable,
@@ -33,7 +37,7 @@ const receiptItem: WarehouseReceiptItem = {
 describe("DR-019 logistics presentation helpers", () => {
   it("requires real shipment, contact, driver, POD and freight input without UAT prefills", () => {
     const shipment = {
-      id: "shipment-1", shipment_number: "SHP-2026-000001", shipment_name: "Current",
+      id: "shipment-1", consolidation_group_id: "other-group-1", consolidation_number: "CNS-2026-000011", shipment_number: "SHP-2026-000001", shipment_name: "ชื่อซ้ำ",
       shipment_type: "CONSOLIDATED", status: "READY_FOR_DELIVERY", tracking_number: null,
       estimated_arrival_at: null, items: [], history: [], deliveries: [], partialDecision: null,
     };
@@ -46,9 +50,9 @@ describe("DR-019 logistics presentation helpers", () => {
       logistics: {
         productionTimeline: [{ supplier_order_id: "supplier-order-1", supplier_order_number: "SO-1", po_number: "PO-1", status: "IN_PRODUCTION", updates: [{ id: "update-1", status: "DELAYED", note: "รอวัสดุ", estimated_completion_at: null, progress_percent: 40, started_at: null, actual_completed_at: null, delay_reason: "วัสดุล่าช้า", created_at: "2026-09-19T00:00:00Z", files: [{ id: "file-1", original_name: "progress.jpg", mime_type: "image/jpeg" }] }] }],
         prerequisites: { warehouses: [], receiptSources: [] }, receipts: [{ id: "receipt-1", warehouse_id: "warehouse-1", supplier_order_id: "supplier-order-1", receipt_number: "WRC-1", status: "RECEIVED_COMPLETE", received_at: "2026-09-19T00:00:00Z", package_count: 1, actual_weight_kg: 5, actual_cbm: 1, note: null, items: [] }],
-        consolidations: [{ id: "group-1", status: "CONFIRMED", strategy: "CONSOLIDATE_ALL", items: [] }],
-        shipments: [shipment, { ...shipment, id: "shipment-2", status: "OUT_FOR_DELIVERY", deliveries: [delivery] },
-          { ...shipment, id: "shipment-3", status: "DELIVERED", deliveries: [{ ...delivery, status: "DELIVERED" }] }],
+        consolidations: [{ id: "group-1", consolidation_number: "CNS-2026-000001", status: "CONFIRMED", strategy: "CONSOLIDATE_ALL", items: [] }],
+        shipments: [shipment, { ...shipment, id: "shipment-2", consolidation_group_id: "other-group-2", consolidation_number: "CNS-2026-000012", shipment_number: "SHP-2026-000002", status: "OUT_FOR_DELIVERY", deliveries: [delivery] },
+          { ...shipment, id: "shipment-3", consolidation_group_id: "other-group-3", consolidation_number: "CNS-2026-000013", shipment_number: "SHP-2026-000003", status: "DELIVERED", deliveries: [{ ...delivery, status: "DELIVERED" }] }],
         costs: [], invoice: null,
       },
     } as unknown as OrderDetail;
@@ -64,6 +68,30 @@ describe("DR-019 logistics presentation helpers", () => {
     expect(markup).toContain("/api/admin/logistics/production-media/supplier-order-1/file-1");
     expect(markup).toContain("/api/admin/warehouse-receipts/receipt-1/pdf");
     expect(markup).not.toContain("factory_cost");
+    expect(markup).toContain('value="ORD-2026-000001 / CNS-2026-000001"');
+    expect(markup).toContain("เที่ยวที่ 1 · CNS-2026-000011");
+    expect(markup).toContain("SHP-2026-000001");
+    expect(markup).toContain("SHP-2026-000002");
+    expect(markup.match(/ชื่อ: ชื่อซ้ำ/g)).toHaveLength(3);
+
+    const memberMarkup = renderToStaticMarkup(createElement(MemberLogisticsPanel, {
+      data, busy: false, post: async () => true,
+    }));
+    expect(memberMarkup).toContain("เที่ยวที่ 1 · CNS-2026-000011 · รวมเที่ยว");
+    expect(memberMarkup).toContain("SHP-2026-000001");
+    expect(memberMarkup).not.toMatch(/factory_cost|paid_factory_amount|supplier_payments/);
+  });
+
+  it("loads only safe consolidation references for Member shipment projection", () => {
+    const server = readFileSync(path.join(process.cwd(), "src", "lib", "orders", "server.ts"), "utf8");
+    expect(server).toContain('mode === "member" ? logisticsDatabase.from("consolidation_groups")');
+    expect(server).toContain('.select("id,consolidation_number").eq("customer_order_id", id)');
+    expect(server).toContain('consolidations: mode === "admin" ? consolidations.map');
+    expect(server).toContain('shipment_type,shipping_method,status,tracking_number');
+  });
+
+  it("uses order and consolidation references for a new shipment name", () => {
+    expect(defaultShipmentName("ORD-2026-000001", "CNS-2026-000009")).toBe("ORD-2026-000001 / CNS-2026-000009");
   });
   it("describes IMPORT_CUSTOMS as in progress for admin and member views", () => {
     expect(trackingStatusLabel("IMPORT_CUSTOMS")).toBe("อยู่ระหว่างพิธีการนำเข้า");

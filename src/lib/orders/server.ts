@@ -286,7 +286,10 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
       .eq("customer_order_id", id).order("received_at").limit(100) : Promise.resolve({ data: [], error: null }),
     mode === "admin" && capabilities?.manageLogistics ? logisticsDatabase.from("consolidation_groups")
       .select("id,consolidation_number,warehouse_id,strategy,status,reason")
-      .eq("customer_order_id", id).order("created_at").limit(100) : Promise.resolve({ data: [], error: null }),
+      .eq("customer_order_id", id).order("created_at").limit(100)
+      : mode === "member" ? logisticsDatabase.from("consolidation_groups")
+        .select("id,consolidation_number").eq("customer_order_id", id).order("created_at").limit(100)
+        : Promise.resolve({ data: [], error: null }),
     canLoadLogistics ? logisticsDatabase.from("shipments")
       .select("id,consolidation_group_id,shipment_number,shipment_name,shipment_type,shipping_method,status,tracking_number,estimated_arrival_at,dispatched_at")
       .eq("customer_order_id", id).order("created_at").limit(100) : Promise.resolve({ data: [], error: null }),
@@ -298,7 +301,7 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   const consolidations = take(consolidationsResult, "load consolidations") ?? [];
   const shipments = take(shipmentsResult, "load shipments") ?? [];
   const receiptIds = receipts.map((row) => row.id);
-  const consolidationIds = consolidations.map((row) => row.id);
+  const consolidationIds = mode === "admin" ? consolidations.map((row) => row.id) : [];
   const shipmentIds = shipments.map((row) => row.id);
   const invoice = take(invoiceResult, "load freight invoice");
   const [receiptItemsResult, consolidationItemsResult, shipmentItemsResult, historyResult,
@@ -394,8 +397,9 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
       receiptSources,
     },
     receipts: receipts.map((row) => ({ ...row, items: receiptItems.filter((item) => item.warehouse_receipt_id === row.id) })),
-    consolidations: consolidations.map((row) => ({ ...row, items: consolidationItems.filter((item) => item.consolidation_group_id === row.id) })),
+    consolidations: mode === "admin" ? consolidations.map((row) => ({ ...row, items: consolidationItems.filter((item) => item.consolidation_group_id === row.id) })) : [],
     shipments: shipments.map((row) => ({ ...row,
+      consolidation_number: consolidations.find((group) => group.id === row.consolidation_group_id)?.consolidation_number ?? "—",
       items: shipmentItems.filter((item) => item.shipment_id === row.id),
       history: history.filter((event) => event.shipment_id === row.id),
       customsEvidence: shipmentDocuments.filter((document) => document.shipment_id === row.id)
