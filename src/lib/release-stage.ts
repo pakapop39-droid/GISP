@@ -180,8 +180,15 @@ const RELEASE_C_API_PREFIXES = [
   "/api/custom-quotations",
 ];
 
+// Keep document downloads narrower than their parent resources. Adding the
+// supplier-orders prefix would expose unrelated routes that are outside C.
+const RELEASE_C_EXACT_API_PATHS = [
+  /^\/api\/admin\/supplier-orders\/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\/po\/pdf$/i,
+];
+
 export function isReleaseCPathAllowed(pathname: string) {
   if (isReleaseBPathAllowed(pathname, false)) return true;
+  if (RELEASE_C_EXACT_API_PATHS.some((pattern) => pattern.test(pathname))) return true;
   const prefixes = pathname.startsWith("/api/") ? RELEASE_C_API_PREFIXES : RELEASE_C_PAGE_PREFIXES;
   return prefixes.some((prefix) => matchesPrefix(pathname, prefix));
 }
@@ -191,6 +198,15 @@ const RELEASE_D_SLICE_PREFIXES: Record<number, { pages: string[]; apis: string[]
   8: { pages: [], apis: ["/api/admin/logistics", "/api/admin/deliveries", "/api/admin/shipments", "/api/member/logistics"] },
   9: { pages: ["/member/claims", "/admin/claims"], apis: ["/api/member/claims", "/api/claims/evidence", "/api/admin/claims"] },
   10: { pages: ["/member/reports", "/admin/reports", "/admin/executive"], apis: ["/api/member/reports", "/api/admin/reports", "/api/admin/executive"] },
+};
+
+// D8 exposes only the generated receipt PDF route. The warehouse-receipts
+// resource itself and any future child routes remain closed by default.
+const RELEASE_D_SLICE_EXACT_API_PATHS: Record<number, RegExp[]> = {
+  7: [],
+  8: [/^\/api\/admin\/warehouse-receipts\/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\/pdf$/i],
+  9: [],
+  10: [],
 };
 
 // D is released slice-by-slice under DEC-049. Invalid or missing configuration
@@ -215,7 +231,9 @@ export function isReleaseDPathAllowed(pathname: string) {
   return enabledReleaseDSlices().some((slice) => {
     const prefixes = pathname.startsWith("/api/")
       ? RELEASE_D_SLICE_PREFIXES[slice].apis : RELEASE_D_SLICE_PREFIXES[slice].pages;
-    return prefixes.some((prefix) => matchesPrefix(pathname, prefix));
+    return prefixes.some((prefix) => matchesPrefix(pathname, prefix)) ||
+      (pathname.startsWith("/api/") && RELEASE_D_SLICE_EXACT_API_PATHS[slice]
+        .some((pattern) => pattern.test(pathname)));
   });
 }
 

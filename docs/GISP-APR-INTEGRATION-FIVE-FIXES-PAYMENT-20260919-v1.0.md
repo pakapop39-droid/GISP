@@ -9,7 +9,7 @@
 - **Scope document version:** `GISP-INTEGRATION-FIVE-FIXES-PAYMENT-v1.0`
 - **Approval recorded at:** `2026-09-19 07:54 ICT`
 
-## Environment and authority
+## Environment and authority (original record)
 
 - **Local integration workspace:** Authorized
 - **Development frontend deployment and UAT:** Authorized by the owner, but excluded from this App Builder handoff; it must be executed separately against the frozen candidate
@@ -19,6 +19,37 @@
 - **Production data or configuration mutation:** **Not authorized**
 - **Release-stage route allowlist change:** **Not authorized in this record** because it changes a Production permission gate
 - **Other external service mutation:** None authorized for this local integration build
+
+## Authorization addendum — Development execution + exact PDF gates
+
+- **Approval level:** Scope + Implementation + Development migration/deploy/UAT
+  execution + bounded Release Stage gate change
+- **Approved by:** ภคภพ ช.เจริญยิ่ง (owner/user)
+- **Exact approval text:** `Apply migrations 20260920010000 through
+  20260920011100 (12 in order) to Development project
+  db09b94e-fc37-4f90-9530-3289afef0b79 after 19 Sep backup completed;
+  Development UAT test data mutation; deploy integrated candidate; change Release
+  Stage allowlist only for Supplier PO PDF and Warehouse Receipt PDF with tests;
+  Production prohibited.`
+- **Scope document version:** `GISP-INTEGRATION-FIVE-FIXES-PAYMENT-v1.1`
+- **Approval recorded at:** `2026-09-19 08:16:16 +07:00`
+- **Environment:** Development project
+  `db09b94e-fc37-4f90-9530-3289afef0b79` only
+- **Data migration authorized:** Yes, limited to the 12 named migration files from
+  `20260920010000` through `20260920011100`, applied once and in order, after the
+  19 September Development backup is verified complete
+- **Development UAT test-data mutation:** Authorized within this candidate's UAT
+  flows; current app data remains classified as test data
+- **Development deployment:** Authorized for the exact frozen integrated candidate
+- **Release-stage route gate:** Authorized only for the exact Supplier PO PDF route
+  at C and exact Warehouse Receipt PDF route at D8, with broader parent/child routes
+  kept closed
+- **Production allowed:** **No**
+
+This addendum supersedes the original record's pending status for these narrowly
+named Development actions and PDF gate code. It does not authorize any Production
+deployment, Production migration, Production data mutation, or any other route,
+role, permission, environment flag, or external-service change.
 
 ## Bounded implementation
 
@@ -31,15 +62,16 @@ This record authorizes a clean integration branch based on five-fix commit
 4. this approval record and an immutable candidate manifest.
 
 It does not authorize copying the dirty checkout, `pnpm-lock`, tools, caches,
-environment files, migration execution, backend mutation, Production deployment,
-or opening Supplier PO and Warehouse Receipt PDF routes in Production release-stage
-allowlists.
+environment files, Production deployment, Production backend mutation, or opening
+any route beyond the two exact PDF paths named in the addendum. The migration,
+Development deploy and UAT authority in the addendum is execution authority for the
+Release Executor; this App Builder changed local source and documentation only.
 
 ## Stop conditions
 
-- Stop before applying any of the 12 SQL migrations until the owner approves the
-  exact target, ordered migration list, backup, rollback and rehearsal evidence.
-- Stop before changing Production route gates or environment flags until a new
-  permission/gate approval names the exact prefixes and release stage.
+- Before applying the 12 SQL migrations, verify the 19 September Development
+  backup completed and the target project ID matches the addendum exactly.
+- Do not broaden the PDF route patterns, alter another gate or change an
+  environment flag under this approval.
 - A successful Local build is candidate evidence only; it is not Development
   deployment evidence or Production Release Authorization.

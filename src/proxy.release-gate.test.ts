@@ -9,6 +9,9 @@ import { proxy } from "./proxy";
 const request = (path: string) => new NextRequest(`https://gisp.example.test${path}`);
 
 describe("hosted Release C/D proxy gate", () => {
+  const supplierOrderId = "11111111-1111-4111-8111-111111111111";
+  const receiptId = "22222222-2222-4222-8222-222222222222";
+
   afterEach(() => vi.unstubAllEnvs());
 
   it("opens C Payment and Order routes but blocks D actions even with staff rehearsal enabled", async () => {
@@ -18,6 +21,9 @@ describe("hosted Release C/D proxy gate", () => {
     vi.stubEnv("NEXT_PUBLIC_INSFORGE_URL", "");
     vi.stubEnv("NEXT_PUBLIC_INSFORGE_ANON_KEY", "");
     expect((await proxy(request("/api/admin/payment-transfers/11111111-1111-4111-8111-111111111111/evidence"))).status).toBe(200);
+    expect((await proxy(request(`/api/admin/supplier-orders/${supplierOrderId}/po/pdf`))).status).toBe(200);
+    expect((await proxy(request(`/api/admin/supplier-orders/${supplierOrderId}`))).status).toBe(404);
+    expect((await proxy(request(`/api/admin/supplier-orders/${supplierOrderId}/po/pdf/extra`))).status).toBe(404);
     expect((await proxy(request("/member/orders"))).status).toBe(200);
     const blocked = await proxy(request("/api/admin/logistics/actions"));
     expect(blocked.status).toBe(404);
@@ -33,8 +39,12 @@ describe("hosted Release C/D proxy gate", () => {
     vi.stubEnv("RELEASE_D_ENABLED_SLICES", "7");
     expect((await proxy(request("/api/admin/qc-inspections"))).status).toBe(200);
     expect((await proxy(request("/api/admin/logistics/actions"))).status).toBe(404);
+    expect((await proxy(request(`/api/admin/warehouse-receipts/${receiptId}/pdf`))).status).toBe(404);
     vi.stubEnv("RELEASE_D_ENABLED_SLICES", "7,8");
     expect((await proxy(request("/api/admin/logistics/actions"))).status).toBe(200);
+    expect((await proxy(request(`/api/admin/warehouse-receipts/${receiptId}/pdf`))).status).toBe(200);
+    expect((await proxy(request(`/api/admin/warehouse-receipts/${receiptId}`))).status).toBe(404);
+    expect((await proxy(request(`/api/admin/warehouse-receipts/${receiptId}/pdf/extra`))).status).toBe(404);
     vi.stubEnv("RELEASE_STAGE", "");
     expect((await proxy(request("/api/admin/orders"))).status).toBe(404);
   });

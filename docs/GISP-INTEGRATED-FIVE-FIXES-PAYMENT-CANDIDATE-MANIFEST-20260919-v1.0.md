@@ -9,6 +9,7 @@ executed Development frontend deploy/UAT. Production remains **NO-GO**.
 - Five-fix base: `6d43b0278348dad4038f0408b76d87d8f94d9bf2`
 - Payment integration commit: `a6eda24474f232f56eec24a9c404092f6ae88a7e` (`test(payment): integrate verification gate`)
 - Production media hardening commit: `e27ec49edb1b62a18bd1cb38377fef619ea8e015` (`fix(logistics): disambiguate production media links`)
+- Pre-authorization manifest commit: `01c3064d1b7ec352402ca407dfa37e9e7d8a3aec`
 - Final candidate HEAD is the commit containing this manifest and must be
   recorded by QA/deploy tooling before any deployment.
 
@@ -35,31 +36,59 @@ checkout file was imported.
 | `ad97d61725e8a0b3bfc99c950d162b96ddbc27dd1405f6c4f16ad3137cf31713` | `src/lib/payments/evidence-binding-migration.test.ts` | Normalize LF/CRLF in test input; SQL and business behavior unchanged. |
 | `79184acc9c3e80b4f52a0e2cf86d95b8e2e01fa136bb78c1a671e1b0117c3776` | `src/app/api/admin/logistics/production-media/[supplierOrderId]/[fileId]/route.ts` | Resolve multiple file links and require at least one update under the requested Supplier Order. |
 | `b0a1d9c9db57f02dc79a5029e21325a69ccee7611fe04530320dd677647c2528` | `src/app/api/admin/logistics/production-media/[supplierOrderId]/[fileId]/route.test.ts` | Multi-link allow/deny regression and existing tenant checks. |
-| `f76409d8183b3a7d1e110418f74c0ce3ae949bc0d43973f1cd1307843df390f8` | `docs/GISP-APR-INTEGRATION-FIVE-FIXES-PAYMENT-20260919-v1.0.md` | Bounded owner approval and stop conditions. |
+
+## Authorized Release Stage delta over `01c3064d`
+
+This final local delta contains only the two exact PDF route gates, their positive
+and negative regression tests, and the approval/manifest/readiness documents that
+bind the candidate to the owner's authorization.
+
+| SHA-256 | Path | Bounded change |
+| --- | --- | --- |
+| `3e4944809052c4f745432d1aea2b53484d65cc488f39ee76c206ef7270d74388` | `src/lib/release-stage.ts` | Exact Supplier PO PDF route at C and exact Warehouse Receipt PDF route at D8; no broad parent prefix. |
+| `2dc3e63244b5416c1baf18d2f2660cbed07951e99f5234aac1657fb54a438a0e` | `src/lib/release-stage.test.ts` | Stage boundary plus invalid ID, parent and extra-child denials. |
+| `1b1654ec5e8b17686197b499988cc23efb4de46911ca3f0d9c6a9f232c26567d` | `src/proxy.release-gate.test.ts` | Hosted proxy positive and broader-route negative regressions. |
+| `c21dc73cc0ebfbb7f318bfd5830dd4252d362d3fa89e15104ee86f20f536085f` | `docs/GISP-APR-INTEGRATION-FIVE-FIXES-PAYMENT-20260919-v1.0.md` | Owner's exact Development migration/deploy/UAT and two-route gate authorization. |
 
 ## Explicit exclusions and blockers
 
 - No `pnpm-lock`, tools, caches, `.env`, keys, unrelated dirty files or root
   checkout state are part of this candidate.
-- No database schema/data change or migration execution occurred.
-- The 12 ordered `PAY-RPC-GATE-001` migrations remain **pending separate exact
-  authorization**. This manifest does not authorize applying any of them.
-- Production release-stage routing still blocks two new PDF endpoints:
-  - `/api/admin/supplier-orders/[id]/po/pdf` is absent from the Release C/D
-    positive route lists.
-  - `/api/admin/warehouse-receipts/[id]/pdf` is absent from the D8 positive
-    route list.
+- No database schema/data change, migration execution, Development deployment or
+  UAT mutation occurred while building this source candidate.
+- The owner has authorized the 12 ordered `PAY-RPC-GATE-001` migrations for
+  Development project `db09b94e-fc37-4f90-9530-3289afef0b79`, after verifying
+  the 19 September backup completed. Execution evidence remains pending.
+- Release-stage source now opens only these exact UUID routes:
+  - C: `/api/admin/supplier-orders/[id]/po/pdf`
+  - D8: `/api/admin/warehouse-receipts/[id]/pdf`
+  Parent resources, invalid IDs and extra child paths remain closed by tests.
 - `/api/admin/logistics/production-media/...` is covered by the existing D8
   `/api/admin/logistics` prefix when D8 is explicitly enabled.
-- The PDF allowlist gaps are intentionally unchanged because opening Production
-  routes is a permission/gate change requiring a new owner approval.
-- Development frontend deployment/UAT is authorized in the approval record but
-  was not performed while producing this local candidate.
+- Development deployment and bounded UAT test-data mutation are authorized in the
+  approval record but were not performed while producing this local candidate.
+- Production remains prohibited. The route source change is present for later
+  separately authorized staged Production execution; it is not Production Release
+  Authorization.
+
+## Local verification on the final working tree
+
+- Focused Payment/PDF/media/release-gate suite: 7 files, 41 tests passed.
+- TypeScript: `npm run typecheck` passed.
+- Full Vitest suite: 103 files, 525 tests passed.
+- Optimized Next.js build: passed; 128 static pages generated and both PDF routes
+  were present in the route inventory.
+- `git diff --check`: passed. Independent QA must still verify the committed HEAD
+  and tree before Development execution.
 
 ## Required next gates
 
-1. Independent QA verifies the final commit/tree and this SHA-256 inventory.
-2. Release Executor deploys only this frozen frontend candidate to Development
-   and records UAT evidence; no backend migration is implied.
-3. Obtain separate owner approval before any 12-migration apply or release-stage
-   allowlist change.
+1. Independent QA verifies the final commit/tree, route boundaries and this
+   SHA-256 inventory.
+2. Release Executor verifies the completed 19 September Development backup, then
+   applies exactly migrations `20260920010000` through `20260920011100` once and
+   in order to project `db09b94e-fc37-4f90-9530-3289afef0b79`.
+3. Release Executor deploys only the final frozen commit to Development, completes
+   bounded UAT/test-data work and records migration, deploy and UAT evidence.
+4. Keep Production closed until a separate Production Release Authorization is
+   recorded.

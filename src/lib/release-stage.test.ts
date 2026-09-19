@@ -24,6 +24,9 @@ describe("Release A route gate", () => {
 });
 
 describe("Release C/D progressive gate", () => {
+  const supplierOrderId = "11111111-1111-4111-8111-111111111111";
+  const receiptId = "22222222-2222-4222-8222-222222222222";
+
   it("opens C transactions but blocks every D slice even with the staff rehearsal flag", () => {
     for (const route of ["/member/orders/123", "/api/member/payment-transfers", "/admin/orders/123", "/api/admin/payment-transfers/123/evidence", "/api/admin/supplier-disclosures/123/revoke", "/api/admin/dashboard"]) {
       expect(isReleaseStagePathAllowed(route, "C", true)).toBe(true);
@@ -50,6 +53,39 @@ describe("Release C/D progressive gate", () => {
       for (const invalid of ["", "8", "7,9", "7,8,8", "7,8,9,10,11"]) {
         expect(enabledReleaseDSlices(invalid)).toEqual([]);
       }
+    } finally {
+      if (previous === undefined) delete process.env.RELEASE_D_ENABLED_SLICES;
+      else process.env.RELEASE_D_ENABLED_SLICES = previous;
+    }
+  });
+
+  it("opens only the exact Supplier PO PDF route at C", () => {
+    const pdf = `/api/admin/supplier-orders/${supplierOrderId}/po/pdf`;
+    expect(isReleaseStagePathAllowed(pdf, "B", false)).toBe(false);
+    expect(isReleaseStagePathAllowed(pdf, "C", true)).toBe(true);
+    for (const route of [
+      "/api/admin/supplier-orders",
+      `/api/admin/supplier-orders/${supplierOrderId}`,
+      `/api/admin/supplier-orders/${supplierOrderId}/po`,
+      `/api/admin/supplier-orders/${supplierOrderId}/po/pdf/extra`,
+      "/api/admin/supplier-orders/not-a-uuid/po/pdf",
+    ]) expect(isReleaseStagePathAllowed(route, "C", true)).toBe(false);
+  });
+
+  it("opens only the exact Warehouse Receipt PDF route after D8", () => {
+    const previous = process.env.RELEASE_D_ENABLED_SLICES;
+    const pdf = `/api/admin/warehouse-receipts/${receiptId}/pdf`;
+    try {
+      process.env.RELEASE_D_ENABLED_SLICES = "7";
+      expect(isReleaseStagePathAllowed(pdf, "D", true)).toBe(false);
+      process.env.RELEASE_D_ENABLED_SLICES = "7,8";
+      expect(isReleaseStagePathAllowed(pdf, "D", true)).toBe(true);
+      for (const route of [
+        "/api/admin/warehouse-receipts",
+        `/api/admin/warehouse-receipts/${receiptId}`,
+        `/api/admin/warehouse-receipts/${receiptId}/pdf/extra`,
+        "/api/admin/warehouse-receipts/not-a-uuid/pdf",
+      ]) expect(isReleaseStagePathAllowed(route, "D", true)).toBe(false);
     } finally {
       if (previous === undefined) delete process.env.RELEASE_D_ENABLED_SLICES;
       else process.env.RELEASE_D_ENABLED_SLICES = previous;
