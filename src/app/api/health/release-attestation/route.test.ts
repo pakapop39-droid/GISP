@@ -17,6 +17,8 @@ function configuredEnvironment() {
   process.env.RELEASE_CANDIDATE_COMMIT = "1".repeat(40);
   process.env.RELEASE_CANDIDATE_TREE = "2".repeat(40);
   process.env.RELEASE_TARGET_PROJECT_ID = "e902393a-ffe7-433d-96d8-a37256948959";
+  process.env.RELEASE_TARGET_BACKEND_HOST = "child-key.ap-southeast.insforge.app";
+  process.env.RELEASE_TARGET_APP_KEY = "child-key";
   process.env.INSFORGE_URL = "https://child-key.ap-southeast.insforge.app";
   process.env.NEXT_PUBLIC_INSFORGE_URL = "https://child-key.ap-southeast.insforge.app";
   process.env.NEXT_PUBLIC_APP_URL = "https://child-rehearsal.insforge.site";
@@ -50,6 +52,7 @@ describe("hosted release attestation", () => {
       candidate: { commit: "1".repeat(40), tree: "2".repeat(40) },
       target: {
         projectId: "e902393a-ffe7-433d-96d8-a37256948959",
+        backendHost: "child-key.ap-southeast.insforge.app",
         backendAppKey: "child-key",
         appHost: "child-rehearsal.insforge.site",
         requestHost: "child-rehearsal.insforge.site",
@@ -69,16 +72,45 @@ describe("hosted release attestation", () => {
     expect((await response.json()).bindingComplete).toBe(false);
   });
 
-  it("fails closed for malformed identity, non-contiguous slices or admin probe failure", async () => {
+  it("rejects an attacker host that merely starts with the expected Child app key", async () => {
+    process.env.INSFORGE_URL = "https://child-key.ap-southeast.insforge.app.attacker.test";
+    process.env.NEXT_PUBLIC_INSFORGE_URL = "https://child-key.ap-southeast.insforge.app.attacker.test";
+    const response = await GET(request());
+    const body = await response.json();
+    expect(response.status).toBe(503);
+    expect(body.bindingComplete).toBe(false);
+    expect(JSON.stringify(body)).not.toContain("attacker.test");
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("requires the configured Child host and app key to agree exactly", async () => {
+    process.env.RELEASE_TARGET_APP_KEY = "different-child";
+    expect((await GET(request())).status).toBe(503);
+    process.env.RELEASE_TARGET_APP_KEY = "child-key";
+    process.env.RELEASE_TARGET_BACKEND_HOST = "child-key.other-region.insforge.app";
+    expect((await GET(request())).status).toBe(503);
+  });
+
+  it("fails closed before the admin probe for malformed identity or non-contiguous slices", async () => {
     process.env.RELEASE_TARGET_PROJECT_ID = "not-a-project";
     process.env.RELEASE_D_ENABLED_SLICES = "7,9";
-    mocks.limit.mockResolvedValueOnce({ data: null, error: new Error("denied") });
     const response = await GET(request());
     const body = await response.json();
     expect(response.status).toBe(503);
     expect(body.target.projectId).toBe("not-a-project");
     expect(body.release.enabledDSlices).toEqual([]);
     expect(body.serverAdminProbeOk).toBe(false);
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the safely targeted admin probe is denied", async () => {
+    mocks.limit.mockResolvedValueOnce({ data: null, error: new Error("denied") });
+    const response = await GET(request());
+    const body = await response.json();
+    expect(response.status).toBe(503);
+    expect(body.bindingComplete).toBe(false);
+    expect(body.serverAdminProbeOk).toBe(false);
+    expect(mocks.from).toHaveBeenCalledWith("file_metadata");
   });
 
   it("accepts Release C only when every D slice is disabled", async () => {

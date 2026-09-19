@@ -3,22 +3,47 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
 const allowedKinds = new Set(["advisor", "suppressions", "deployment", "acl", "runtime", "attestation"]);
-const sensitiveKey = /(authorization|cookie|credential|password|private.?key|api.?key|anon.?key|token|secret)/i;
+const exactSensitiveKeys = new Set([
+  "key", "accesskey", "accesskeyid", "secretaccesskey", "servicerolekey",
+  "databaseurl", "dburl", "connectionstring", "databaseconnectionstring",
+  "authorization", "cookie", "setcookie", "credential", "credentials",
+  "password", "passwd", "privatekey", "apikey", "anonkey", "token",
+  "accesstoken", "refreshtoken", "sessiontoken", "clientsecret", "jwt",
+]);
+
+function isSensitiveKey(key) {
+  const normalized = String(key).replace(/[^a-z0-9]/gi, "").toLowerCase();
+  return exactSensitiveKeys.has(normalized)
+    || normalized.includes("authorization")
+    || normalized.includes("credential")
+    || normalized.includes("password")
+    || normalized.includes("secret")
+    || normalized.includes("token")
+    || normalized.includes("accesskey")
+    || normalized.includes("servicerolekey")
+    || normalized.includes("privatekey")
+    || normalized.includes("apikey")
+    || normalized.includes("anonkey")
+    || normalized.includes("databaseurl")
+    || normalized.includes("connectionstring");
+}
+
 const sensitiveEnvValues = Object.entries(process.env)
-  .filter(([key, value]) => value && sensitiveKey.test(key) && String(value).length >= 8)
+  .filter(([key, value]) => value && isSensitiveKey(key) && String(value).length >= 8)
   .map(([, value]) => String(value));
 
 function sanitizeString(value) {
   let result = value
     .replace(/(bearer\s+)[^\s"']+/gi, "$1[REDACTED]")
     .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, "[REDACTED_JWT]")
+    .replace(/\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis):\/\/[^\s"'<>]+/gi, "[REDACTED_CONNECTION_URL]")
     .replace(/([?&](?:access_token|refresh_token|token|api_key|key|secret|password)=)[^&#\s]+/gi, "$1[REDACTED]");
   for (const secret of sensitiveEnvValues) result = result.split(secret).join("[REDACTED_ENV]");
   return result;
 }
 
 function sanitize(value, key = "") {
-  if (sensitiveKey.test(key)) return "[REDACTED]";
+  if (isSensitiveKey(key)) return "[REDACTED]";
   if (typeof value === "string") return sanitizeString(value);
   if (Array.isArray(value)) return value.map((item) => sanitize(item));
   if (value && typeof value === "object") {

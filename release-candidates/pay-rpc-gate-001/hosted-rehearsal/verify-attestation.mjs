@@ -9,6 +9,7 @@ const expected = {
   commit: value("--commit"),
   tree: value("--tree"),
   projectId: value("--project-id"),
+  backendHost: value("--backend-host").toLowerCase(),
   appKey: value("--app-key"),
   appHost: value("--app-host").toLowerCase(),
   stage: value("--stage"),
@@ -29,6 +30,7 @@ if (body?.bindingComplete !== true) failures.push("BINDING_INCOMPLETE");
 if (body?.candidate?.commit !== expected.commit) failures.push("COMMIT");
 if (body?.candidate?.tree !== expected.tree) failures.push("TREE");
 if (body?.target?.projectId !== expected.projectId) failures.push("PROJECT_ID");
+if (body?.target?.backendHost !== expected.backendHost) failures.push("BACKEND_HOST");
 if (body?.target?.backendAppKey !== expected.appKey) failures.push("APP_KEY");
 if (body?.target?.appHost !== expected.appHost || url.hostname.toLowerCase() !== expected.appHost) failures.push("APP_HOST");
 if (body?.release?.stage !== expected.stage) failures.push("STAGE");

@@ -9,7 +9,9 @@ Required deployment variables for the attestation route:
 - `RELEASE_CANDIDATE_COMMIT`: exact 40-character Git commit.
 - `RELEASE_CANDIDATE_TREE`: exact 40-character Git tree.
 - `RELEASE_TARGET_PROJECT_ID`: exact authorized Child UUID.
-- `INSFORGE_URL` and `NEXT_PUBLIC_INSFORGE_URL`: same Child app key/host.
+- `RELEASE_TARGET_BACKEND_HOST`: exact Child host ending in `.ap-southeast.insforge.app`.
+- `RELEASE_TARGET_APP_KEY`: exact Child app key matching the host's single prefix label.
+- `INSFORGE_URL` and `NEXT_PUBLIC_INSFORGE_URL`: exact HTTPS Child host above, with no alternate region, suffix, port, path or credentials.
 - `NEXT_PUBLIC_APP_URL`: the hosted deployment URL.
 - `RELEASE_STAGE`: `C` or `D`.
 - `RELEASE_D_ENABLED_SLICES`: empty for C or a contiguous prefix of `7,8,9,10` for D.
@@ -33,8 +35,11 @@ original raw files only in the approved restricted store; do not commit them.
 Verify the hosted attestation before capturing it:
 
 ```text
-node verify-attestation.mjs --url <child-url>/api/health/release-attestation --commit <commit> --tree <tree> --project-id <child-uuid> --app-key <child-app-key> --app-host <child-host> --stage D --slices 7,8,9,10 --prohibited-host <production-host>
+node verify-attestation.mjs --url <child-url>/api/health/release-attestation --commit <commit> --tree <tree> --project-id <child-uuid> --backend-host <child-backend-host> --app-key <child-app-key> --app-host <child-host> --stage D --slices 7,8,9,10 --prohibited-host <production-host>
 ```
 
 Run `emergency/function-snapshot.sql` before Stop and after Forward Resume. Both
 results must report 54 rows and identical per-row and combined hashes.
+
+Current dependency audit evidence and runtime reachability triage are recorded
+in `npm-audit-triage-20260919.md`; that record does not authorize upgrades.

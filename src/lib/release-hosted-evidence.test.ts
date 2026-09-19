@@ -55,4 +55,58 @@ describe("hosted rehearsal evidence capture", () => {
     expect(() => execFileSync(process.execPath, [script, "--out-dir", output, `runtime=${input}`], { stdio: "pipe" }))
       .toThrow(/Command failed/);
   });
+
+  it("redacts case-insensitive and nested credential keys without erasing safe evidence keys", () => {
+    const root = mkdtempSync(join(tmpdir(), "gisp-hr-evidence-"));
+    tempDirs.push(root);
+    const input = join(root, "deployment.json");
+    const output = join(root, "frozen");
+    const secrets = {
+      bareKey: "secret-bare-key-value",
+      access: "secret-access-key-value",
+      service: "secret-service-role-value",
+      database: "postgresql://user:password@private-db.example/gisp",
+      connection: "redis://default:password@private-cache.example:6379",
+      nestedApi: "secret-nested-api-value",
+      mixedToken: "secret-mixed-token-value",
+      accessVariant: "secret-access-variant-value",
+      databaseVariant: "secret-database-variant-value",
+      connectionVariant: "secret-connection-variant-value",
+    };
+    writeFileSync(input, JSON.stringify({
+      KEY: secrets.bareKey,
+      AccessKey: secrets.access,
+      SERVICE_ROLE_KEY: secrets.service,
+      databaseUrl: secrets.database,
+      Connection_String: secrets.connection,
+      nested: { settings: {
+        customApiKey: secrets.nestedApi,
+        UserAccessToken: secrets.mixedToken,
+        awsAccessKeyIdentifier: secrets.accessVariant,
+        primaryDatabaseUrlResolved: secrets.databaseVariant,
+        replicaConnectionStringValue: secrets.connectionVariant,
+      } },
+      safeEvidence: {
+        monkey: "preserve-monkey",
+        keyCount: 54,
+        ruleKey: "advisor-rule-1",
+        publicKey: "documented-public-identifier",
+        scanId: "scan-2",
+      },
+      diagnostic: `database unavailable at ${secrets.database}`,
+    }));
+    execFileSync(process.execPath, [script, "--out-dir", output, `deployment=${input}`]);
+    const evidence = readFileSync(join(output, "deployment.sanitized.json"), "utf8");
+    const manifest = readFileSync(join(output, "manifest.json"), "utf8");
+    for (const value of Object.values(secrets)) {
+      expect(evidence).not.toContain(value);
+      expect(manifest).not.toContain(value);
+    }
+    expect(evidence).toContain("preserve-monkey");
+    expect(evidence).toContain('"keyCount": 54');
+    expect(evidence).toContain("advisor-rule-1");
+    expect(evidence).toContain("documented-public-identifier");
+    expect(evidence).toContain("scan-2");
+    expect(evidence).toContain("[REDACTED_CONNECTION_URL]");
+  });
 });
