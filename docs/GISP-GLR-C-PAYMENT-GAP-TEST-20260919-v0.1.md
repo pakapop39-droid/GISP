@@ -1,0 +1,15 @@
+# GISP Release C — Payment Gap Rehearsal Evidence v0.1
+
+**Environment:** isolated child `pay-seq-02-rehearsal-20260918` (`e902393a-ffe7-433d-96d8-a37256948959`), descended from Production B; not Production. All new fixtures were labelled `REH-PAY-RPC-001-GAP-*`, used approved test aliases, and were created without altering prior test rows. The local App was bound to the child and Stage C for this test only. No Production migration, deploy, backup, real payment or Member change occurred.
+
+| Case | Observed result | Limit |
+| --- | --- | --- |
+| Missing stored evidence | Finance GET 404; Verify HTTP 409 `EVIDENCE_NOT_VERIFIED`; transfer `SUBMITTED`, no VERIFIED Audit or Finance log. | Does not test a later object deletion. |
+| Mislabeled/corrupt evidence | A unique 20-byte non-PDF object marked as PDF gave GET 404 and Verify HTTP 409; transfer `SUBMITTED`, no VERIFIED Audit or Finance log. | Does not prove rejection of every malformed PDF with a valid PDF header. |
+| Expired Finance preview | Finance genuinely retrieved the exact stored file; the database recorded the preview. After over 11 elapsed minutes (without changing Audit time), Verify returned HTTP 409 `EVIDENCE_PREVIEW_REQUIRED`; transfer remained `SUBMITTED`, Order `PENDING_DEPOSIT`, no VERIFIED Audit, Finance log or new Notification. | Reopening the file would create a fresh 10-minute preview; test deliberately did not do that. |
+| Partial then exact deposit | Two different evidence files and transfers of 20.00 then 33.50 against 53.50 due: first `PARTIALLY_VERIFIED`/Order `PENDING_DEPOSIT`; second exact total `VERIFIED`/Order `DEPOSIT_VERIFIED`. Actor, Audit, stored-file hash and amounts matched. | Synthetic amount only; no bank settlement. |
+| Overpayment | A separate 54.50 transfer against 53.50 due was flagged `OVERPAYMENT_REVIEW`; Order remained `PENDING_DEPOSIT`. | Finance/owner must resolve the real overpayment under approved policy; the test did not refund or change financial rules. |
+
+Independent QA verdict for this bounded Payment gap slice is **PASS**. QA checked child records and found five new GAP Orders, six transfers, five stored objects (the missing-object case has none), no verification on the three denied transfers, three successful Finance verification logs, and four total queued Notification Jobs to the approved Finance test alias. Jobs were `PENDING`, so email delivery is not asserted. The full updated local suite passed 95 files/496 tests; TypeScript typecheck and optimized Next.js build passed. QA verified 28/28 C/D manifest paths and 12/12 SQL package hashes. The generated `next-env.d.ts` change from the temporary dev server was automatically restored by the build; `git diff --check` passed with no unexpected tracked drift.
+
+**Production interpretation:** This closes the targeted child-rehearsal Payment behavior gaps only. It is not proof that Finance visually read the slip, that the bank received money, or that the Production Release Candidate/rollback is ready. Production C and D remain NO-GO under `GISP-RELEASE-CD-GO-LIVE-READINESS-20260919-v0.1.md`.

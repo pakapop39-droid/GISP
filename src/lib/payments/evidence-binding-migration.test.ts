@@ -2,14 +2,21 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const sql = readFileSync(resolve(
+const normalizeLineEndings = (value: string) => value.replace(/\r\n?/g, "\n");
+const sql = normalizeLineEndings(readFileSync(resolve(
   process.cwd(), "migrations/20260918211000_payment-evidence-binding.sql",
-), "utf8");
+), "utf8"));
 const submit = sql.split("CREATE OR REPLACE FUNCTION public.submit_payment_transfer(")[1]
   ?.split("CREATE OR REPLACE FUNCTION public.verify_payment_transfer(")[0] ?? "";
 const verify = sql.split("CREATE OR REPLACE FUNCTION public.verify_payment_transfer(")[1] ?? "";
 
 describe("customer Payment evidence binding migration contract", () => {
+  it("checks the same SQL contract for LF and CRLF checkouts", () => {
+    const sample = "submit_payment_transfer(\n  payment_schedule_id_input UUID";
+    expect(normalizeLineEndings(sample)).toBe(sample);
+    expect(normalizeLineEndings(sample.replaceAll("\n", "\r\n"))).toBe(sample);
+  });
+
   it("replaces only the two existing function signatures without schema, ACL, or historical data changes", () => {
     expect(sql.match(/CREATE OR REPLACE FUNCTION public\./g)).toHaveLength(2);
     expect(sql).toContain("submit_payment_transfer(\n  payment_schedule_id_input UUID,\n  amount_input NUMERIC,\n  transferred_at_input TIMESTAMPTZ,\n  evidence_file_id_input UUID");

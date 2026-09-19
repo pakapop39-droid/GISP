@@ -1,6 +1,6 @@
 # PAY-RPC-GATE-001 — isolated C/D migration candidate (provisional)
 
-Authorization: `docs/GISP-APR-PAY-RPC-GATE-001-IMPLEMENTATION-20260918-v1.0.md`; AC `PAY-RPC-01`–`04` and draft `PAY-SEQ-01`. This directory is a **local candidate only**, not a Git worktree, backend branch, executed migration set, hosted rehearsal (`PAY-SEQ-02`), or Production release. No file here has been Applied or Deployed. Preserve the original `migrations/` history and unrelated dirty worktree files.
+Authorization: `docs/GISP-APR-PAY-RPC-GATE-001-IMPLEMENTATION-20260918-v1.0.md` and bounded gap continuation `docs/GISP-APR-GLR-C-GAPS-20260919-v0.1.md`; AC `PAY-RPC-01`–`04` and `PAY-SEQ-02`. This directory remains a **local candidate package**, not a Production release. Its 12 SQL files were applied in order only to isolated rehearsal child `e902393a-ffe7-433d-96d8-a37256948959` on 2026-09-18; none were applied to Production. See `docs/GISP-PAY-SEQ-02-REHEARSAL-STATUS-20260918-v0.1.md`. Preserve the original `migrations/` history and unrelated working-tree files.
 
 Read-only Production B check reported by the primary thread: latest applied migration `20260908170000 release-b-member-pilot` (prior `20260906020000 restrict-sequence-helper-rpc`). That is a point-in-time observation, **not** a complete lineage, signature, dependency, or ACL validation. The 20260920 candidate versions are provisional until an independent reviewer checks the exact target baseline and may need new numbers in a new isolated package. Never run `up --all` from the shared worktree. In an independently authorized clean rehearsal workspace, validate this package's lineage and apply only the explicitly selected next migration at each gate; no command is authorized by this document.
 
@@ -29,8 +29,8 @@ The files are renamed, forward-only copies from the corresponding root `migratio
 |---|---|
 | `ead316777d10f4ed0b85a2602129aae9c9a81d4040b0ff3d82fb321dbd60ae98` | `src/app/api/admin/payment-transfers/[id]/evidence/route.ts` |
 | `e17f10973f7a69b6f6d02adc5bbbbb73a3633d43a0f765b398a899d7b634f34d` | `src/app/api/admin/payment-transfers/[id]/evidence/route.test.ts` |
-| `fabb56ab5422954381cbd3fc32e6b9b9f456d4b655eba8eb819850c242d0be5b` | `src/app/api/admin/payment-transfers/[id]/verify/route.ts` |
-| `d956196f88cf1b9753d3b1dc54b2ff722017da99e74e9c5b3c4dbdcb47a3113e` | `src/app/api/admin/payment-transfers/[id]/verify/route.test.ts` |
+| `ecea79e228e32b98e5a01f62ab9036b4cb93c774da1542afd94b2982f3d7045a` | `src/app/api/admin/payment-transfers/[id]/verify/route.ts` — HTTP 409 for missing Finance preview |
+| `595044765b35ae6dfbb2d294cdf5bc384773da66f40ffb831eaee883c19d2f36` | `src/app/api/admin/payment-transfers/[id]/verify/route.test.ts` |
 | `631e2c6b470f88edb71d6ad2fc205d9d1e7a7ddb8d0047d02c993c20ba41ef8c` | `src/lib/payments/bound-evidence.ts` |
 | `7de510bd0e8366da1ddfbfa0beffb1a308d4efa1e847755c11f1ff446a17b14e` | `src/lib/payments/bound-evidence.test.ts` |
 | `7bf7f014c7b7f55232c30372f12f7710e07f15a67ec17659f2aea3626f9dd3d2` | `src/lib/payments/finance-access.ts` |
@@ -43,7 +43,7 @@ The application still needs the broader Release C/D files frozen in `docs/GISP-R
 
 ## QA / release blockers
 
-- Local checks: focused 7 test files/37 tests, full 95 files/495 tests, TypeScript typecheck, optimized Next.js build, and lint (0 errors, 1 unrelated pre-existing warning) passed while preparing this candidate. Independent QA and hosted rehearsal remain pending; no Production PASS is claimed.
-- Development QC Reopen UAT was `PASS WITH CONDITIONS` with two minor UX issues requiring owner Production risk acceptance or fix/retest; cross-organization scoped-QC was `N/A`, not a pass. Payment Integrity is `NOT VERIFIED` until a hosted test proves the SQL/Storage path.
+- Previous local checks: focused 7 test files/37 tests, full 95 files/495 tests, TypeScript typecheck, optimized Next.js build, and lint (0 errors, 1 unrelated pre-existing warning) passed before the HTTP 409 presentation fix. On the updated local source, independent QA passed 95 files/496 tests, typecheck and the optimized Next.js build. Missing/corrupt evidence, partial/exact settlement, overpayment review, and genuine expired-preview tests passed on the isolated child. QA verified 28/28 C/D manifest paths (21 original hashes plus 7 superseding Payment hashes) and all 12/12 SQL package hashes. This is PASS only for the bounded child gap rehearsal; no Production PASS is claimed.
+- Development QC Reopen UAT was `PASS WITH CONDITIONS` with two minor UX issues requiring owner Production risk acceptance or fix/retest; cross-organization scoped-QC was `N/A`, not a pass. Payment SQL/Storage binding was exercised on the isolated hosted child and is `PASS WITH CONDITIONS` there; the exact integrated Production Release Candidate, real-bank settlement, and Production permission/rollback gates are **NOT VERIFIED**.
 - A receipt proves exact server byte retrieval and a Finance confirmation click, not that a human visually read the slip or that money settled at the bank. Storage-object mutation between the final read and SQL commit remains a residual time-of-check/time-of-use risk; verify Storage immutability/version behavior in rehearsal.
 - Recheck every function signature, ACL, table dependency, SQL syntax and applied migration lineage against a Production-B-derived rehearsal environment before any Apply. D7/D8 prerequisites listed here are the currently documented ones, not a guarantee that no others exist. Confirm backup and tested rollback, role/tenant negative cases, deposit/balance/freight reconciliation, and Release-stage configuration before seeking separate Production authorization.
