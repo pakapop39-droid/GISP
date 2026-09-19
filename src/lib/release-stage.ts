@@ -226,9 +226,9 @@ export function isOrderOperationSliceVisible(slice: 7 | 8) {
   return process.env.VERCEL_ENV !== "production" && process.env.APP_ENV !== "production";
 }
 
-export function isReleaseDPathAllowed(pathname: string) {
+export function isReleaseDPathAllowed(pathname: string, releaseDSlices: readonly number[] = enabledReleaseDSlices()) {
   if (isReleaseCPathAllowed(pathname)) return true;
-  return enabledReleaseDSlices().some((slice) => {
+  return releaseDSlices.some((slice) => {
     const prefixes = pathname.startsWith("/api/")
       ? RELEASE_D_SLICE_PREFIXES[slice].apis : RELEASE_D_SLICE_PREFIXES[slice].pages;
     return prefixes.some((prefix) => matchesPrefix(pathname, prefix)) ||
@@ -241,11 +241,12 @@ export function isReleaseStagePathAllowed(
   pathname: string,
   stage = process.env.RELEASE_STAGE,
   staffOperations = process.env.ENABLE_STAFF_OPERATIONS === "true",
+  releaseDSlices: readonly number[] = enabledReleaseDSlices(),
 ) {
   if (stage === "A") return isReleaseAPathAllowed(pathname, staffOperations);
   if (stage === "B") return isReleaseBPathAllowed(pathname, staffOperations);
   if (stage === "C") return isReleaseCPathAllowed(pathname);
-  if (stage === "D") return isReleaseDPathAllowed(pathname);
+  if (stage === "D") return isReleaseDPathAllowed(pathname, releaseDSlices);
   // Local Development remains unstaged, but hosted Production must fail closed.
   return process.env.VERCEL_ENV !== "production" && process.env.APP_ENV !== "production";
 }

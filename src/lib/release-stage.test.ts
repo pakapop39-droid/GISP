@@ -59,6 +59,18 @@ describe("Release C/D progressive gate", () => {
     }
   });
 
+  it("uses an explicit server snapshot instead of browser build-time D slice environment", () => {
+    const previous = process.env.RELEASE_D_ENABLED_SLICES;
+    process.env.RELEASE_D_ENABLED_SLICES = "7,8";
+    try {
+      expect(isReleaseStagePathAllowed("/admin/claims", "D", false, [7, 8, 9, 10])).toBe(true);
+      expect(isReleaseStagePathAllowed("/admin/reports", "D", false, [7, 8, 9, 10])).toBe(true);
+      expect(isReleaseStagePathAllowed("/admin/reports", "D", false, [7, 8])).toBe(false);
+    } finally {
+      if (previous === undefined) delete process.env.RELEASE_D_ENABLED_SLICES;
+      else process.env.RELEASE_D_ENABLED_SLICES = previous;
+    }
+  });
   it("opens only the exact Supplier PO PDF route at C", () => {
     const pdf = `/api/admin/supplier-orders/${supplierOrderId}/po/pdf`;
     expect(isReleaseStagePathAllowed(pdf, "B", false)).toBe(false);
