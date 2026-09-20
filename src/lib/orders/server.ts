@@ -2,6 +2,10 @@ import "server-only";
 
 import { AppAccessError, requireAppAccess } from "@/lib/auth/session";
 import {
+  organizationScopeForPermissions,
+  permissionsForOrganization,
+} from "@/lib/auth/organization-scope";
+import {
   adminOrderAccessPermissions,
   adminOrderCapabilitiesForPermissions,
   projectLogisticsReceiptSources,
@@ -57,8 +61,15 @@ export async function requireOrderAdmin() {
   if (!context.permissions.some((permission) => adminOrderAccessPermissions.includes(permission as typeof adminOrderAccessPermissions[number]))) {
     throw new AppAccessError("PERMISSION_DENIED", 403, "ไม่มีสิทธิ์จัดการ Order และ Payment");
   }
+  const organizationScope = organizationScopeForPermissions(
+    context,
+    adminOrderAccessPermissions,
+  );
+  if (!organizationScope.global && organizationScope.organizationIds.length === 0) {
+    throw new AppAccessError("PERMISSION_DENIED", 403, "ไม่มีขอบเขตองค์กรสำหรับจัดการ Order และ Payment");
+  }
   const capabilities = adminOrderCapabilitiesForPermissions(context.permissions);
-  return { context, capabilities };
+  return { context, capabilities, organizationScope };
 }
 
 async function attachOrderReferences(
@@ -95,41 +106,58 @@ export async function loadMemberOrders(): Promise<OrderListRow[]> {
 }
 
 export async function loadAdminOrders(): Promise<AdminOrderListData> {
-  const { capabilities } = await requireOrderAdmin();
+  const { context, capabilities, organizationScope } = await requireOrderAdmin();
   const admin = createInsForgeAdminClient();
-  const result = await admin.database.from("customer_orders").select(orderColumns)
-    .order("created_at", { ascending: false }).limit(200);
+  let query = admin.database.from("customer_orders").select(orderColumns);
+  if (!organizationScope.global) {
+    query = query.in("organization_id", organizationScope.organizationIds);
+  }
+  const result = await query.order("created_at", { ascending: false }).limit(200);
   const rows = take(result, "load admin orders") ?? [];
   const orders = await attachOrderReferences(rows as unknown as Array<Record<string, unknown>>, "admin");
   return {
     capabilities,
-    orders: capabilities.viewSalesAmounts ? orders : orders.map((order) => ({
-      ...order,
-      subtotal: 0,
-      vat_amount: 0,
-      grand_total: 0,
-      deposit_amount: 0,
-      balance_amount: 0,
-    })),
+    orders: orders.map((order) => {
+      const rowCapabilities = adminOrderCapabilitiesForPermissions(
+        permissionsForOrganization(
+          context,
+          (order as OrderListRow & { organization_id: string }).organization_id,
+        ),
+      );
+      return rowCapabilities.viewSalesAmounts ? order : {
+        ...order,
+        subtotal: 0,
+        vat_amount: 0,
+        grand_total: 0,
+        deposit_amount: 0,
+        balance_amount: 0,
+      };
+    }),
   };
 }
 
 async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promise<OrderDetail> {
   const adminAccess = mode === "admin" ? await requireOrderAdmin() : null;
   const context = mode === "member" ? await requireOrderMember() : adminAccess!.context;
-  const capabilities = adminAccess?.capabilities;
+  let capabilities = adminAccess?.capabilities;
   const database = mode === "admin" ? createInsForgeAdminClient().database : (await createInsForgeServerClient()).database;
   let orderQuery = database.from("customer_orders").select(orderColumns).eq("id", id);
   if (mode === "member") orderQuery = orderQuery.eq("member_profile_id", context.memberProfileId ?? "");
   const order = take(await orderQuery.maybeSingle(), "load order");
   if (!order) throw new AppAccessError("PERMISSION_DENIED", 404, "ไม่พบ Order");
   const orderRow = order as unknown as Record<string, unknown>;
-  const canManageQcForOrder = mode === "admin" && Boolean(capabilities?.manageQc)
-    ? take(await (await createInsForgeServerClient()).database.rpc("has_permission", {
-      permission_code: "qc.manage",
-      target_organization_id: String(orderRow.organization_id),
-    }), "check organization-scoped QC permission") === true
-    : false;
+  if (mode === "admin") {
+    const organizationPermissions = permissionsForOrganization(
+      context,
+      String(orderRow.organization_id),
+    );
+    if (!organizationPermissions.some((permission) =>
+      adminOrderAccessPermissions.includes(permission as typeof adminOrderAccessPermissions[number]))) {
+      throw new AppAccessError("PERMISSION_DENIED", 404, "ไม่พบ Order");
+    }
+    capabilities = adminOrderCapabilitiesForPermissions(organizationPermissions);
+  }
+  const canManageQcForOrder = mode === "admin" && Boolean(capabilities?.manageQc);
   const [itemsResult, schedulesResult, cancellationsResult, eventsResult, projectResult, memberResult] = await Promise.all([
     database.from("order_items").select(itemColumns).eq("order_id", id).order("created_at").limit(200),
     mode === "member" || capabilities?.viewCustomerPaymentStatus

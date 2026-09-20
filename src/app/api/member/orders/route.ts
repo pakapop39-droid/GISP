@@ -25,6 +25,12 @@ export async function POST(request: NextRequest) {
     const selections = parseIdQuantities(parsed.project_item_ids).map(
       ({ id, quantity }) => ({ project_item_id: id, quantity }),
     );
+    if (new Set(selections.map((selection) => selection.project_item_id)).size !== selections.length) {
+      return NextResponse.json({
+        code: "DUPLICATE_PROJECT_ITEM",
+        message: "แต่ละรายการสินค้าเลือกได้เพียงครั้งเดียว กรุณารวมจำนวนก่อนสร้าง Order",
+      }, { status: 400 });
+    }
     const forwarded = new Request(request.url, {
       method: "POST",
       headers: request.headers,

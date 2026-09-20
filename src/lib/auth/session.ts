@@ -6,6 +6,10 @@ import { createInsForgeServerClient } from "@/lib/insforge/server";
 import type { AppAccessContext, AppErrorCode } from "@/lib/auth/types";
 import { APP_SESSION_COOKIE } from "@/lib/auth/cookies";
 import { hasAllPermissions, isStaffRole } from "@/lib/auth/policy";
+import {
+  hasAllPermissionsForOrganization,
+  hasAnyPermissionForOrganization,
+} from "@/lib/auth/organization-scope";
 
 export { APP_SESSION_COOKIE } from "@/lib/auth/cookies";
 export const APP_SESSION_MAX_AGE = 60 * 60 * 24 * 7;
@@ -72,8 +76,23 @@ export async function readAppAccessContext(): Promise<AppAccessContext | null> {
 export type AccessRequirement = {
   active?: boolean;
   permissions?: string[];
+  targetOrganizationId?: string;
   allowSuspendedHistory?: boolean;
 };
+
+export function assertOrganizationPermission(
+  context: AppAccessContext,
+  permissions: readonly string[],
+  organizationId: string,
+  mode: "all" | "any" = "all",
+) {
+  const allowed = mode === "all"
+    ? hasAllPermissionsForOrganization(context, permissions, organizationId)
+    : hasAnyPermissionForOrganization(context, permissions, organizationId);
+  if (!allowed) {
+    throw new AppAccessError("PERMISSION_DENIED", 403, "ไม่มีสิทธิ์เข้าถึงข้อมูลองค์กรนี้");
+  }
+}
 
 export async function requireAppAccess(
   requirement: AccessRequirement = { active: true },
@@ -81,6 +100,9 @@ export async function requireAppAccess(
   const context = await readAppAccessContext();
   if (!context) {
     throw new AppAccessError("SESSION_REVOKED", 401, "เซสชันหมดอายุหรือถูกยกเลิก");
+  }
+  if (context.userStatus === "INACTIVE") {
+    throw new AppAccessError("ACCOUNT_INACTIVE", 403, "บัญชีถูกปิดใช้งานถาวร");
   }
   if (context.userStatus === "SUSPENDED" && !requirement.allowSuspendedHistory) {
     throw new AppAccessError("ACCOUNT_SUSPENDED", 403, "บัญชีถูกระงับการใช้งาน");
@@ -94,7 +116,13 @@ export async function requireAppAccess(
   }
   if (
     requirement.permissions?.length &&
-    !hasAllPermissions(context, requirement.permissions)
+    !(requirement.targetOrganizationId
+      ? hasAllPermissionsForOrganization(
+        context,
+        requirement.permissions,
+        requirement.targetOrganizationId,
+      )
+      : hasAllPermissions(context, requirement.permissions))
   ) {
     throw new AppAccessError("PERMISSION_DENIED", 403, "ไม่มีสิทธิ์ทำรายการนี้");
   }

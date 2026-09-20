@@ -4,6 +4,10 @@ vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => state.loggedIn ? { value: "test-session" } : undefined }), headers: vi.fn() }));
 vi.mock("@/lib/auth/cookies", () => ({ APP_SESSION_COOKIE: "gisp_app_session" }));
 vi.mock("@/lib/auth/policy", () => ({ isStaffRole: (role: string) => role !== "MEMBER", hasAllPermissions: () => true, accessHome: vi.fn() }));
+vi.mock("@/lib/auth/organization-scope", () => ({
+  hasAllPermissionsForOrganization: () => true,
+  hasAnyPermissionForOrganization: () => true,
+}));
 vi.mock("@/lib/insforge/server", () => ({ createInsForgeServerClient: async () => ({
   auth: { getCurrentUser: async () => ({ data: { user: { id: "owner" } } }) },
   database: { rpc: async () => ({ data: { roles: state.roles, userStatus: state.status, applicationStatus: "APPROVED" } }) },
@@ -17,3 +21,7 @@ it.each(["MEMBER", "MEMBER_ADMIN", "PRODUCT_ADMIN", "ORDER_ADMIN", "PURCHASING",
 });
 it("denies signed-out users", async () => { state.loggedIn = false; await expect(requireSuperAdmin()).rejects.toMatchObject({ status: 401 }); });
 it("denies suspended owners", async () => { state.status = "SUSPENDED"; await expect(requireSuperAdmin()).rejects.toMatchObject({ status: 403 }); });
+it("denies inactive owners", async () => {
+  state.status = "INACTIVE";
+  await expect(requireSuperAdmin()).rejects.toMatchObject({ status: 403, code: "ACCOUNT_INACTIVE" });
+});

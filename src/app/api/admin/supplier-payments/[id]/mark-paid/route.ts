@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, invalidInput } from "@/lib/api/response";
-import { AppAccessError, requireAppAccess } from "@/lib/auth/session";
+import { AppAccessError, assertOrganizationPermission, requireAppAccess } from "@/lib/auth/session";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 
@@ -64,9 +64,11 @@ export async function POST(
     if (!supplierOrder.data?.organization_id) {
       return NextResponse.json({ code: "NOT_FOUND", message: "ไม่พบ Supplier Order ของรายการจ่ายนี้" }, { status: 404 });
     }
-    if (context.organizationId && context.organizationId !== supplierOrder.data.organization_id) {
-      throw new AppAccessError("PERMISSION_DENIED", 403, "ไม่มีสิทธิ์จัดการ Supplier Payment ขององค์กรนี้");
-    }
+    assertOrganizationPermission(
+      context,
+      ["supplier_payments.manage"],
+      supplierOrder.data.organization_id,
+    );
 
     const form = await request.formData();
     const file = form.get("file");

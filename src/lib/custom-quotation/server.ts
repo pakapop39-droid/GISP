@@ -1,6 +1,6 @@
 import "server-only";
 
-import { AppAccessError, requireAppAccess } from "@/lib/auth/session";
+import { AppAccessError, assertOrganizationPermission, requireAppAccess } from "@/lib/auth/session";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import type { QuotationDetail, QuotationRow } from "@/lib/custom-quotation/types";
@@ -29,10 +29,11 @@ function take<T>(result: DatabaseResult<T>, label: string) {
 }
 
 export async function loadAdminQuotationDetail(id: string): Promise<QuotationDetail> {
-  await requireQuotationAdmin();
+  const context = await requireQuotationAdmin();
   const admin = createInsForgeAdminClient();
   const quotation = take(await admin.database.from("custom_quotations").select(quotationColumns).eq("id", id).maybeSingle(), "load quotation") as QuotationRow | null;
   if (!quotation) throw new AppAccessError("PERMISSION_DENIED", 404, "ไม่พบใบเสนอราคา");
+  assertOrganizationPermission(context, ["quotations.manage"], quotation.organization_id);
 
   const [itemsResult, requestResult, historyResult, costResult] = await Promise.all([
     admin.database.from("custom_quotation_items").select(quotationItemColumns).eq("quotation_id", id).order("line_number").limit(50),
