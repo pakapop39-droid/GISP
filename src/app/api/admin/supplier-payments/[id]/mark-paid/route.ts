@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, invalidInput } from "@/lib/api/response";
-import { AppAccessError, requireAppAccess } from "@/lib/auth/session";
+import { AppAccessError, assertOrganizationPermission, requireAppAccess } from "@/lib/auth/session";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 
@@ -51,21 +51,22 @@ export async function POST(
     if (!payment.data) {
       return NextResponse.json({ code: "NOT_FOUND", message: "ไม่พบ Supplier Payment" }, { status: 404 });
     }
-    if (payment.data.status !== "APPROVED") {
-      return NextResponse.json({
-        code: "INVALID_TRANSITION",
-        message: "แนบหลักฐานจ่ายได้เฉพาะ Supplier Payment ที่อนุมัติแล้ว",
-      }, { status: 409 });
-    }
-
     const supplierOrder = await admin.database.from("supplier_orders")
       .select("id,organization_id").eq("id", payment.data.supplier_order_id).maybeSingle();
     if (supplierOrder.error) throw supplierOrder.error;
     if (!supplierOrder.data?.organization_id) {
       return NextResponse.json({ code: "NOT_FOUND", message: "ไม่พบ Supplier Order ของรายการจ่ายนี้" }, { status: 404 });
     }
-    if (context.organizationId && context.organizationId !== supplierOrder.data.organization_id) {
-      throw new AppAccessError("PERMISSION_DENIED", 403, "ไม่มีสิทธิ์จัดการ Supplier Payment ขององค์กรนี้");
+    assertOrganizationPermission(
+      context,
+      ["supplier_payments.manage"],
+      supplierOrder.data.organization_id,
+    );
+    if (payment.data.status !== "APPROVED") {
+      return NextResponse.json({
+        code: "INVALID_TRANSITION",
+        message: "แนบหลักฐานจ่ายได้เฉพาะ Supplier Payment ที่อนุมัติแล้ว",
+      }, { status: 409 });
     }
 
     const form = await request.formData();

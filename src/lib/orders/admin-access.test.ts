@@ -41,6 +41,17 @@ describe("admin order capabilities", () => {
     });
   });
 
+  it("lets a scoped adjustment role see only the payment context it needs", () => {
+    expect(adminOrderCapabilitiesForPermissions(["payments.adjust"])).toMatchObject({
+      viewSalesAmounts: true,
+      viewCustomerPaymentStatus: true,
+      manageCustomerPayments: false,
+      managePaymentAdjustments: true,
+      manageOrder: false,
+      manageSupplierPayments: false,
+    });
+  });
+
   it("redacts financial areas for logistics", () => {
     const result = adminOrderCapabilitiesForPermissions([
       "shipments.manage",

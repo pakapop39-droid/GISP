@@ -26,12 +26,25 @@ const mocks = vi.hoisted(() => ({
   queriedTables: [] as string[],
 }));
 
-vi.mock("@/lib/auth/session", () => ({
-  AppAccessError: class AppAccessError extends Error {
+vi.mock("@/lib/auth/session", () => {
+  class AppAccessError extends Error {
     constructor(public code: string, public status: number, message: string) { super(message); }
-  },
-  requireAppAccess: mocks.guard,
-}));
+  }
+  return {
+    AppAccessError,
+    requireAppAccess: mocks.guard,
+    assertOrganizationPermission: (
+      context: { permissionScopes?: Array<{ code: string; organizationId: string | null }> },
+      permissions: string[],
+      organizationId: string,
+    ) => {
+      const allowed = permissions.every((permission) => context.permissionScopes?.some((scope) =>
+        scope.code === permission
+        && (scope.organizationId === null || scope.organizationId === organizationId)));
+      if (!allowed) throw new AppAccessError("PERMISSION_DENIED", 403, "denied");
+    },
+  };
+});
 vi.mock("@/lib/api/response", () => ({
   apiError: (error: { status?: number; message?: string }) => Response.json(
     { message: error.message },
@@ -121,7 +134,11 @@ describe("supplier payment evidence binding", () => {
     mocks.insertPayload = null;
     mocks.metadataError = null;
     mocks.queriedTables = [];
-    mocks.guard.mockResolvedValue({ userId: "finance-user", organizationId: null });
+    mocks.guard.mockResolvedValue({
+      userId: "finance-user",
+      organizationId: null,
+      permissionScopes: [{ code: "supplier_payments.manage", organizationId: null }],
+    });
     mocks.upload.mockResolvedValue({ data: { key: "payments/supplier/server-key.png", url: "private" }, error: null });
     mocks.remove.mockResolvedValue({ data: null, error: null });
     mocks.metadataDeleteEq.mockResolvedValue({ data: null, error: null });
@@ -328,8 +345,25 @@ describe("supplier payment evidence binding", () => {
   });
 
   it("rejects a scoped staff user from another organization before uploading", async () => {
-    mocks.guard.mockResolvedValue({ userId: "finance-user", organizationId: "other-org" });
+    mocks.guard.mockResolvedValue({
+      userId: "finance-user",
+      organizationId: "other-org",
+      permissionScopes: [{ code: "supplier_payments.manage", organizationId: "other-org" }],
+    });
     expect((await POST(request(), params())).status).toBe(403);
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
+
+  it("does not reveal a cross-organization payment status before authorization", async () => {
+    mocks.payment = { id: paymentId, supplier_order_id: supplierOrderId, status: "REQUESTED" };
+    mocks.guard.mockResolvedValue({
+      userId: "finance-user",
+      organizationId: "other-org",
+      permissionScopes: [{ code: "supplier_payments.manage", organizationId: "other-org" }],
+    });
+    const response = await POST(request(), params());
+    expect(response.status).toBe(403);
+    expect(response.status).not.toBe(409);
     expect(mocks.upload).not.toHaveBeenCalled();
   });
 });

@@ -4,12 +4,16 @@ import { createQuotationSchema, quotationRpcInput } from "@/lib/custom-quotation
 import { quotationColumns, requireQuotationAdmin } from "@/lib/custom-quotation/server";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
+import { assertOrganizationPermission } from "@/lib/auth/session";
+import { organizationScopeForPermissions } from "@/lib/auth/organization-scope";
 
 export async function GET(request: NextRequest) {
   try {
-    await requireQuotationAdmin();
+    const context = await requireQuotationAdmin();
     const admin = createInsForgeAdminClient();
     let query = admin.database.from("custom_quotations").select(quotationColumns).order("updated_at", { ascending: false }).limit(200);
+    const organizationScope = organizationScopeForPermissions(context, ["quotations.manage"]);
+    if (!organizationScope.global) query = query.in("organization_id", organizationScope.organizationIds);
     const status = request.nextUrl.searchParams.get("status");
     const requestId = request.nextUrl.searchParams.get("requestId");
     if (status) query = query.eq("status", status);
@@ -47,9 +51,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireQuotationAdmin();
+    const context = await requireQuotationAdmin();
     const parsed = createQuotationSchema.safeParse(await request.json());
     if (!parsed.success) return invalidInput(parsed.error.flatten().fieldErrors);
+    const admin = createInsForgeAdminClient();
+    const target = await admin.database.from("custom_requests").select("organization_id")
+      .eq("id", parsed.data.custom_request_id).maybeSingle();
+    if (target.error) throw target.error;
+    if (!target.data?.organization_id) return NextResponse.json({ code: "NOT_FOUND", message: "ไม่พบ Custom Request" }, { status: 404 });
+    assertOrganizationPermission(context, ["quotations.manage"], target.data.organization_id);
     const db = await createInsForgeServerClient();
     const { data, error } = await db.database.rpc("create_custom_quotation", {
       custom_request_id_input: parsed.data.custom_request_id,

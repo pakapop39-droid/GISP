@@ -2,14 +2,19 @@ import { NextResponse, type NextRequest } from "next/server";
 import { apiError } from "@/lib/api/response";
 import { requireRfqAdmin } from "@/lib/custom-rfq/server";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
+import { organizationScopeForPermissions } from "@/lib/auth/organization-scope";
 
 export async function GET(request: NextRequest) {
   try {
-    await requireRfqAdmin();
+    const context = await requireRfqAdmin();
     const admin = createInsForgeAdminClient();
     let query = admin.database.from("custom_requests")
       .select("id,organization_id,member_profile_id,project_id,request_number,request_type,item_name,quantity,unit,status,submitted_at,created_at,updated_at")
       .order("updated_at", { ascending: false }).limit(200);
+    const organizationScope = organizationScopeForPermissions(context, ["rfq.manage"]);
+    if (!organizationScope.global) {
+      query = query.in("organization_id", organizationScope.organizationIds);
+    }
     const status = request.nextUrl.searchParams.get("status");
     if (status) query = query.eq("status", status);
     const requests = await query;

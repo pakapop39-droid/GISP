@@ -1,11 +1,19 @@
 import "server-only";
 import { AppAccessError,requireAppAccess } from "@/lib/auth/session";
+import { organizationScopeForPermissions } from "@/lib/auth/organization-scope";
+import type { AppAccessContext } from "@/lib/auth/types";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import type { sourcingRequestSchema } from "./schema";
 
 export const sourcingRequestColumns="id,organization_id,member_profile_id,project_id,area_id,request_number,item_name,description,match_preference,quantity,unit,width_mm,depth_mm,height_mm,requested_material,requested_color,budget_max,currency,needed_at,source_url,member_note,status,submitted_at,created_at,updated_at";
 export async function requireMember(){const context=await requireAppAccess({active:true});if(!context.roles.includes("MEMBER"))throw new AppAccessError("PERMISSION_DENIED",403,"หน้านี้สำหรับสมาชิก");return context}
 export async function requireSourcingAdmin(){return requireAppAccess({active:true,permissions:["sourcing.manage"]})}
+export function sourcingAdminScope(context:Pick<AppAccessContext,"permissionScopes">){
+ const scope=organizationScopeForPermissions(context,["sourcing.manage"]);if(!scope.global&&scope.organizationIds.length===0)throw new AppAccessError("PERMISSION_DENIED",403,"ไม่มีสิทธิ์จัดการคำขอจัดหาสินค้า");return scope
+}
+export function assertSourcingOrganizationAccess(context:Pick<AppAccessContext,"permissionScopes">,organizationId:string){const scope=sourcingAdminScope(context);if(!scope.global&&!scope.organizationIds.includes(organizationId))throw new AppAccessError("PERMISSION_DENIED",403,"ไม่มีสิทธิ์จัดการคำขอขององค์กรนี้")}
+export async function loadAuthorizedSourcingTarget(requestId:string,context:Pick<AppAccessContext,"permissionScopes">){const admin=createInsForgeAdminClient();const result=await admin.database.from("product_sourcing_requests").select("id,organization_id").eq("id",requestId).maybeSingle();if(result.error)throw result.error;if(!result.data?.organization_id)return null;const scope=sourcingAdminScope(context);if(!scope.global&&!scope.organizationIds.includes(result.data.organization_id))return null;return result.data}
+export async function loadAuthorizedSourcingRequest(requestId:string,context:Pick<AppAccessContext,"permissionScopes">){const admin=createInsForgeAdminClient();const result=await admin.database.from("product_sourcing_requests").select("id,organization_id,status").eq("id",requestId).neq("status","DRAFT").maybeSingle();if(result.error)throw result.error;if(!result.data?.organization_id)return null;assertSourcingOrganizationAccess(context,result.data.organization_id);return result.data}
 export function sourcingRpcInput(input:ReturnType<typeof sourcingRequestSchema.parse>){return {project_id_input:input.projectId,area_id_input:input.areaId,item_name_input:input.itemName,description_input:input.description,match_preference_input:input.matchPreference,quantity_input:input.quantity,unit_input:input.unit,width_mm_input:input.widthMm,depth_mm_input:input.depthMm,height_mm_input:input.heightMm,requested_material_input:input.requestedMaterial,requested_color_input:input.requestedColor,budget_max_input:input.budgetMax,needed_at_input:input.neededAt,source_url_input:input.sourceUrl,member_note_input:input.memberNote}}
 
 export async function loadMemberSourcingDetail(requestId:string,memberProfileId:string){

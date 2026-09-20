@@ -21,6 +21,11 @@ export type ApplicationStatus =
   | "REJECTED"
   | "CANCELLED";
 
+export type PermissionScope = {
+  code: string;
+  organizationId: string | null;
+};
+
 export type AppAccessContext = {
   userId: string;
   sessionId: string;
@@ -35,6 +40,13 @@ export type AppAccessContext = {
   companyName: string | null;
   roles: ProductionRole[];
   permissions: string[];
+  /**
+   * Exact permission assignments returned by get_app_access_context.
+   * Missing scopes fail closed in organization-targeted privileged services so
+   * application code cannot mistake a scoped role for a global role during an
+   * incomplete migration/deploy.
+   */
+  permissionScopes?: PermissionScope[];
 };
 
 export type MemberHistoryItem = {
@@ -51,9 +63,9 @@ export const appErrorCodes = [
   "SESSION_REVOKED",
   "ACCOUNT_PENDING",
   "ACCOUNT_SUSPENDED",
+  "ACCOUNT_INACTIVE",
   "PERMISSION_DENIED",
   "INVALID_TRANSITION",
 ] as const;
 
 export type AppErrorCode = (typeof appErrorCodes)[number];
-

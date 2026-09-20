@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiError } from "@/lib/api/response";
-import { requireAppAccess } from "@/lib/auth/session";
+import { assertOrganizationPermission, requireAppAccess } from "@/lib/auth/session";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -27,10 +27,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       }
     }
     const own = file.member_profile_id === context.memberProfileId;
-    const staff = context.permissions.includes("files.member.manage");
     const confidential = file.visibility === "CONFIDENTIAL";
-    if ((!own && !staff) || (confidential && !context.permissions.includes("files.confidential.read"))) {
-      return NextResponse.json({ code: "PERMISSION_DENIED", message: "ไม่มีสิทธิ์ดาวน์โหลดไฟล์" }, { status: 403 });
+    if (!own) {
+      if (!file.organization_id) return NextResponse.json({ code: "PERMISSION_DENIED", message: "ไม่มีสิทธิ์ดาวน์โหลดไฟล์" }, { status: 403 });
+      assertOrganizationPermission(context, ["files.member.manage"], file.organization_id);
+    }
+    if (confidential) {
+      if (!file.organization_id) return NextResponse.json({ code: "PERMISSION_DENIED", message: "ไม่มีสิทธิ์ดาวน์โหลดไฟล์" }, { status: 403 });
+      assertOrganizationPermission(context, ["files.confidential.read"], file.organization_id);
     }
     const signed = await admin.storage.from(file.bucket).createSignedUrl(file.object_key, 300);
     if (signed.error || !signed.data) throw signed.error ?? new Error("SIGNED_URL_FAILED");

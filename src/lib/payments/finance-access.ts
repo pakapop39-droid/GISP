@@ -11,8 +11,15 @@ export async function currentFinanceSessionHash() {
   return hashSessionToken(rawToken);
 }
 
-/** Resolve the target organization before any private-file access. Do not use a staff profile's nullable organizationId. */
-export async function loadAuthorizedFinanceTransfer(transferId: string) {
+type PaymentPermission =
+  | "payments.verify"
+  | "payments.adjust";
+
+/** Resolve the target organization before any privileged payment action. */
+export async function loadAuthorizedPaymentTransfer(
+  transferId: string,
+  permissionCode: PaymentPermission,
+) {
   const admin = createInsForgeAdminClient();
   const transfer = await admin.database.from("payment_transfers")
     .select("id,organization_id,payment_schedule_id,status")
@@ -22,7 +29,7 @@ export async function loadAuthorizedFinanceTransfer(transferId: string) {
 
   const userClient = await createInsForgeServerClient();
   const permission = await userClient.database.rpc("has_permission", {
-    permission_code: "payments.verify",
+    permission_code: permissionCode,
     target_organization_id: transfer.data.organization_id,
   });
   if (permission.error) throw permission.error;
@@ -39,4 +46,55 @@ export async function loadAuthorizedFinanceTransfer(transferId: string) {
     scheduleType: schedule.data.schedule_type as string,
     status: transfer.data.status as string,
   };
+}
+
+/** Resolve the target organization before any private-file access. */
+export function loadAuthorizedFinanceTransfer(transferId: string) {
+  return loadAuthorizedPaymentTransfer(transferId, "payments.verify");
+}
+
+export async function loadAuthorizedPaymentAdjustment(adjustmentId: string) {
+  const admin = createInsForgeAdminClient();
+  const adjustment = await admin.database.from("payment_adjustments")
+    .select("id,organization_id,status,payment_transfer_id")
+    .eq("id", adjustmentId).maybeSingle();
+  if (adjustment.error) throw adjustment.error;
+  if (!adjustment.data?.organization_id) return null;
+
+  const userClient = await createInsForgeServerClient();
+  const permission = await userClient.database.rpc("has_permission", {
+    permission_code: "payments.adjust",
+    target_organization_id: adjustment.data.organization_id,
+  });
+  if (permission.error) throw permission.error;
+  if (permission.data !== true) return null;
+
+  return {
+    organizationId: adjustment.data.organization_id as string,
+    status: adjustment.data.status as string,
+    transferId: adjustment.data.payment_transfer_id as string,
+  };
+}
+
+export type PaymentHoldDecisionRole = "FINANCE" | "ORDER_ADMIN";
+
+export async function loadAuthorizedPaymentWorkflowHold(
+  holdId: string,
+  role: PaymentHoldDecisionRole,
+) {
+  const admin = createInsForgeAdminClient();
+  const hold = await admin.database.from("payment_workflow_holds")
+    .select("id,organization_id,status")
+    .eq("id", holdId).maybeSingle();
+  if (hold.error) throw hold.error;
+  if (!hold.data?.organization_id || hold.data.status !== "ACTIVE") return null;
+
+  const userClient = await createInsForgeServerClient();
+  const permission = await userClient.database.rpc("has_permission", {
+    permission_code: role === "FINANCE" ? "payments.adjust" : "orders.manage",
+    target_organization_id: hold.data.organization_id,
+  });
+  if (permission.error) throw permission.error;
+  if (permission.data !== true) return null;
+  return { organizationId: hold.data.organization_id as string };
 }

@@ -2,14 +2,18 @@ import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api/response";
 import { requireQuotationAdmin } from "@/lib/custom-quotation/server";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
+import { organizationScopeForPermissions } from "@/lib/auth/organization-scope";
 
 export async function GET() {
   try {
-    await requireQuotationAdmin();
+    const context = await requireQuotationAdmin();
     const admin = createInsForgeAdminClient();
-    const requests = await admin.database.from("custom_requests")
-      .select("id,request_number,item_name,specification,quantity,unit,member_profile_id,project_id")
-      .eq("status", "READY_FOR_QUOTE").order("updated_at", { ascending: false }).limit(100);
+    const organizationScope = organizationScopeForPermissions(context, ["quotations.manage"]);
+    let requestQuery = admin.database.from("custom_requests")
+      .select("id,organization_id,request_number,item_name,specification,quantity,unit,member_profile_id,project_id")
+      .eq("status", "READY_FOR_QUOTE");
+    if (!organizationScope.global) requestQuery = requestQuery.in("organization_id", organizationScope.organizationIds);
+    const requests = await requestQuery.order("updated_at", { ascending: false }).limit(100);
     if (requests.error) throw requests.error;
     const rows = requests.data ?? [];
     const requestIds = rows.map((row) => row.id);

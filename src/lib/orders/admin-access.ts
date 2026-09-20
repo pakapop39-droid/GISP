@@ -6,6 +6,7 @@ import type {
 export const adminOrderAccessPermissions = [
   "orders.manage",
   "payments.verify",
+  "payments.adjust",
   "supplier_payments.request",
   "supplier_payments.manage",
   "production.manage",
@@ -20,6 +21,7 @@ export const allAdminOrderCapabilities: AdminOrderCapabilities = {
   viewSalesAmounts: true,
   viewCustomerPaymentStatus: true,
   manageCustomerPayments: true,
+  managePaymentAdjustments: true,
   requestSupplierPayment: true,
   manageSupplierPayments: true,
   manageProduction: true,
@@ -37,9 +39,10 @@ export function adminOrderCapabilitiesForPermissions(
 
   return {
     manageOrder: has("orders.manage"),
-    viewSalesAmounts: has("orders.manage") || has("payments.verify"),
-    viewCustomerPaymentStatus: has("orders.manage") || has("payments.verify"),
+    viewSalesAmounts: has("orders.manage") || has("payments.verify") || has("payments.adjust"),
+    viewCustomerPaymentStatus: has("orders.manage") || has("payments.verify") || has("payments.adjust"),
     manageCustomerPayments: has("payments.verify"),
+    managePaymentAdjustments: has("payments.adjust"),
     requestSupplierPayment: has("supplier_payments.request"),
     manageSupplierPayments: has("supplier_payments.manage"),
     manageProduction: has("production.manage"),
