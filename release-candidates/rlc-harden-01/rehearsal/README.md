@@ -22,7 +22,7 @@ An optional sanitized snapshot can be checked without contacting a backend:
 node release-candidates/rlc-harden-01/rehearsal/prepare-rehearsal.mjs --snapshot <sanitized-snapshot.json>
 ```
 
-The snapshot must contain `currentProject`, `branch`, `schedules` and `productionBaseline`. Do not include credentials, cookies, authorization headers, tokens, real emails or business rows.
+The snapshot must contain `currentProject`, `branch`, `schedulesComplete: true`, `schedules` and `productionBaseline`. `schedules` must be the complete successfully parsed array returned by a single read-only list operation; missing, null, object-shaped, truncated or otherwise ambiguous schedule data produces `safe: false` with blockers and fails closed. Do not include credentials, cookies, authorization headers, tokens, real emails or business rows.
 
 ## Mandatory future execution gates
 
@@ -50,4 +50,3 @@ The latch is an accident-prevention control, not a secret and not an Approval Re
 ## Current blocker
 
 Ghost Schedule `aefecf8b-5b02-4649-a9b2-47aa448af0e8` still read back as active and targeting Production after a supported disable reported success. No migration or fixture phase may start until InsForge repairs it and independent QA confirms the schedule gate.
-

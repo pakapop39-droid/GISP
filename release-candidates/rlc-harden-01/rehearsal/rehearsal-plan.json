@@ -17,6 +17,7 @@
     "id": "aefecf8b-5b02-4649-a9b2-47aa448af0e8",
     "name": "GISP-Notification-Retry",
     "passCondition": "No active schedule URL, header or body targets the Production appkey/host",
+    "requiresCompleteArraySnapshot": true,
     "requiredBeforeEveryWrite": true
   },
   "execution": {
@@ -53,4 +54,3 @@
     "requiresPostCleanupZeroPrefixedRows": true
   }
 }
-

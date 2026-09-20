@@ -72,7 +72,7 @@ function normalizedString(input) {
   return String(input ?? "").trim().toLowerCase();
 }
 
-function containsProductionIdentity(input) {
+function containsProductionIdentity(input, seen = new WeakSet()) {
   if (typeof input === "string") {
     const text = normalizedString(input);
     if (text === CONTRACT.parent.appkey) return true;
@@ -80,9 +80,45 @@ function containsProductionIdentity(input) {
     if (/(^|[^a-z0-9-])m8ugbyak([^a-z0-9-]|$)/i.test(text)) return true;
     return false;
   }
-  if (Array.isArray(input)) return input.some(containsProductionIdentity);
-  if (input && typeof input === "object") return Object.values(input).some(containsProductionIdentity);
+  if (input && typeof input === "object") {
+    if (seen.has(input)) return false;
+    seen.add(input);
+    if (Array.isArray(input)) return input.some((item) => containsProductionIdentity(item, seen));
+    return Object.values(input).some((item) => containsProductionIdentity(item, seen));
+  }
   return false;
+}
+
+function isPlainObject(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return false;
+  const prototype = Object.getPrototypeOf(input);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function validateJsonShape(input, path, blockers, seen = new WeakSet()) {
+  if (input === null || typeof input === "string" || typeof input === "boolean") return;
+  if (typeof input === "number") {
+    if (!Number.isFinite(input)) blockers.push(`${path} contains a non-finite number`);
+    return;
+  }
+  if (typeof input !== "object") {
+    blockers.push(`${path} contains a non-JSON value`);
+    return;
+  }
+  if (seen.has(input)) {
+    blockers.push(`${path} contains a cycle`);
+    return;
+  }
+  seen.add(input);
+  if (Array.isArray(input)) {
+    input.forEach((item, index) => validateJsonShape(item, `${path}[${index}]`, blockers, seen));
+    return;
+  }
+  if (!isPlainObject(input)) {
+    blockers.push(`${path} must contain plain JSON objects only`);
+    return;
+  }
+  for (const [key, item] of Object.entries(input)) validateJsonShape(item, `${path}.${key}`, blockers, seen);
 }
 
 export function validateChildIdentity({ current, branch }) {
@@ -115,28 +151,92 @@ export function validateChildIdentity({ current, branch }) {
   return { childId: currentId, parentId: branchParent, appkey: currentAppkey };
 }
 
-export function validateScheduleSafety(schedulesInput) {
-  const schedules = Array.isArray(schedulesInput) ? schedulesInput : schedulesInput ? [schedulesInput] : [];
-  const target = schedules.find((item) => value(item, "id") === CONTRACT.schedule.id);
-  if (target && value(target, "name") !== CONTRACT.schedule.name) {
-    throw new Error("RLC_SCHEDULE_GUARD: approved Schedule ID has an unexpected name");
+export function assessScheduleSafety(schedulesInput, { complete = false } = {}) {
+  const blockers = [];
+  if (complete !== true) blockers.push("schedule snapshot completeness is not proven");
+  if (!Array.isArray(schedulesInput)) {
+    blockers.push("schedules must be a complete array");
+    return { safe: false, blockers, targetState: "unknown", scheduleCount: null, activeProductionTargets: null };
   }
-  const unsafe = schedules.filter((item) => {
-    const active = value(item, "isActive", "is_active", "active") === true;
-    if (!active) return false;
-    return containsProductionIdentity({
-      url: value(item, "functionUrl", "function_url", "url"),
-      headers: value(item, "headers"),
-      body: value(item, "body"),
-    });
-  });
-  if (unsafe.length > 0) {
-    throw new Error(`RLC_SCHEDULE_GUARD: ${unsafe.length} active Schedule(s) target Production`);
+
+  const ids = new Set();
+  let targetState = "absent";
+  let activeProductionTargets = 0;
+  for (const [index, item] of schedulesInput.entries()) {
+    const path = `schedules[${index}]`;
+    if (!isPlainObject(item)) {
+      blockers.push(`${path} must be a plain object`);
+      continue;
+    }
+    if (typeof item.id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item.id)) {
+      blockers.push(`${path}.id must be a UUID`);
+    } else if (ids.has(item.id)) {
+      blockers.push(`${path}.id is duplicated`);
+    } else {
+      ids.add(item.id);
+    }
+    if (typeof item.name !== "string" || item.name.trim() === "") blockers.push(`${path}.name must be a non-empty string`);
+    if (typeof item.isActive !== "boolean") blockers.push(`${path}.isActive must be a strict boolean`);
+
+    let parsedUrl = null;
+    if (typeof item.functionUrl !== "string" || item.functionUrl.trim() === "") {
+      blockers.push(`${path}.functionUrl must be a non-empty HTTPS URL`);
+    } else {
+      try {
+        parsedUrl = new URL(item.functionUrl);
+        if (parsedUrl.protocol !== "https:" || !parsedUrl.hostname || parsedUrl.username || parsedUrl.password) {
+          blockers.push(`${path}.functionUrl must be credential-free HTTPS`);
+          parsedUrl = null;
+        }
+      } catch {
+        blockers.push(`${path}.functionUrl is not parseable`);
+      }
+    }
+
+    if (item.headers !== undefined && item.headers !== null) {
+      if (!isPlainObject(item.headers)) {
+        blockers.push(`${path}.headers must be a plain object or null`);
+      } else {
+        for (const [key, headerValue] of Object.entries(item.headers)) {
+          if (key.trim() === "" || typeof headerValue !== "string") blockers.push(`${path}.headers must contain non-empty string keys and string values`);
+        }
+      }
+    }
+    if (item.body !== undefined) validateJsonShape(item.body, `${path}.body`, blockers);
+
+    const isTarget = item.id === CONTRACT.schedule.id;
+    if (isTarget && item.name !== CONTRACT.schedule.name) blockers.push("approved Schedule ID has an unexpected name");
+    if (isTarget && typeof item.isActive === "boolean") targetState = item.isActive ? "active-safe-target" : "inactive";
+
+    if (item.isActive === true) {
+      const targetsProduction = (parsedUrl?.hostname.toLowerCase() === CONTRACT.parent.host)
+        || containsProductionIdentity(item.functionUrl)
+        || containsProductionIdentity(item.headers)
+        || containsProductionIdentity(item.body);
+      if (targetsProduction) {
+        activeProductionTargets += 1;
+        blockers.push(`${path} is active and targets Production`);
+      }
+    }
   }
+
   return {
-    targetState: target ? (value(target, "isActive", "is_active", "active") === true ? "active-safe-target" : "inactive") : "absent",
-    activeProductionTargets: 0,
+    safe: blockers.length === 0,
+    blockers,
+    targetState,
+    scheduleCount: schedulesInput.length,
+    activeProductionTargets,
   };
+}
+
+export function validateScheduleSafety(schedulesInput, options) {
+  const assessment = assessScheduleSafety(schedulesInput, options);
+  if (!assessment.safe) {
+    const error = new Error(`RLC_SCHEDULE_GUARD: ${assessment.blockers.join("; ")}`);
+    error.assessment = assessment;
+    throw error;
+  }
+  return assessment;
 }
 
 export function validateExecutionToken(token) {
@@ -215,7 +315,7 @@ export function validatePlanDocument(plan) {
   if (plan?.target?.prohibitedProductionAppkey !== CONTRACT.parent.appkey || plan?.target?.prohibitedProductionHost !== CONTRACT.parent.host) {
     throw new Error("RLC_PLAN_GUARD: Production rejection markers mismatch");
   }
-  if (plan?.scheduleGate?.id !== CONTRACT.schedule.id || plan?.scheduleGate?.requiredBeforeEveryWrite !== true) {
+  if (plan?.scheduleGate?.id !== CONTRACT.schedule.id || plan?.scheduleGate?.requiredBeforeEveryWrite !== true || plan?.scheduleGate?.requiresCompleteArraySnapshot !== true) {
     throw new Error("RLC_PLAN_GUARD: schedule gate mismatch");
   }
   if (plan?.execution?.defaultMode !== "dry-run" || plan?.execution?.mutationExecutorIncluded !== false) {

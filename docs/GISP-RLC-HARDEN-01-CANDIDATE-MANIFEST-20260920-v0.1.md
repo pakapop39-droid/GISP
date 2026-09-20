@@ -32,10 +32,10 @@ The migration is forward-only. It adds/replaces functions, a trigger and RLS pol
 - Package: `release-candidates/rlc-harden-01/rehearsal/`
 - Approval: `docs/GISP-APR-RLC-HARDEN-01-LOCAL-REHEARSAL-PREPARATION-20260920-v0.4.md`
 - Status: **PREPARED LOCALLY / VALIDATED / NOT EXECUTED**.
-- The package fixes the exact Child/parent/Schedule identities, rejects Production identity, validates all five migration hashes/order, forbids `up --all` and `up --to`, and requires fresh identity/schedule checks plus a deliberate latch for any future mutation-capable executor.
+- The package fixes the exact Child/parent/Schedule identities, rejects Production identity, validates all five migration hashes/order, forbids `up --all` and `up --to`, and requires fresh identity/schedule checks plus a deliberate latch for any future mutation-capable executor. Schedule input is fail-closed: it must be a proven-complete canonical array with strict booleans, well-formed entries and credential-free HTTPS URLs; missing, malformed or ambiguous input produces `safe: false` with blockers.
 - `prepare-rehearsal.mjs` is dry-run only and refuses execute mode. No mutation executor, backend credential, secret, fixture data or real email is included.
 - Synthetic fixture namespace is fixed to `REH-RLC-HARDEN-01`; planned runtime coverage and cleanup constraints are frozen in `rehearsal-plan.json` and `cleanup-plan.md`.
-- Local validator: PASS. Node guard tests: PASS — 11/11. Relevant existing security regression: PASS — 5 files / 55 tests.
+- Local validator: PASS. Node guard tests: PASS — 17/17, including adversarial incomplete/malformed schedule snapshots. Relevant existing security regression: PASS — 5 files / 55 tests.
 - Ghost Schedule remains the backend blocker. Migration Apply is prohibited until it is repaired and independent QA confirms no active Child schedule points to Production.
 - The owner authorized an hourly read-only Ghost Schedule check. Automation creation/operation is owned by the primary thread; this local package neither creates nor mutates that automation and does not claim its implementation details.
 
@@ -82,11 +82,11 @@ The commit/tree above is the authoritative whole-candidate identity. Key file ha
 | `91f32e02e097469ca70408db04162f21c81511b44e2f96d14263fcf36980cfbe` | `src/app/api/admin/supplier-payments/[id]/mark-paid/route.ts` |
 | `adbfbc0607dbb7f6f91a137e996af75a08b801a2187867405b0e7c85c4753a5c` | `src/lib/release-c-org-scope-hardening.test.ts` |
 | `4cd64758326bd3102f7e39712053396927aa86fd96f92b1414526972fadb4d4a` | `src/lib/auth/release-c-org-scope-app.test.ts` |
-| `3db6d69c402eb7333a758e48f54d57c5c8f3b0704320d1fc0518c201fc2091f0` | `release-candidates/rlc-harden-01/rehearsal/rehearsal-contract.mjs` |
+| `ff76dc768f9f01340ea1cc73c587a1da503e7cfff2f8f37ab3213556ddad4b14` | `release-candidates/rlc-harden-01/rehearsal/rehearsal-contract.mjs` |
 | `1c69e3ed9f1e903377faae3717ff7ad846e987e7385865ec491baf13c6055933` | `release-candidates/rlc-harden-01/rehearsal/validate-package.mjs` |
-| `279eb357f5d00fa26c9262b1f77cebac44baf3eeca496167a4b4ddaf24bff2db` | `release-candidates/rlc-harden-01/rehearsal/prepare-rehearsal.mjs` |
-| `57bcd08d5ee1d30220c5d60039dfe2889a5fe68b110859fec73ce58230d8b1c3` | `release-candidates/rlc-harden-01/rehearsal/rehearsal-guard.test.mjs` |
-| `8dba0b143e6e0d8ee38069f3a2c38993ce1e5dbf0ee51d416dc37850e582d9cf` | `release-candidates/rlc-harden-01/rehearsal/rehearsal-plan.json` |
-| `8e4c9124b75ea02413bd8a1bc3f3e39abecff2730f8d8eb683e4a5a8fa6b3a07` | `release-candidates/rlc-harden-01/rehearsal/README.md` |
-| `6f609cd1016eaf34c7a8920272e0ebdc069099c508bcaa131e79679c744939e6` | `release-candidates/rlc-harden-01/rehearsal/cleanup-plan.md` |
-| `39e49ccbfb03bf2f1b0ce965ca857f453f5f585a21c411f4ed6ddd3c2d112ac0` | `release-candidates/rlc-harden-01/rehearsal/evidence-template.md` |
+| `b4863f0738d4de083f1d496c1be88197808db5b76d28b353f3513dcc5e3309f8` | `release-candidates/rlc-harden-01/rehearsal/prepare-rehearsal.mjs` |
+| `2de0f8c8eda57df4f64546c62ae163773eaa10b4048139dcc50f52ffe2921c0e` | `release-candidates/rlc-harden-01/rehearsal/rehearsal-guard.test.mjs` |
+| `70a97d6a1742bac58480de23ebea89315da9f80c26b939a237c7f574a078dae4` | `release-candidates/rlc-harden-01/rehearsal/rehearsal-plan.json` |
+| `ceb3ab3efc00bbe9c1d6840f3b59b288fd2550f1d1ad71f52f14f8022013cf8b` | `release-candidates/rlc-harden-01/rehearsal/README.md` |
+| `4277b862c8868215a91a626772743687c8fbaca413335fa592f4e3979878787c` | `release-candidates/rlc-harden-01/rehearsal/cleanup-plan.md` |
+| `6c0c2b144c35fda827a50d197a94b53fe64b90d21143510c4192bcde8ecafcc6` | `release-candidates/rlc-harden-01/rehearsal/evidence-template.md` |

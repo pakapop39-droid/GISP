@@ -18,4 +18,3 @@ Required fail-closed sequence:
 7. Preserve application audit evidence; do not erase audit history unless a later versioned approval explicitly identifies those exact synthetic audit IDs.
 
 Rollback for migration behavior is forward-fix or isolated branch reset/delete under separate authorization. This cleanup plan is not a database schema rollback and must never run on Production.
-

@@ -32,7 +32,7 @@ let snapshotStatus = "NOT_PROVIDED_REMOTE_PREFLIGHT_REQUIRED";
 if (snapshotPath) {
   const snapshot = JSON.parse(readFileSync(resolve(snapshotPath), "utf8"));
   validateChildIdentity({ current: snapshot.currentProject, branch: snapshot.branch });
-  validateScheduleSafety(snapshot.schedules);
+  validateScheduleSafety(snapshot.schedules, { complete: snapshot.schedulesComplete === true });
   validateProductionBaseline(snapshot.productionBaseline);
   snapshotStatus = "LOCAL_SNAPSHOT_VALID";
 }
@@ -59,4 +59,3 @@ const result = {
 };
 
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-
