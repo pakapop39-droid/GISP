@@ -1,0 +1,56 @@
+{
+  "format": "GISP_RLC_HARDEN_01_REHEARSAL_PLAN_V1",
+  "status": "PREPARED_NOT_EXECUTED",
+  "candidate": {
+    "commit": "cf62215b0cb359de87700b35f45c6d4ba1aaf1c2",
+    "tree": "8345c23b52b2ddc102dbc8bc92d237f957eeb1ef"
+  },
+  "target": {
+    "childId": "41df0506-ef0a-4753-9426-b1c8ed4f9ff6",
+    "childName": "rlc-harden-01-rehearsal-20260920",
+    "childAppkey": "m8ugbyak-bd6",
+    "parentId": "865860c2-49fa-4e53-908f-9396b2f75233",
+    "prohibitedProductionAppkey": "m8ugbyak",
+    "prohibitedProductionHost": "m8ugbyak.ap-southeast.insforge.app"
+  },
+  "scheduleGate": {
+    "id": "aefecf8b-5b02-4649-a9b2-47aa448af0e8",
+    "name": "GISP-Notification-Retry",
+    "passCondition": "No active schedule URL, header or body targets the Production appkey/host",
+    "requiredBeforeEveryWrite": true
+  },
+  "execution": {
+    "defaultMode": "dry-run",
+    "mutationExecutorIncluded": false,
+    "requiresSeparateAuthorization": true,
+    "requiresDeliberateToken": true,
+    "requiresFreshChildIdentityBeforeEveryWrite": true,
+    "requiresFreshScheduleSafetyBeforeEveryWrite": true,
+    "forbiddenMigrationArguments": ["--all", "--to"]
+  },
+  "fixture": {
+    "prefix": "REH-RLC-HARDEN-01",
+    "syntheticOnly": true,
+    "prohibited": ["real email", "real payment", "notification send", "external call", "secret in evidence"],
+    "plannedOrganizations": ["REH-RLC-HARDEN-01-ORG-A", "REH-RLC-HARDEN-01-ORG-B"],
+    "plannedActors": ["global-staff", "org-a-scoped-staff", "org-b-scoped-staff", "inactive-staff", "no-role-user", "anonymous"]
+  },
+  "runtimeTests": [
+    "RFQ list/detail: global and same-org allow; other-org, no-role and anonymous deny",
+    "Quotation cost: global and same-org allow; other-org direct RLS deny",
+    "Order list/detail: global and same-org allow; other-org deny",
+    "File metadata/download: global and same-org allow; other-org direct RLS deny",
+    "Supplier payment list/detail: global and same-org allow; other-org deny without existence/status oracle",
+    "Direct RPC negatives: issue_supplier_orders, create_supplier_payment, review_supplier_payment, mark_supplier_payment_paid, decide_order_cancellation",
+    "Duplicate project_item UUID and mixed-case UUID reject atomically with zero order/audit/quantity partial writes",
+    "INACTIVE account session/context/touch and application guard deny re-entry",
+    "Release C privileges allowed while D7-D10 and Freight remain closed"
+  ],
+  "cleanup": {
+    "scope": "Rows and auth actors proven to carry the exact REH-RLC-HARDEN-01 prefix or captured fixture IDs only",
+    "executeNow": false,
+    "requiresPreCleanupCountsAndDependencySnapshot": true,
+    "requiresPostCleanupZeroPrefixedRows": true
+  }
+}
+
