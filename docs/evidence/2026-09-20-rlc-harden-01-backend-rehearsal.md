@@ -2,7 +2,7 @@
 
 Date: 2026-09-20 (Asia/Bangkok)
 
-Status: **STOPPED BEFORE APPLY — supported schedule deletion failed and the inherited Production-targeting schedule remains active**
+Status: **STOPPED BEFORE APPLY — schedule disable reported success but did not persist; inherited Production-targeting schedule remains active**
 
 Authorization: `docs/GISP-APR-RLC-HARDEN-01-BACKEND-REHEARSAL-20260920-v0.1.md`, committed as `cfd3609d419b9b5a42ed8dd636e459e1323e13d4` before any external mutation.
 
@@ -101,3 +101,50 @@ Fail-closed postcheck:
 - Final Production read-only check remained unchanged: the same schedule is active with the same cron and URL; migration count/head remain `26` / `20260908170000 release-b-member-pilot`.
 
 This is a hard stop under the owner's authorization. Rehearsal execution remains blocked until the schedule can be neutralized through an explicitly approved supported path; this evidence does not authorize a bypass or raw SQL workaround.
+
+## Continuation attempt — one approved disable call
+
+Authorization: `docs/GISP-APR-RLC-HARDEN-01-BACKEND-REHEARSAL-SCHEDULE-UPDATE-20260920-v0.3.md`, committed as `6aac84c46e6f1300f6e828b83ca60f0f59949a2b` (tree `4932d114dddb0c713e1b066c8276a3a5821cb0a6`) before the external mutation attempt.
+
+Read-only preconditions were verified again:
+
+- Production parent ID `865860c2-49fa-4e53-908f-9396b2f75233`, appkey `m8ugbyak`.
+- Production schedule baseline: exact ID/name, active, cron `*/10 * * * *`, Production target URL.
+- Production migrations: 26 applied; head `20260908170000 release-b-member-pilot`.
+- Child `rlc-harden-01-rehearsal-20260920`, ID `41df0506-ef0a-4753-9426-b1c8ed4f9ff6`, remained `active` / `ready` / `schema-only` under the exact parent.
+- On the child, schedule ID `aefecf8b-5b02-4649-a9b2-47aa448af0e8` was `GISP-Notification-Retry`, active and targeting Production.
+
+Exactly one supported disable call was made:
+
+```text
+npx -y @insforge/cli schedules update aefecf8b-5b02-4649-a9b2-47aa448af0e8 --active false --json
+```
+
+CLI result:
+
+- attempt count: `1`
+- exit code: `0`
+- response: `Schedule updated successfully`
+
+Immediate read-only postcondition checks did **not** match the successful response:
+
+- `schedules get` still returned `isActive: true`.
+- `schedules list` still found one active schedule targeting the Production host.
+- The schedule URL itself remained unchanged, which would have been acceptable only if inactive; because it remained active, the child is still unsafe.
+
+No retry was made. No delete, raw SQL, permission bypass, migration Apply, fixture/data write, deployment, config/secret change, branch merge/reset or Production mutation was attempted.
+
+The CLI context was returned to the Production parent. Final read-only Production verification was unchanged:
+
+- same schedule ID/name, `isActive: true`, same cron/method/Production URL;
+- migration count/head `26` / `20260908170000 release-b-member-pilot`.
+
+One sanitized support report was sent through the authorized InsForge CLI feedback command:
+
+- feedback ID: `0d52d335-9316-4e88-b2c5-433a5eb6ee3f`
+- status: `received`
+- classification: backend bug / database area / blocker
+- request: repair or deactivate the ghost schedule on child ID `41df0506-ef0a-4753-9426-b1c8ed4f9ff6` only and do not alter parent ID `865860c2-49fa-4e53-908f-9396b2f75233`
+- payload contained project/schedule identifiers and sanitized errors only; no secret or application data was included.
+
+Migration Apply remains prohibited until the child schedule is verifiably inactive or absent and independent QA confirms there is no active child schedule pointing to Production.
