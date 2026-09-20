@@ -2,7 +2,7 @@
 
 Date: 2026-09-20 (Asia/Bangkok)
 
-Status: **STOPPED BEFORE APPLY — inherited active schedule points to Production**
+Status: **STOPPED BEFORE APPLY — supported schedule deletion failed and the inherited Production-targeting schedule remains active**
 
 Authorization: `docs/GISP-APR-RLC-HARDEN-01-BACKEND-REHEARSAL-20260920-v0.1.md`, committed as `cfd3609d419b9b5a42ed8dd636e459e1323e13d4` before any external mutation.
 
@@ -66,6 +66,38 @@ URL, headers and body were evaluated for the Production marker without printing 
 - Final read-only Production migration state remains `26` applied migrations with head `20260908170000 release-b-member-pilot`, matching the previously recorded Production baseline.
 - No Production data/config/deploy/migration mutation was performed. The only destructive external action was deletion of the exact authorized old branch.
 
-## Required decision before rehearsal execution
+## Decision identified by the initial preflight
 
-Migration Apply and fixture creation remain blocked. A separate explicit authorization is required to decide how the child schedule should be made safe (for example, disable it or retarget it only to an isolated child endpoint) and then repeat schedule preflight before any migration or data write.
+The initial preflight blocked migration Apply and fixture creation pending explicit authorization to make the child schedule safe and repeat the schedule preflight. That authorization was subsequently recorded in the continuation section below.
+
+## Continuation attempt — approved schedule deletion
+
+Continuation authorization: `docs/GISP-APR-RLC-HARDEN-01-BACKEND-REHEARSAL-CONTINUATION-20260920-v0.2.md`, committed as `4f8754d9d02f533f2aba919cec6ff6403c865e13` before the external mutation attempt.
+
+Verified before the attempt:
+
+- Current CLI project was Production parent ID `865860c2-49fa-4e53-908f-9396b2f75233`, appkey `m8ugbyak`.
+- Exact child `rlc-harden-01-rehearsal-20260920`, ID `41df0506-ef0a-4753-9426-b1c8ed4f9ff6`, remained `active` / `ready` / `schema-only` under that parent.
+- Production schedule baseline remained ID `aefecf8b-5b02-4649-a9b2-47aa448af0e8`, name `GISP-Notification-Retry`, active, cron `*/10 * * * *`, targeting `https://m8ugbyak.ap-southeast.insforge.app/functions/notification-retry`.
+- Production migration baseline remained 26 applied migrations with head `20260908170000 release-b-member-pilot`.
+
+The CLI was switched to the exact child and current project identity was rechecked as ID `41df0506-ef0a-4753-9426-b1c8ed4f9ff6`, appkey `m8ugbyak-bd6`. The inherited schedule matched the exact authorized ID/name and was still active and targeting Production.
+
+The supported command attempted was:
+
+```text
+npx -y @insforge/cli schedules delete aefecf8b-5b02-4649-a9b2-47aa448af0e8 -y --json
+```
+
+Result: **FAILED**. The backend returned `DATABASE_INTERNAL_ERROR` with sanitized message `could not find valid entry for job 4`; the Windows CLI process then terminated with assertion failure and exit code `-1073740791`.
+
+Fail-closed postcheck:
+
+- Child schedule ID `aefecf8b-5b02-4649-a9b2-47aa448af0e8` still exists, remains active and still targets the Production URL.
+- No migration was applied; the approved allow-list was not started.
+- No synthetic fixture or other business data was created or modified.
+- No deployment, raw SQL, managed-schema change, schedule workaround, secret/config change, branch merge/reset or Production write was attempted.
+- The dedicated CLI context was returned to the Production parent.
+- Final Production read-only check remained unchanged: the same schedule is active with the same cron and URL; migration count/head remain `26` / `20260908170000 release-b-member-pilot`.
+
+This is a hard stop under the owner's authorization. Rehearsal execution remains blocked until the schedule can be neutralized through an explicitly approved supported path; this evidence does not authorize a bypass or raw SQL workaround.
