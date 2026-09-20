@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     raw = await request.json();
     const parsed = schema.parse(raw);
     const selections = parseIdQuantities(parsed.project_item_ids).map(
-      ({ id, quantity }) => ({ project_item_id: id, quantity }),
+      ({ id, quantity }) => ({ project_item_id: id.toLowerCase(), quantity }),
     );
     if (new Set(selections.map((selection) => selection.project_item_id)).size !== selections.length) {
       return NextResponse.json({

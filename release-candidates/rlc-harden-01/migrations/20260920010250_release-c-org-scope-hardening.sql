@@ -380,3 +380,37 @@ FOR SELECT TO authenticated USING (
       )
   )
 );
+
+-- Replace the two remaining Release C SELECT policies that flattened scoped
+-- roles into global access. Existing table grants and member/public branches
+-- remain unchanged; only staff permission checks gain the target organization.
+DROP POLICY IF EXISTS custom_quotation_costs_internal ON public.custom_quotation_costs;
+CREATE POLICY custom_quotation_costs_internal ON public.custom_quotation_costs
+FOR SELECT TO authenticated USING (
+  EXISTS (
+    SELECT 1
+    FROM public.custom_quotations cq
+    WHERE cq.id = custom_quotation_costs.quotation_id
+      AND public.has_permission('quotations.manage', cq.organization_id)
+  )
+);
+
+DROP POLICY IF EXISTS file_metadata_select ON public.file_metadata;
+CREATE POLICY file_metadata_select ON public.file_metadata
+FOR SELECT TO authenticated USING (
+  visibility = 'PUBLIC'
+  OR member_profile_id IN (
+    SELECT mp.id
+    FROM public.member_profiles mp
+    WHERE mp.user_id = (SELECT auth.uid())
+  )
+  OR (
+    organization_id IS NOT NULL
+    AND public.has_permission('files.member.manage', organization_id)
+  )
+  OR (
+    visibility = 'CONFIDENTIAL'
+    AND organization_id IS NOT NULL
+    AND public.has_permission('files.confidential.read', organization_id)
+  )
+);

@@ -12,6 +12,10 @@ const packagedSql = readFileSync(
   ),
   "utf8",
 );
+const migration = (name: string) => readFileSync(
+  new URL(`../../migrations/${name}`, import.meta.url),
+  "utf8",
+);
 
 function body(functionName: string) {
   const start = sql.indexOf(`CREATE OR REPLACE FUNCTION public.${functionName}`);
@@ -19,6 +23,26 @@ function body(functionName: string) {
   const end = sql.indexOf("\n$$;", start);
   expect(end).toBeGreaterThan(start);
   return sql.slice(start, end);
+}
+
+type Scope = { code: string; organizationId: string | null };
+const hasTargetPermission = (scopes: Scope[], code: string, organizationId: string) =>
+  scopes.some((scope) => scope.code === code
+    && (scope.organizationId === null || scope.organizationId === organizationId));
+
+function canReadFileMetadata(input: {
+  authenticated: boolean;
+  visibility: "PUBLIC" | "MEMBER_PRIVATE" | "CONFIDENTIAL";
+  ownMemberProfile: boolean;
+  organizationId: string;
+  scopes: Scope[];
+}) {
+  if (!input.authenticated) return false;
+  return input.visibility === "PUBLIC"
+    || input.ownMemberProfile
+    || hasTargetPermission(input.scopes, "files.member.manage", input.organizationId)
+    || (input.visibility === "CONFIDENTIAL"
+      && hasTargetPermission(input.scopes, "files.confidential.read", input.organizationId));
 }
 
 describe("RLC-HARDEN-01 migration contract", () => {
@@ -55,6 +79,64 @@ describe("RLC-HARDEN-01 migration contract", () => {
     expect(policy).toContain("FROM public.supplier_orders");
     expect(policy).toContain("so.organization_id");
     expect(policy).not.toMatch(/has_permission\('[^']+'\s*\)/);
+  });
+
+  it("replaces quotation-cost and file metadata policies with row-targeted checks", () => {
+    expect(sql).toContain("DROP POLICY IF EXISTS custom_quotation_costs_internal");
+    expect(sql).toContain("cq.id = custom_quotation_costs.quotation_id");
+    expect(sql).toContain("public.has_permission('quotations.manage', cq.organization_id)");
+    expect(sql).toContain("DROP POLICY IF EXISTS file_metadata_select");
+    expect(sql).toContain("public.has_permission('files.member.manage', organization_id)");
+    expect(sql).toContain("public.has_permission('files.confidential.read', organization_id)");
+    expect(sql).not.toMatch(/has_permission\('(quotations\.manage|files\.member\.manage|files\.confidential\.read)'\s*\)/);
+  });
+
+  it("denies direct authenticated cross-org RLS while preserving same-org and global staff", () => {
+    const sameOrg: Scope[] = [{ code: "quotations.manage", organizationId: "org-a" }];
+    const global: Scope[] = [{ code: "quotations.manage", organizationId: null }];
+    expect(hasTargetPermission(sameOrg, "quotations.manage", "org-a")).toBe(true);
+    expect(hasTargetPermission(sameOrg, "quotations.manage", "org-b")).toBe(false);
+    expect(hasTargetPermission(global, "quotations.manage", "org-b")).toBe(true);
+    expect(hasTargetPermission([], "quotations.manage", "org-a")).toBe(false);
+  });
+
+  it("preserves authenticated public/member-own file reads and targets staff file scopes", () => {
+    const base = {
+      authenticated: true,
+      visibility: "MEMBER_PRIVATE" as const,
+      ownMemberProfile: false,
+      organizationId: "org-a",
+    };
+    expect(canReadFileMetadata({ ...base, visibility: "PUBLIC", scopes: [] })).toBe(true);
+    expect(canReadFileMetadata({ ...base, ownMemberProfile: true, scopes: [] })).toBe(true);
+    expect(canReadFileMetadata({
+      ...base,
+      scopes: [{ code: "files.member.manage", organizationId: "org-a" }],
+    })).toBe(true);
+    expect(canReadFileMetadata({
+      ...base,
+      scopes: [{ code: "files.member.manage", organizationId: "org-b" }],
+    })).toBe(false);
+    expect(canReadFileMetadata({
+      ...base,
+      scopes: [{ code: "files.member.manage", organizationId: null }],
+    })).toBe(true);
+    expect(canReadFileMetadata({ ...base, authenticated: false, scopes: [] })).toBe(false);
+  });
+
+  it("audits adjacent Release C SELECT policies for target organization checks", () => {
+    const rfq = migration("20260824134357_slice-4-custom-rfq.sql");
+    const quotation = migration("20260828132933_slice-5-custom-quotation.sql");
+    const orders = migration("20260828154027_slice-6-orders-payments.sql");
+    const supplierPayments = migration("20260905120500_staff-job-groups.sql");
+    expect(rfq).toContain("public.has_permission('rfq.manage',organization_id)");
+    expect(rfq).toContain("public.has_permission('rfq.manage',cr.organization_id)");
+    expect(quotation).toContain("public.has_permission('quotations.manage', organization_id)");
+    expect(quotation).toContain("public.has_permission('quotations.manage', quotation.organization_id)");
+    expect(orders).toContain("public.has_permission('orders.manage', organization_id)");
+    expect(orders).toContain("public.has_permission('payments.verify', co.organization_id)");
+    expect(supplierPayments).toContain("public.has_permission('supplier_payments.request', organization_id)");
+    expect(supplierPayments).toContain("public.has_permission('supplier_payments.manage', organization_id)");
   });
 
   it("blocks inactive session registration, context, touch, and re-entry", () => {

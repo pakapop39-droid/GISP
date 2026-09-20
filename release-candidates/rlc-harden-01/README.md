@@ -10,9 +10,9 @@ Approval: `docs/GISP-APR-RLC-HARDEN-01-IMPLEMENTATION-20260920-v0.1.md`.
 
 | Gate | SHA-256 (exact package bytes) | File |
 |---|---|---|
-| C hardening prerequisite | `e17460c02b26d11aa4aa51028f63017c16a1a3969430f2d2d6e8fb3558380ca2` | `migrations/20260920010250_release-c-org-scope-hardening.sql` |
+| C hardening prerequisite | `0d2fac819d158a2a87962b181f2f637ada298b7973240341dfcef46f4be9bfa2` | `migrations/20260920010250_release-c-org-scope-hardening.sql` |
 
-Source draft: `migrations/20260918133857_release-c-org-scope-hardening.sql` มี exact SHA-256 เดียวกันคือ `e17460c02b26d11aa4aa51028f63017c16a1a3969430f2d2d6e8fb3558380ca2`.
+Source draft: `migrations/20260918133857_release-c-org-scope-hardening.sql` มี exact SHA-256 เดียวกันคือ `0d2fac819d158a2a87962b181f2f637ada298b7973240341dfcef46f4be9bfa2`.
 
 ## ขอบเขตและข้อห้าม
 

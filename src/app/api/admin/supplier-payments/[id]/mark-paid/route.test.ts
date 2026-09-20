@@ -353,4 +353,17 @@ describe("supplier payment evidence binding", () => {
     expect((await POST(request(), params())).status).toBe(403);
     expect(mocks.upload).not.toHaveBeenCalled();
   });
+
+  it("does not reveal a cross-organization payment status before authorization", async () => {
+    mocks.payment = { id: paymentId, supplier_order_id: supplierOrderId, status: "REQUESTED" };
+    mocks.guard.mockResolvedValue({
+      userId: "finance-user",
+      organizationId: "other-org",
+      permissionScopes: [{ code: "supplier_payments.manage", organizationId: "other-org" }],
+    });
+    const response = await POST(request(), params());
+    expect(response.status).toBe(403);
+    expect(response.status).not.toBe(409);
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
 });

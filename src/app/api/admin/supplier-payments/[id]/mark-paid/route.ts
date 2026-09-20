@@ -51,13 +51,6 @@ export async function POST(
     if (!payment.data) {
       return NextResponse.json({ code: "NOT_FOUND", message: "ไม่พบ Supplier Payment" }, { status: 404 });
     }
-    if (payment.data.status !== "APPROVED") {
-      return NextResponse.json({
-        code: "INVALID_TRANSITION",
-        message: "แนบหลักฐานจ่ายได้เฉพาะ Supplier Payment ที่อนุมัติแล้ว",
-      }, { status: 409 });
-    }
-
     const supplierOrder = await admin.database.from("supplier_orders")
       .select("id,organization_id").eq("id", payment.data.supplier_order_id).maybeSingle();
     if (supplierOrder.error) throw supplierOrder.error;
@@ -69,6 +62,12 @@ export async function POST(
       ["supplier_payments.manage"],
       supplierOrder.data.organization_id,
     );
+    if (payment.data.status !== "APPROVED") {
+      return NextResponse.json({
+        code: "INVALID_TRANSITION",
+        message: "แนบหลักฐานจ่ายได้เฉพาะ Supplier Payment ที่อนุมัติแล้ว",
+      }, { status: 409 });
+    }
 
     const form = await request.formData();
     const file = form.get("file");
