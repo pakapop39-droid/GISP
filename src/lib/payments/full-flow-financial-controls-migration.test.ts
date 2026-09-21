@@ -29,6 +29,27 @@ const packagedPostSql = readFileSync(
   ),
   "utf8",
 );
+const repairSql = readFileSync(
+  new URL(
+    "../../../migrations/20260920100000_full-flow-payment-private-executor-repair.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const packagedRepairSql = readFileSync(
+  new URL(
+    "../../../release-candidates/full-flow-go-live-01/migrations/20260920011310_full-flow-payment-private-executor-repair.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const privateExecutorSql = readFileSync(
+  new URL(
+    "../../../release-candidates/full-flow-go-live-01/migrations/20260920010200_pay-private-executor.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const sql = `${preSql}\n${postSql}`;
 
 function bodyFrom(source: string, functionName: string) {
@@ -164,7 +185,6 @@ describe("FULL-FLOW-GO-LIVE-01 financial controls migration", () => {
     for (const blockedField of ["grand_total", "subtotal", "vat_amount", "due_at", "note"]) {
       expect("status,paid_at,updated_at").not.toContain(blockedField);
     }
-    expect(verifier).toContain("verify_payment_transfer_private_ffgl_impl");
     expect(verifier).not.toMatch(/set_config|current_setting/);
     expect(preConfirm).toContain("PERFORM public.recalculate_customer_payment_schedule(");
     expect(preConfirm).not.toMatch(/set_config|current_setting/);
@@ -178,6 +198,38 @@ describe("FULL-FLOW-GO-LIVE-01 financial controls migration", () => {
     expect(preSql).not.toMatch(/GRANT EXECUTE ON FUNCTION public\.verify_payment_transfer_private\([\s\S]*?\)\s+TO (PUBLIC|anon|authenticated);/);
     expect(postSql).toContain("REVOKE ALL ON FUNCTION public.block_order_operation_on_payment_hold()");
     expect(blocker).not.toContain("GRANT EXECUTE");
+  });
+
+  it("repairs the split private verifier forward-only and restores the final ACL contract", () => {
+    const outerSignature = /public\.verify_payment_transfer_private\(\s*UUID,\s*BOOLEAN,\s*TEXT,\s*TEXT,\s*UUID,\s*TEXT,\s*BIGINT\s*\)/;
+    expect(repairSql).not.toMatch(/^\s*(BEGIN|COMMIT|ROLLBACK)\s*;/im);
+    expect(repairSql).toContain("IF to_regprocedure(");
+    expect(repairSql).toContain("verify_payment_transfer_private_ffgl_impl(uuid,boolean,text,text,uuid,text,bigint)");
+    expect(repairSql).toMatch(new RegExp(`DROP FUNCTION\\s+${outerSignature.source}`));
+    expect(repairSql).toContain("ALTER FUNCTION public.verify_payment_transfer_private_ffgl_impl(");
+    expect(repairSql).toContain("RENAME TO verify_payment_transfer_private");
+    expect(repairSql).toContain("FFGL_PRIVATE_PAYMENT_VERIFIER_MISSING");
+    expect(repairSql).toContain("FFGL_PRIVATE_PAYMENT_VERIFIER_INNER_REMAINS");
+    expect(repairSql).toMatch(new RegExp(`REVOKE ALL ON FUNCTION\\s+${outerSignature.source}`));
+    expect(repairSql).toContain("FROM PUBLIC, anon, authenticated, project_admin");
+    expect(repairSql).toMatch(new RegExp(`GRANT EXECUTE ON FUNCTION\\s+${outerSignature.source}`));
+    expect(repairSql).toContain("TO project_admin");
+    expect(repairSql).toContain("has_function_privilege('anon', function_signature, 'EXECUTE')");
+    expect(repairSql).toContain("has_function_privilege('authenticated', function_signature, 'EXECUTE')");
+    expect(repairSql).toContain("has_function_privilege('project_admin', function_signature, 'EXECUTE')");
+    expect(repairSql).not.toMatch(/CREATE OR REPLACE FUNCTION|verify_payment_transfer_private_ffgl_impl\s*\([^)]*\)\s*TO/);
+    expect(repairSql).not.toMatch(/GRANT EXECUTE[\s\S]*?TO\s+(PUBLIC|anon|authenticated)\s*;/i);
+  });
+
+  it("keeps the legacy verifier closed and does not broaden Supplier Payment wrappers", () => {
+    expect(privateExecutorSql).toContain("RAISE EXCEPTION 'PRIVATE_PAYMENT_VERIFICATION_REQUIRED'");
+    expect(privateExecutorSql).toMatch(/REVOKE ALL ON FUNCTION public\.verify_payment_transfer\(UUID,BOOLEAN,TEXT\)[\s\S]*?FROM PUBLIC, anon, authenticated;/);
+    expect(repairSql).not.toMatch(/public\.verify_payment_transfer\(UUID,\s*BOOLEAN,\s*TEXT\)/);
+    expect(repairSql).not.toMatch(/review_supplier_payment|mark_supplier_payment_paid/);
+    expect(preSql).toMatch(/GRANT EXECUTE ON FUNCTION public\.review_supplier_payment\(UUID,BOOLEAN,TEXT\)[\s\S]*?TO authenticated;/);
+    expect(preSql).toMatch(/GRANT EXECUTE ON FUNCTION public\.mark_supplier_payment_paid\(UUID,UUID\)[\s\S]*?TO authenticated;/);
+    expect(body("review_supplier_payment")).toContain("public.has_permission('supplier_payments.manage', target_organization_id)");
+    expect(body("mark_supplier_payment_paid")).toContain("public.has_permission('supplier_payments.manage', target_organization_id)");
   });
 
   it("installs maker/checker before C without referencing Release D tables", () => {
@@ -232,6 +284,8 @@ describe("FULL-FLOW-GO-LIVE-01 financial controls migration", () => {
     const normalize = (value: string) => value.replace(/\r\n/g, "\n").trimEnd();
     expect(normalize(packagedPreSql)).toBe(normalize(preSql));
     expect(normalize(packagedPostSql)).toBe(normalize(postSql));
+    expect(normalize(packagedRepairSql)).toBe(normalize(repairSql));
     expect(packagedPostSql).toBe(postSql);
+    expect(packagedRepairSql).toBe(repairSql);
   });
 });

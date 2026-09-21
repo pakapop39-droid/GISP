@@ -6,7 +6,7 @@
 The historical package under `release-candidates/pay-rpc-gate-001/emergency/`
 remains unchanged. This directory is the exact candidate recovery package and
 adds coverage for Payment Adjustment review, payment recalculation, workflow
-hold confirmation, the wrapped verified-transfer executor, and the two
+hold confirmation, the verified-transfer executor, and the two
 reconciliation tables.
 
 ## Stop order
@@ -26,6 +26,15 @@ Independent QA, and a separate authorization: `resume-c.sql` →
 `resume-d10.sql`. Resume C restores the exact pre-C bodies/ACL. Resume D8
 then restores the exact post-D Freight-aware recalculation and hold-confirm
 bodies. Legacy direct Payment bypasses remain revoked.
+
+For the corrective lifecycle, the exact order is baseline + candidate
+migrations #1–#16 + corrective #17 → Stop C → Resume C → Resume D7/D8/D9/D10.
+Corrective #17 removes the obsolete `_ffgl_impl` name. Resume C therefore
+restores the complete verified outer executor body from the original private
+executor migration, never recreates the wrapper, keeps the inner name absent,
+revokes `PUBLIC`/`anon`/`authenticated`, and grants only `project_admin`.
+Capture `function-snapshot.sql` before Stop C and require the restored outer
+definition/ACL to equal that approved snapshot before continuing to D resumes.
 
 `reconcile.sql` is SELECT-only and covers orders, payment schedules,
 verified transfers, `payment_adjustments`, `payment_workflow_holds`,
@@ -59,7 +68,7 @@ file whitespace removed. Verify each file before authorized use.
 | --- | --- |
 | `function-snapshot.sql` | `4BDFD8773DEDC668A019AA462D4AECAA65E4259B0D8C00E73ABC253B65E0ADC9` |
 | `reconcile.sql` | `0938D60388A67D668E47197EBE2CE4746FA95BCF72AEB2420C68E9586099ED7D` |
-| `resume-c.sql` | `E783FC27044CCA9E0A39B6BCA0D54FA296C05CC918552EBD90918EF834D0AC25` |
+| `resume-c.sql` | `6297B514A589ECEB4ECCDED0249EAF801E629FBAEB77AF9E8D3C4E9EC6039B98` |
 | `resume-d10.sql` | `363C60C76687829D36E61FE42C264EFA812AD2205DC5D1AB9F342D16C37F048C` |
 | `resume-d7.sql` | `98CC941A83DB6EAE077DACEAD8B4EBB01CB36FE6B9E7A38C600594D7DD8DA3E7` |
 | `resume-d8.sql` | `DDED3302186D562FC2A0E6D29C23412724F5E55FC5000D900D82E8F14C32D61A` |

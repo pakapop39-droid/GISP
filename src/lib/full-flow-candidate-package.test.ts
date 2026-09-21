@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const root = new URL("../../release-candidates/full-flow-go-live-01/", import.meta.url);
 const manifest = readFileSync(new URL("CANDIDATE-MANIFEST.md", root), "utf8");
+const candidateReadme = readFileSync(new URL("README.md", root), "utf8");
 
 const allowList = [
   ["20260920010000_pay-close-legacy-entry.sql", "638E76E102E05E9F03CCB93357B74DC496DB50E398DE030C0A057F3021D73993"],
@@ -22,11 +23,12 @@ const allowList = [
   ["20260920011100_release-d10-privileges.sql", "2B687DEF1689F317D9090E0B139F219E2A54CF916DC28D6AD111149F5F941451"],
   ["20260920011200_full-flow-sourcing-scope-hardening.sql", "F5754D8BC1A9BDDD9A11E8C48F4203CCF99564B32E73908062EA14760B74CD7F"],
   ["20260920011300_full-flow-financial-controls.sql", "198A1E5B8C15BF6C44C71D5E3183333ADC0C3B475935AA6643D7ED9F1196CC83"],
+  ["20260920011310_full-flow-payment-private-executor-repair.sql", "BC3B7D06E49D93A0B492745BC12D3AFC1FF5B4AFD6778D8EB6345F1F2128D17E"],
 ].map(([file, hash]) => ({ file, hash }));
 
 describe("FULL-FLOW-GO-LIVE-01 local candidate package", () => {
   it("pins the exact migration allow-list hashes recorded in the manifest", () => {
-    expect(allowList).toHaveLength(16);
+    expect(allowList).toHaveLength(17);
     expect(readdirSync(new URL("migrations/", root)).sort()).toEqual(allowList.map((item) => item.file));
     for (const item of allowList) {
       const bytes = readFileSync(new URL(`migrations/${item.file}`, root), "utf8")
@@ -44,6 +46,7 @@ describe("FULL-FLOW-GO-LIVE-01 local candidate package", () => {
     expect(names.indexOf("20260920010250_release-c-org-scope-hardening.sql")).toBeLessThan(names.indexOf("20260920010275_full-flow-financial-controls-pre-c.sql"));
     expect(names.indexOf("20260920010275_full-flow-financial-controls-pre-c.sql")).toBeLessThan(names.indexOf("20260920010300_release-c-privileges.sql"));
     expect(names.indexOf("20260920011100_release-d10-privileges.sql")).toBeLessThan(names.indexOf("20260920011300_full-flow-financial-controls.sql"));
+    expect(names.indexOf("20260920011300_full-flow-financial-controls.sql")).toBeLessThan(names.indexOf("20260920011310_full-flow-payment-private-executor-repair.sql"));
     expect(manifest).toContain("Never use `up --all`");
   });
 
@@ -51,5 +54,13 @@ describe("FULL-FLOW-GO-LIVE-01 local candidate package", () => {
     expect(manifest).toContain("Production allowed:** `No`");
     expect(manifest).toContain("No migration was applied");
     expect(manifest).toContain("No deployment or Production");
+    expect(manifest).toContain("#17-compatible exact-candidate stop/resume/reconcile package");
+    expect(candidateReadme).toContain("17-file `migrations/` allow-list");
+    expect(candidateReadme).toContain("#17-compatible exact-candidate stop/resume package");
+    const emergencyManifest = readFileSync(new URL("emergency/README.md", root), "utf8")
+      .replace(/\r\n?/g, "\n").trimEnd();
+    const emergencyHash = createHash("sha256").update(Buffer.from(emergencyManifest, "utf8"))
+      .digest("hex").toUpperCase();
+    expect(manifest).toContain(emergencyHash);
   });
 });

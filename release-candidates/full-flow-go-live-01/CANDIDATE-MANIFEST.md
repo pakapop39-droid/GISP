@@ -1,6 +1,6 @@
 # FULL-FLOW-GO-LIVE-01 v0.1 — Candidate Manifest
 
-**Candidate state:** Syntax-only corrective Local tree passed Independent QA and is sealed by the enclosing Git commit/tree (Staging/Production not authorized)
+**Candidate state:** Corrective #17 plus its #17-compatible recovery package passed Builder gates on the exact 9-file Local candidate and awaits narrow Independent QA hash/diff reseal (no Staging/Production authorization or live apply)
 **Baseline:** `2bb809791ea809c6f5b8fc9472a2430240cb840c`  
 **Branch:** `codex/full-flow-go-live-01`  
 **Approval record:** `docs/GISP-APR-FULL-FLOW-GO-LIVE-01-LOCAL-IMPLEMENTATION-20260920-v1.0.md`  
@@ -14,6 +14,7 @@
 - `FFGL-AC-007`: Supplier Payment requester cannot approve the same request and the approver cannot attach/record payment evidence for the same item.
 - Advanced Orders receive an active financial workflow hold after an approved reduction; direct writes to Order items, Supplier Payment, Production, QC/member decisions, Shipment, Delivery and Freight operation tables fail closed while the hold is active.
 - Product Sourcing Admin Client and all five staff mutation RPCs resolve the target organization before reading or mutating; confidential file metadata requires `files.confidential.read`.
+- Corrective #17 removes the broken outer private-payment wrapper only when its renamed implementation exists, restores that verified implementation under the public private-executor name, and reasserts project-admin-only execution without changing its body or any financial formula.
 - `FULL-FLOW-DEP-SEC-01 v0.1`: dependency security gate pins Next.js/eslint-config-next `16.3.5`, Sharp `0.35.4` (direct and override), Vitest `4.1.11`, and resolved js-yaml `4.3.2`.
 
 ## Public interfaces
@@ -51,25 +52,26 @@ Apply only in this order after separate Staging authorization and identity/sched
 | 14 | `migrations/20260920011100_release-d10-privileges.sql` | `2B687DEF1689F317D9090E0B139F219E2A54CF916DC28D6AD111149F5F941451` |
 | 15 | `migrations/20260920011200_full-flow-sourcing-scope-hardening.sql` | `F5754D8BC1A9BDDD9A11E8C48F4203CCF99564B32E73908062EA14760B74CD7F` |
 | 16 | `migrations/20260920011300_full-flow-financial-controls.sql` | `198A1E5B8C15BF6C44C71D5E3183333ADC0C3B475935AA6643D7ED9F1196CC83` |
+| 17 | `migrations/20260920011310_full-flow-payment-private-executor-repair.sql` | `BC3B7D06E49D93A0B492745BC12D3AFC1FF5B4AFD6778D8EB6345F1F2128D17E` |
 
 Packaged copies live under `release-candidates/full-flow-go-live-01/migrations/`.
 Contract tests compare normalized packaged content to the canonical migrations.
-The pre-C safeguard is deliberately installed before `20260920010300_release-c-privileges.sql`. It installs the verified-transfer wrapper, adjustment request/review, Deposit/Balance recalculation, dual-control hold confirmation and hold triggers for the Release C tables (`order_items`, `supplier_orders`, `purchase_orders`, `supplier_payments`) without referencing any Release D object. The post-D migration runs only after every Release D dependency and extends the same functions/triggers for Production/QC/Logistics/Freight. Never use `up --all` for this package.
+The pre-C safeguard is deliberately installed before `20260920010300_release-c-privileges.sql`. It installs the verified-transfer wrapper, adjustment request/review, Deposit/Balance recalculation, dual-control hold confirmation and hold triggers for the Release C tables (`order_items`, `supplier_orders`, `purchase_orders`, `supplier_payments`) without referencing any Release D object. The post-D migration runs only after every Release D dependency and extends the same functions/triggers for Production/QC/Logistics/Freight. Corrective #17 must run after #16; it performs no body or business-rule rewrite and only repairs the split private-verifier identity/ACL. Never use `up --all` for this package.
 
 ## Standalone Staging bootstrap and recovery package
 
 - `production-b-baseline/` contains the 26-file LF-normalized schema/runtime baseline fetched read-only from Production-B migration history. Its head is `20260908170000_release-b-member-pilot.sql`; `production-b-baseline/MANIFEST.md` records every file hash. It contains no cloned Production row set, PII export or secret and does not authorize apply.
 - Baseline manifest canonical-LF/trimmed SHA-256: `4A9E3AC84EEA1A826897D27667572D42D3A37FCB70131C92099FDDB4C2EFBE55`.
-- `emergency/` is the exact-candidate stop/resume/reconcile package. `emergency/README.md` records all 12 SQL hashes plus the local runner hash. Stop C closes every new project-admin financial executor; Resume C restores exact pre-C bodies/ACL and Resume D8 restores exact post-D Freight-aware bodies. Reconciliation is SELECT-only, covers `payment_adjustments` and `payment_workflow_holds`, validates an ISO cutover literal and does not rely on a session custom GUC.
-- Emergency manifest canonical-LF/trimmed SHA-256: `BFA52AED7738A7C208ABA456CCD862A44C0E8FD53879387D2024E1C6A1412D4D`.
+- `emergency/` is the #17-compatible exact-candidate stop/resume/reconcile package. `emergency/README.md` records all 12 SQL hashes plus the local runner hash. Resume C restores the complete verified outer body from the original private executor, leaves `_ffgl_impl` absent, and reapplies project-admin-only ACL before D resumes. Reconciliation remains SELECT-only, covers `payment_adjustments` and `payment_workflow_holds`, validates an ISO cutover literal and does not rely on a session custom GUC.
+- Emergency manifest canonical-LF/trimmed SHA-256: `24A043EBF16F2DA31D5EF6B2C9A8C4321DC8631E1A134297C1520D2398D6964C`.
 
 ## Existing Staging state and corrective Local patch non-actions
 
-- Before this syntax-only corrective Local patch, the separately authorized isolated Staging had already received the 26-file Production-B baseline plus candidate migrations #1–#15. Migration #16 was rejected transactionally and remains pending.
-- No migration was applied by this syntax-only corrective Local patch: it did not call the backend, retry migration #16, apply any other migration, deploy, create any fixture, or mutate any InsForge project, branch, schedule, storage object or backend row.
+- Before corrective #17 was prepared, the separately authorized isolated Staging had already received the 26-file Production-B baseline plus candidate migrations #1–#16. The first private payment verification then failed because #16 left the project-admin outer wrapper unable to execute its revoked inner implementation; order/payment UAT stopped at that first verification.
+- No migration was applied by this corrective #17 Local patch: it did not call the backend, apply #17, retry the payment flow, deploy, create a fixture, or mutate any InsForge project, branch, schedule, storage object or backend row.
 - No deployment or Production configuration, schema or data change was made by this corrective Local patch; Production remained unchanged.
 - No price, VAT, 50/50 Deposit/Balance or Freight formula was changed.
-- This manifest records candidate evidence only. It grants no Apply, Deploy, Staging-mutation or Production authority. The owner must reauthorize the exact new commit/tree before any retry of Staging migration #16.
+- This manifest records candidate evidence only. It grants no Apply, Deploy, Staging-mutation or Production authority. The owner must reauthorize the exact new commit/tree before applying #17 or retrying the payment flow.
 
 ## Local verification status
 
@@ -78,6 +80,7 @@ The pre-C safeguard is deliberately installed before `20260920010300_release-c-p
 - Builder verification for this syntax-only #16 corrective Local tree passed sequentially: focused migration/package contracts `2 files / 13 tests`, full regression `112 files / 606 tests`, typecheck PASS, lint `0 errors / 7 pre-existing warnings`, optimized Next.js `16.3.5` build PASS (`128/128` pages), and `git diff --check` PASS.
 - Independent QA for this syntax-only tree passed with Blocker `0`, Major `0`, Minor `0`; local in-memory PL/pgSQL compile, focused `2 files / 13 tests`, full regression `112 files / 606 tests`, typecheck, lint, build `128/128`, diff check and secret scan passed. QA confirmed that only two CASE-expression parenthesis pairs changed and that formula, mapping, ACL, RPC, trigger behavior, emergency package and application source remain unchanged.
 - The earlier custom-GUC corrective candidate also passed its own QA, but neither QA result grants Staging or Production authority.
-- All 16 packaged migration hashes must match this manifest; the allow-list filenames/order remain unchanged.
+- Corrective #17 plus its recovery-package repair passed Builder verification sequentially: focused migration/package/emergency contracts `3 files / 22 tests`, full regression `112 files / 609 tests`, typecheck PASS, lint `0 errors / 7 pre-existing warnings`, optimized Next.js `16.3.5` build PASS (`128/128` pages), and `git diff --check` PASS. Independent QA passed the predecessor 9-file Local candidate and its static SQL, recovery lifecycle, ACL, package-parity and hash contracts; removing one trailing blank EOF from each byte-identical #17 copy changed only the #17 hash, so this exact tree awaits narrow Independent QA hash/diff reseal. This Local evidence grants no Staging/Production authorization or live-apply authority.
+- All 17 packaged migration hashes must match this manifest; #17 is appended after the already-applied #1–#16 sequence.
 - Isolated Staging migration/UAT/recovery rehearsal remains separately authorized work; this manifest does not authorize Apply, Deploy or Production.
-- The owner must reauthorize the exact new commit/tree before retrying Staging migration #16.
+- The owner must reauthorize the exact new commit/tree before applying #17 or retrying the Staging payment flow.

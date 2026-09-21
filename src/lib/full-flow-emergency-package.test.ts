@@ -14,7 +14,7 @@ const functionDefinition = (source: string, name: string) => {
 const expected = [
   ["function-snapshot.sql", "4BDFD8773DEDC668A019AA462D4AECAA65E4259B0D8C00E73ABC253B65E0ADC9"],
   ["reconcile.sql", "0938D60388A67D668E47197EBE2CE4746FA95BCF72AEB2420C68E9586099ED7D"],
-  ["resume-c.sql", "E783FC27044CCA9E0A39B6BCA0D54FA296C05CC918552EBD90918EF834D0AC25"],
+  ["resume-c.sql", "6297B514A589ECEB4ECCDED0249EAF801E629FBAEB77AF9E8D3C4E9EC6039B98"],
   ["resume-d10.sql", "363C60C76687829D36E61FE42C264EFA812AD2205DC5D1AB9F342D16C37F048C"],
   ["resume-d7.sql", "98CC941A83DB6EAE077DACEAD8B4EBB01CB36FE6B9E7A38C600594D7DD8DA3E7"],
   ["resume-d8.sql", "DDED3302186D562FC2A0E6D29C23412724F5E55FC5000D900D82E8F14C32D61A"],
@@ -66,13 +66,15 @@ describe("FULL-FLOW exact-candidate emergency package", () => {
     expect(compact(stop)).not.toMatch(/\bGRANT\b/i);
   });
 
-  it("restores exact pre-C bodies and exact post-D Freight-aware bodies", () => {
+  it("restores the original full private executor and exact pre-C/post-D bodies", () => {
     const pre = readFileSync(new URL("../../migrations/20260920092500_full-flow-financial-controls-pre-c.sql", import.meta.url), "utf8");
     const post = readFileSync(new URL("../../migrations/20260920093000_full-flow-financial-controls.sql", import.meta.url), "utf8");
+    const privateExecutor = readFileSync(new URL("../../release-candidates/full-flow-go-live-01/migrations/20260920010200_pay-private-executor.sql", import.meta.url), "utf8");
     const resumeC = read("resume-c.sql");
     const resumeD8 = read("resume-d8.sql");
+    expect(functionDefinition(resumeC, "verify_payment_transfer_private"))
+      .toBe(functionDefinition(privateExecutor, "verify_payment_transfer_private"));
     for (const name of [
-      "verify_payment_transfer_private",
       "recalculate_customer_payment_schedule",
       "create_payment_adjustment_private",
       "review_payment_adjustment_private",
@@ -87,6 +89,27 @@ describe("FULL-FLOW exact-candidate emergency package", () => {
     }
     expect(resumeC).toContain("GRANT EXECUTE ON FUNCTION public.payment_adjustment_actor(TEXT,UUID) TO project_admin");
     expect(resumeC).toContain("GRANT EXECUTE ON FUNCTION public.payment_hold_actor(TEXT,UUID,TEXT) TO project_admin");
+  });
+
+  it("pins the #17 Stop C/Resume C lifecycle with outer-only ACL restoration", () => {
+    const candidateMigrations = readdirSync(new URL("../migrations/", root)).filter((name) => name.endsWith(".sql")).sort();
+    const repair = readFileSync(new URL("../migrations/20260920011310_full-flow-payment-private-executor-repair.sql", root), "utf8");
+    const stopC = read("stop-c.sql");
+    const resumeC = read("resume-c.sql");
+    const snapshot = read("function-snapshot.sql");
+    expect(candidateMigrations).toHaveLength(17);
+    expect(candidateMigrations.at(-1)).toBe("20260920011310_full-flow-payment-private-executor-repair.sql");
+    expect(repair).toContain("RENAME TO verify_payment_transfer_private");
+    expect(repair).toContain("FFGL_PRIVATE_PAYMENT_VERIFIER_INNER_REMAINS_AFTER_ACL");
+    expect(functionDefinition(stopC, "verify_payment_transfer_private")).toContain("EMERGENCY_WRITE_DISABLED");
+    expect(resumeC).not.toContain("verify_payment_transfer_private_ffgl_impl");
+    expect(compact(resumeC)).toContain("REVOKE ALL ON FUNCTION public.verify_payment_transfer_private(UUID,BOOLEAN,TEXT,TEXT,UUID,TEXT,BIGINT) FROM PUBLIC, anon, authenticated");
+    expect(compact(resumeC)).toContain("GRANT EXECUTE ON FUNCTION public.verify_payment_transfer_private(UUID,BOOLEAN,TEXT,TEXT,UUID,TEXT,BIGINT) TO project_admin");
+    expect(snapshot).toContain("public.verify_payment_transfer_private(uuid,boolean,text,text,uuid,text,bigint)");
+    expect(snapshot).not.toContain("verify_payment_transfer_private_ffgl_impl");
+    for (const name of ["resume-d7.sql", "resume-d8.sql", "resume-d9.sql", "resume-d10.sql"]) {
+      expect(read(name), name).not.toMatch(/verify_payment_transfer_private(?:_ffgl_impl)?/);
+    }
   });
 
   it("snapshots exactly the 60 routines touched by stop files", () => {
