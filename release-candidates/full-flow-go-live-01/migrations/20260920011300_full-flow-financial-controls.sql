@@ -59,16 +59,16 @@ BEGIN
         AND freight_schedule.status IN (
           'VERIFIED', 'PARTIALLY_VERIFIED', 'OVERPAYMENT_REVIEW', 'PENDING'
         )
-        AND NEW.status IS NOT DISTINCT FROM CASE freight_schedule.status
+        AND NEW.status IS NOT DISTINCT FROM (CASE freight_schedule.status
           WHEN 'VERIFIED' THEN 'PAID'
           WHEN 'PARTIALLY_VERIFIED' THEN 'PARTIALLY_PAID'
           WHEN 'OVERPAYMENT_REVIEW' THEN 'OVERPAYMENT_REVIEW'
           WHEN 'PENDING' THEN 'ISSUED'
-        END
-        AND NEW.paid_at IS NOT DISTINCT FROM CASE
+        END)
+        AND NEW.paid_at IS NOT DISTINCT FROM (CASE
           WHEN freight_schedule.status = 'VERIFIED' THEN freight_schedule.verified_at
           ELSE NULL
-        END
+        END)
       THEN
         -- Only derived settlement fields may change. Pricing, invoice identity,
         -- due date, notes and every operational field remain blocked.

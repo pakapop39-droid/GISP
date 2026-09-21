@@ -1,6 +1,6 @@
 # FULL-FLOW-GO-LIVE-01 v0.1 — Candidate Manifest
 
-**Candidate state:** Corrective Local tree passed Independent QA and is sealed by the enclosing Git commit/tree (Staging/Production not authorized)
+**Candidate state:** Syntax-only corrective Local tree passed Independent QA and is sealed by the enclosing Git commit/tree (Staging/Production not authorized)
 **Baseline:** `2bb809791ea809c6f5b8fc9472a2430240cb840c`  
 **Branch:** `codex/full-flow-go-live-01`  
 **Approval record:** `docs/GISP-APR-FULL-FLOW-GO-LIVE-01-LOCAL-IMPLEMENTATION-20260920-v1.0.md`  
@@ -50,7 +50,7 @@ Apply only in this order after separate Staging authorization and identity/sched
 | 13 | `migrations/20260920011000_release-d9-privileges.sql` | `A032E91BA8734345C9AD02FD3D11E113B9B43625214C106015576F1CA090D0FF` |
 | 14 | `migrations/20260920011100_release-d10-privileges.sql` | `2B687DEF1689F317D9090E0B139F219E2A54CF916DC28D6AD111149F5F941451` |
 | 15 | `migrations/20260920011200_full-flow-sourcing-scope-hardening.sql` | `F5754D8BC1A9BDDD9A11E8C48F4203CCF99564B32E73908062EA14760B74CD7F` |
-| 16 | `migrations/20260920011300_full-flow-financial-controls.sql` | `89BCABA44B13B7B54157867E921FFA7752FC87B4078D2EF2E7C026BE427D1D1C` |
+| 16 | `migrations/20260920011300_full-flow-financial-controls.sql` | `198A1E5B8C15BF6C44C71D5E3183333ADC0C3B475935AA6643D7ED9F1196CC83` |
 
 Packaged copies live under `release-candidates/full-flow-go-live-01/migrations/`.
 Contract tests compare normalized packaged content to the canonical migrations.
@@ -65,18 +65,19 @@ The pre-C safeguard is deliberately installed before `20260920010300_release-c-p
 
 ## Existing Staging state and corrective Local patch non-actions
 
-- Before this corrective Local patch, the separately authorized isolated Staging had already been created and received the 26-file Production-B baseline plus candidate migrations #1–#4. Migration #5 was rejected transactionally by the InsForge text guard; candidate migrations #5–#16 remain pending.
-- No migration was applied by this corrective Local patch: it did not call the backend, retry migration #5, apply any other migration, deploy, or mutate any InsForge project, branch, schedule, storage object or backend row.
+- Before this syntax-only corrective Local patch, the separately authorized isolated Staging had already received the 26-file Production-B baseline plus candidate migrations #1–#15. Migration #16 was rejected transactionally and remains pending.
+- No migration was applied by this syntax-only corrective Local patch: it did not call the backend, retry migration #16, apply any other migration, deploy, create any fixture, or mutate any InsForge project, branch, schedule, storage object or backend row.
 - No deployment or Production configuration, schema or data change was made by this corrective Local patch; Production remained unchanged.
 - No price, VAT, 50/50 Deposit/Balance or Freight formula was changed.
-- This manifest records candidate evidence only. It grants no Apply, Deploy, Staging-mutation or Production authority. The owner must reauthorize the exact new commit/tree before any retry of Staging migration #5.
+- This manifest records candidate evidence only. It grants no Apply, Deploy, Staging-mutation or Production authority. The owner must reauthorize the exact new commit/tree before any retry of Staging migration #16.
 
 ## Local verification status
 
 - The previous sealed Local candidate at `7eb97436074132ca9c21d7935ea8389f98677062` had Independent QA `PASS`, `109 files / 592 tests`, typecheck/build PASS and dependency audit `0 vulnerabilities`.
 - This corrective Local tree removes the rejected custom GUC, makes the active-hold Freight exception deterministic against the owning schedule identity/state, and adds a hash-pinned SELECT-only reconciliation runner.
-- Builder verification for this corrective Local tree passed: focused migration/emergency/reconcile/package contracts `4 files / 24 tests`, full regression `112 files / 606 tests`, typecheck PASS, lint `0 errors / 7 pre-existing warnings`, optimized Next.js `16.3.5` build PASS (`128/128` pages), and `git diff --check` PASS.
-- Independent QA recheck passed with Blocker `0`, Major `0`, Minor `0`; contract tests `4 files / 24 tests` and `git diff --check` passed. QA confirmed the runner transport, package hashes, manifest truthfulness and unchanged non-manifest fingerprints. Neither this QA result nor the prior QA result grants Staging or Production authority.
+- Builder verification for this syntax-only #16 corrective Local tree passed sequentially: focused migration/package contracts `2 files / 13 tests`, full regression `112 files / 606 tests`, typecheck PASS, lint `0 errors / 7 pre-existing warnings`, optimized Next.js `16.3.5` build PASS (`128/128` pages), and `git diff --check` PASS.
+- Independent QA for this syntax-only tree passed with Blocker `0`, Major `0`, Minor `0`; local in-memory PL/pgSQL compile, focused `2 files / 13 tests`, full regression `112 files / 606 tests`, typecheck, lint, build `128/128`, diff check and secret scan passed. QA confirmed that only two CASE-expression parenthesis pairs changed and that formula, mapping, ACL, RPC, trigger behavior, emergency package and application source remain unchanged.
+- The earlier custom-GUC corrective candidate also passed its own QA, but neither QA result grants Staging or Production authority.
 - All 16 packaged migration hashes must match this manifest; the allow-list filenames/order remain unchanged.
 - Isolated Staging migration/UAT/recovery rehearsal remains separately authorized work; this manifest does not authorize Apply, Deploy or Production.
-- The owner must reauthorize the exact enclosing commit/tree before retrying Staging migration #5.
+- The owner must reauthorize the exact new commit/tree before retrying Staging migration #16.

@@ -145,6 +145,12 @@ describe("FULL-FLOW-GO-LIVE-01 financial controls migration", () => {
     expect(blocker).toContain("ps.organization_id = NEW.organization_id");
     expect(blocker).toContain("ps.schedule_type = 'FREIGHT'");
     expect(blocker).toContain("freight_schedule.status IN (");
+    expect(blocker).toMatch(
+      /NEW\.status IS NOT DISTINCT FROM \(CASE freight_schedule\.status[\s\S]*?END\)/,
+    );
+    expect(blocker).toMatch(
+      /NEW\.paid_at IS NOT DISTINCT FROM \(CASE[\s\S]*?END\)/,
+    );
     for (const mapping of [
       "WHEN 'VERIFIED' THEN 'PAID'",
       "WHEN 'PARTIALLY_VERIFIED' THEN 'PARTIALLY_PAID'",
@@ -226,5 +232,6 @@ describe("FULL-FLOW-GO-LIVE-01 financial controls migration", () => {
     const normalize = (value: string) => value.replace(/\r\n/g, "\n").trimEnd();
     expect(normalize(packagedPreSql)).toBe(normalize(preSql));
     expect(normalize(packagedPostSql)).toBe(normalize(postSql));
+    expect(packagedPostSql).toBe(postSql);
   });
 });
