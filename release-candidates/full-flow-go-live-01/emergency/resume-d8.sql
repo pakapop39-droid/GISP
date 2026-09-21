@@ -186,10 +186,8 @@ BEGIN
   IF schedule_record.id IS NULL THEN RAISE EXCEPTION 'PAYMENT_HOLD_BALANCE_NOT_RESTORED'; END IF;
   -- A later verified replacement transfer is reconciled together with the
   -- append-only negative adjustment before either reviewer can resume work.
-  PERFORM set_config('gisp.payment_hold_finance_maintenance', 'on', TRUE);
   PERFORM public.recalculate_customer_payment_schedule(
     schedule_record.id, hold_record.payment_adjustment_id, actor_id);
-  PERFORM set_config('gisp.payment_hold_finance_maintenance', 'off', TRUE);
   SELECT * INTO schedule_record FROM public.payment_schedules
   WHERE id = schedule_record.id FOR SHARE;
   IF schedule_record.status <> 'VERIFIED'

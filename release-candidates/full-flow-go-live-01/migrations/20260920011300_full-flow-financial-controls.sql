@@ -8,7 +8,9 @@ RETURNS TRIGGER
 LANGUAGE PLPGSQL SECURITY DEFINER
 SET search_path = pg_catalog, public, pg_temp
 AS $$
-DECLARE target_order_id UUID;
+DECLARE
+  target_order_id UUID;
+  freight_schedule public.payment_schedules%ROWTYPE;
 BEGIN
   IF TG_TABLE_NAME = 'order_items' THEN
     target_order_id := NEW.order_id;
@@ -41,16 +43,37 @@ BEGIN
   ) THEN
     IF TG_TABLE_NAME = 'freight_invoices'
       AND TG_OP = 'UPDATE'
-      AND current_setting('gisp.payment_hold_finance_maintenance', TRUE) = 'on'
       AND (to_jsonb(NEW) - ARRAY['status', 'paid_at', 'updated_at'])
         IS NOT DISTINCT FROM
         (to_jsonb(OLD) - ARRAY['status', 'paid_at', 'updated_at'])
     THEN
-      -- Replacement-payment verification and the private reconciliation
-      -- executor may maintain only derived settlement fields. Pricing,
-      -- invoice identity, due date, notes and every operational field remain
-      -- blocked while the hold is active.
-      RETURN NEW;
+      SELECT ps.*
+      INTO freight_schedule
+      FROM public.payment_schedules ps
+      WHERE ps.id = NEW.payment_schedule_id
+        AND ps.order_id = NEW.customer_order_id
+        AND ps.organization_id = NEW.organization_id
+        AND ps.schedule_type = 'FREIGHT';
+
+      IF freight_schedule.id IS NOT NULL
+        AND freight_schedule.status IN (
+          'VERIFIED', 'PARTIALLY_VERIFIED', 'OVERPAYMENT_REVIEW', 'PENDING'
+        )
+        AND NEW.status IS NOT DISTINCT FROM CASE freight_schedule.status
+          WHEN 'VERIFIED' THEN 'PAID'
+          WHEN 'PARTIALLY_VERIFIED' THEN 'PARTIALLY_PAID'
+          WHEN 'OVERPAYMENT_REVIEW' THEN 'OVERPAYMENT_REVIEW'
+          WHEN 'PENDING' THEN 'ISSUED'
+        END
+        AND NEW.paid_at IS NOT DISTINCT FROM CASE
+          WHEN freight_schedule.status = 'VERIFIED' THEN freight_schedule.verified_at
+          ELSE NULL
+        END
+      THEN
+        -- Only derived settlement fields may change. Pricing, invoice identity,
+        -- due date, notes and every operational field remain blocked.
+        RETURN NEW;
+      END IF;
     END IF;
     RAISE EXCEPTION 'PAYMENT_WORKFLOW_ON_HOLD';
   END IF;
@@ -239,10 +262,8 @@ BEGIN
   IF schedule_record.id IS NULL THEN RAISE EXCEPTION 'PAYMENT_HOLD_BALANCE_NOT_RESTORED'; END IF;
   -- A later verified replacement transfer is reconciled together with the
   -- append-only negative adjustment before either reviewer can resume work.
-  PERFORM set_config('gisp.payment_hold_finance_maintenance', 'on', TRUE);
   PERFORM public.recalculate_customer_payment_schedule(
     schedule_record.id, hold_record.payment_adjustment_id, actor_id);
-  PERFORM set_config('gisp.payment_hold_finance_maintenance', 'off', TRUE);
   SELECT * INTO schedule_record FROM public.payment_schedules
   WHERE id = schedule_record.id FOR SHARE;
   IF schedule_record.status <> 'VERIFIED'

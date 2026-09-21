@@ -291,11 +291,9 @@ SET search_path = pg_catalog, public, pg_temp
 AS $$
 DECLARE result_id UUID;
 BEGIN
-  PERFORM set_config('gisp.payment_hold_finance_maintenance', 'on', TRUE);
   result_id := public.verify_payment_transfer_private_ffgl_impl(
     transfer_id_input, approve_input, finance_note_input,
     session_token_hash_input, evidence_file_id_input, sha256_input, size_bytes_input);
-  PERFORM set_config('gisp.payment_hold_finance_maintenance', 'off', TRUE);
   RETURN result_id;
 END;
 $$;
@@ -699,10 +697,8 @@ BEGIN
   IF schedule_record.id IS NULL THEN RAISE EXCEPTION 'PAYMENT_HOLD_BALANCE_NOT_RESTORED'; END IF;
   -- A later verified replacement transfer is reconciled together with the
   -- append-only negative adjustment before either reviewer can resume work.
-  PERFORM set_config('gisp.payment_hold_finance_maintenance', 'on', TRUE);
   PERFORM public.recalculate_customer_payment_schedule(
     schedule_record.id, hold_record.payment_adjustment_id, actor_id);
-  PERFORM set_config('gisp.payment_hold_finance_maintenance', 'off', TRUE);
   SELECT * INTO schedule_record FROM public.payment_schedules
   WHERE id = schedule_record.id FOR SHARE;
   IF schedule_record.status <> 'VERIFIED'

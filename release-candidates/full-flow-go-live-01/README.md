@@ -11,7 +11,8 @@ Local-only candidate package for the owner-approved implementation scope.
 For a future standalone isolated Staging rehearsal, apply the 26-file
 `production-b-baseline/` first and the 16-file `migrations/` allow-list second,
 using only the exact order and SHA-256 inventory recorded in their manifests.
-The `emergency/` directory contains the exact-candidate stop/resume/reconcile
-templates that must be rehearsed on the same candidate. Do not run
+The `emergency/` directory contains the exact-candidate stop/resume package
+and the hash-pinned SELECT-only reconciliation runner/template that must be
+rehearsed on the same candidate. Do not run
 `migrations up --all` or use the shared migration tree. None of these files
 authorizes Staging creation, migration apply, deployment or Production access.

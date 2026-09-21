@@ -133,23 +133,45 @@ describe("FULL-FLOW-GO-LIVE-01 financial controls migration", () => {
   it("allows only derived freight settlement maintenance while the hold stays active", () => {
     const blocker = bodyFrom(postSql, "block_order_operation_on_payment_hold");
     const verifier = body("verify_payment_transfer_private");
+    const preConfirm = bodyFrom(preSql, "confirm_payment_workflow_hold_private");
+    const confirm = bodyFrom(postSql, "confirm_payment_workflow_hold_private");
     expect(blocker).toContain("TG_TABLE_NAME = 'freight_invoices'");
     expect(blocker).toContain("TG_OP = 'UPDATE'");
     expect(blocker).toContain("ARRAY['status', 'paid_at', 'updated_at']");
-    expect(blocker).toContain("current_setting('gisp.payment_hold_finance_maintenance', TRUE) = 'on'");
     expect(blocker).toContain("to_jsonb(NEW)");
     expect(blocker).toContain("to_jsonb(OLD)");
+    expect(blocker).toContain("ps.id = NEW.payment_schedule_id");
+    expect(blocker).toContain("ps.order_id = NEW.customer_order_id");
+    expect(blocker).toContain("ps.organization_id = NEW.organization_id");
+    expect(blocker).toContain("ps.schedule_type = 'FREIGHT'");
+    expect(blocker).toContain("freight_schedule.status IN (");
+    for (const mapping of [
+      "WHEN 'VERIFIED' THEN 'PAID'",
+      "WHEN 'PARTIALLY_VERIFIED' THEN 'PARTIALLY_PAID'",
+      "WHEN 'OVERPAYMENT_REVIEW' THEN 'OVERPAYMENT_REVIEW'",
+      "WHEN 'PENDING' THEN 'ISSUED'",
+    ]) expect(blocker).toContain(mapping);
+    expect(blocker).toContain("freight_schedule.status = 'VERIFIED' THEN freight_schedule.verified_at");
     expect(blocker.indexOf("RETURN NEW;")).toBeLessThan(
       blocker.lastIndexOf("PAYMENT_WORKFLOW_ON_HOLD"),
     );
     for (const blockedField of ["grand_total", "subtotal", "vat_amount", "due_at", "note"]) {
       expect("status,paid_at,updated_at").not.toContain(blockedField);
     }
-    expect(verifier).toContain("set_config('gisp.payment_hold_finance_maintenance', 'on', TRUE)");
     expect(verifier).toContain("verify_payment_transfer_private_ffgl_impl");
+    expect(verifier).not.toMatch(/set_config|current_setting/);
+    expect(preConfirm).toContain("PERFORM public.recalculate_customer_payment_schedule(");
+    expect(preConfirm).not.toMatch(/set_config|current_setting/);
+    expect(confirm).toContain("PERFORM public.recalculate_customer_payment_schedule(");
+    expect(confirm).not.toMatch(/set_config|current_setting/);
+    expect(`${preSql}\n${postSql}\n${packagedPreSql}\n${packagedPostSql}`)
+      .not.toMatch(/set_config\s*\(|current_setting\s*\(/i);
     expect(preSql).toContain("REVOKE ALL ON FUNCTION public.verify_payment_transfer_private_ffgl_impl");
     expect(preSql).toContain("FROM PUBLIC, anon, authenticated, project_admin");
-    expect(body("confirm_payment_workflow_hold_private")).toContain("set_config('gisp.payment_hold_finance_maintenance', 'on', TRUE)");
+    expect(preSql).toMatch(/GRANT EXECUTE ON FUNCTION public\.verify_payment_transfer_private\([\s\S]*?\)\s+TO project_admin;/);
+    expect(preSql).not.toMatch(/GRANT EXECUTE ON FUNCTION public\.verify_payment_transfer_private\([\s\S]*?\)\s+TO (PUBLIC|anon|authenticated);/);
+    expect(postSql).toContain("REVOKE ALL ON FUNCTION public.block_order_operation_on_payment_hold()");
+    expect(blocker).not.toContain("GRANT EXECUTE");
   });
 
   it("installs maker/checker before C without referencing Release D tables", () => {
