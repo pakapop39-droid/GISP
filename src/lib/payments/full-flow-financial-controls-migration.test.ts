@@ -31,12 +31,16 @@ const packagedPostSql = readFileSync(
 );
 const sql = `${preSql}\n${postSql}`;
 
-function body(functionName: string) {
-  const start = sql.indexOf(`CREATE OR REPLACE FUNCTION public.${functionName}`);
+function bodyFrom(source: string, functionName: string) {
+  const start = source.indexOf(`CREATE OR REPLACE FUNCTION public.${functionName}`);
   expect(start).toBeGreaterThan(-1);
-  const end = sql.indexOf("\n$$;", start);
+  const end = source.indexOf("\n$$;", start);
   expect(end).toBeGreaterThan(start);
-  return sql.slice(start, end);
+  return source.slice(start, end);
+}
+
+function body(functionName: string) {
+  return bodyFrom(sql, functionName);
 }
 
 describe("FULL-FLOW-GO-LIVE-01 financial controls migration", () => {
@@ -84,7 +88,7 @@ describe("FULL-FLOW-GO-LIVE-01 financial controls migration", () => {
     expect(recalculate).toContain(
       "co.status NOT IN ('PENDING_DEPOSIT', 'DEPOSIT_VERIFIED', 'CANCELLATION_REQUESTED', 'CANCELLED')",
     );
-    const blocker = body("block_order_operation_on_payment_hold");
+    const blocker = bodyFrom(postSql, "block_order_operation_on_payment_hold");
     expect(blocker).toContain("PAYMENT_WORKFLOW_ON_HOLD");
     expect(blocker).toContain("SECURITY DEFINER");
     expect(blocker).toContain("TG_TABLE_NAME = 'qc_member_decisions'");
@@ -107,7 +111,7 @@ describe("FULL-FLOW-GO-LIVE-01 financial controls migration", () => {
 
   it("resumes only after restored payment and two different scoped actors confirm", () => {
     const actor = body("payment_hold_actor");
-    const confirm = body("confirm_payment_workflow_hold_private");
+    const confirm = bodyFrom(postSql, "confirm_payment_workflow_hold_private");
     expect(actor).toContain("u.status = 'ACTIVE'");
     expect(actor).toContain("permission_code_input NOT IN ('payments.adjust', 'orders.manage')");
     expect(actor).toContain("ur.organization_id IS NULL OR ur.organization_id = target_organization_id_input");
@@ -127,7 +131,7 @@ describe("FULL-FLOW-GO-LIVE-01 financial controls migration", () => {
   });
 
   it("allows only derived freight settlement maintenance while the hold stays active", () => {
-    const blocker = body("block_order_operation_on_payment_hold");
+    const blocker = bodyFrom(postSql, "block_order_operation_on_payment_hold");
     const verifier = body("verify_payment_transfer_private");
     expect(blocker).toContain("TG_TABLE_NAME = 'freight_invoices'");
     expect(blocker).toContain("TG_OP = 'UPDATE'");
@@ -143,16 +147,33 @@ describe("FULL-FLOW-GO-LIVE-01 financial controls migration", () => {
     }
     expect(verifier).toContain("set_config('gisp.payment_hold_finance_maintenance', 'on', TRUE)");
     expect(verifier).toContain("verify_payment_transfer_private_ffgl_impl");
-    expect(postSql).toContain("REVOKE ALL ON FUNCTION public.verify_payment_transfer_private_ffgl_impl");
-    expect(postSql).toContain("FROM PUBLIC, anon, authenticated, project_admin");
+    expect(preSql).toContain("REVOKE ALL ON FUNCTION public.verify_payment_transfer_private_ffgl_impl");
+    expect(preSql).toContain("FROM PUBLIC, anon, authenticated, project_admin");
     expect(body("confirm_payment_workflow_hold_private")).toContain("set_config('gisp.payment_hold_finance_maintenance', 'on', TRUE)");
   });
 
   it("installs maker/checker before C without referencing Release D tables", () => {
     expect(preSql).toContain("CREATE OR REPLACE FUNCTION public.review_supplier_payment");
     expect(preSql).toContain("SUPPLIER_PAYMENT_MAKER_CHECKER_REQUIRED");
-    expect(preSql).not.toMatch(/freight_invoices|qc_inspections|shipments|deliveries|warehouse_receipts|consolidation_groups|maybe_complete_order/);
+    for (const functionName of [
+      "verify_payment_transfer_private",
+      "create_payment_adjustment_private",
+      "review_payment_adjustment_private",
+      "recalculate_customer_payment_schedule",
+      "confirm_payment_workflow_hold_private",
+    ]) {
+      expect(preSql).toContain(`CREATE OR REPLACE FUNCTION public.${functionName}`);
+    }
+    for (const trigger of [
+      "order_items_payment_hold",
+      "supplier_orders_payment_hold",
+      "purchase_orders_payment_hold",
+      "supplier_payments_payment_hold",
+    ]) expect(preSql).toContain(trigger);
+    expect(preSql).not.toMatch(/freight_invoices|qc_inspections|qc_member_decisions|production_updates|shipments|deliveries|warehouse_receipts|consolidation_groups|logistics_cost_items|maybe_complete_order/);
     expect(postSql).toContain("freight_invoices_payment_hold");
+    expect(postSql).toContain("production_updates_payment_hold");
+    expect(postSql).toContain("qc_member_decisions_payment_hold");
     expect(postSql).not.toContain("CREATE OR REPLACE FUNCTION public.review_supplier_payment");
   });
 

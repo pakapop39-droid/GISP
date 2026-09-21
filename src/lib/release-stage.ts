@@ -176,7 +176,8 @@ const RELEASE_C_API_PREFIXES = [
   "/api/member/orders", "/api/member/payment-transfers", "/api/payment-evidence",
   "/api/admin/custom-requests", "/api/admin/custom-quotations",
   "/api/admin/orders", "/api/admin/supplier-payments",
-  "/api/admin/payment-transfers", "/api/admin/cancellations",
+  "/api/admin/payment-transfers", "/api/admin/payment-adjustments",
+  "/api/admin/payment-workflow-holds", "/api/admin/cancellations",
   "/api/admin/supplier-disclosures", "/api/admin/dashboard",
   "/api/custom-quotations",
 ];

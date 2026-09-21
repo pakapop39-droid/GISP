@@ -8,8 +8,10 @@ Local-only candidate package for the owner-approved implementation scope.
 - Production allowed: `No`
 - Migration apply/deploy/backend write: `Not authorized`
 
-The `migrations/` directory is the only migration allow-list proposed for a
-future isolated Staging rehearsal. Do not run `migrations up --all`.
-Verify SHA-256 values in `CANDIDATE-MANIFEST.md` before any separately
-authorized rehearsal.
-
+For a future standalone isolated Staging rehearsal, apply the 26-file
+`production-b-baseline/` first and the 16-file `migrations/` allow-list second,
+using only the exact order and SHA-256 inventory recorded in their manifests.
+The `emergency/` directory contains the exact-candidate stop/resume/reconcile
+templates that must be rehearsed on the same candidate. Do not run
+`migrations up --all` or use the shared migration tree. None of these files
+authorizes Staging creation, migration apply, deployment or Production access.

@@ -1,6 +1,6 @@
 # FULL-FLOW-GO-LIVE-01 v0.1 — Candidate Manifest
 
-**Candidate state:** Local integrated candidate; Independent QA PASS; ready for immutable Git seal  
+**Candidate state:** Independent QA PASS; ready for immutable Local reseal (Staging/Production not authorized)
 **Baseline:** `2bb809791ea809c6f5b8fc9472a2430240cb840c`  
 **Branch:** `codex/full-flow-go-live-01`  
 **Approval record:** `docs/GISP-APR-FULL-FLOW-GO-LIVE-01-LOCAL-IMPLEMENTATION-20260920-v1.0.md`  
@@ -29,6 +29,8 @@
 
 ## Migration allow-list
 
+SHA-256 values below use canonical UTF-8 content with CRLF/CR normalized to LF.
+
 Apply only in this order after separate Staging authorization and identity/schedule preflight:
 
 | Order | File | SHA-256 |
@@ -37,7 +39,7 @@ Apply only in this order after separate Staging authorization and identity/sched
 | 2 | `migrations/20260920010100_pay-evidence-binding.sql` | `01D0786DE19094572467E2DCAEB347E3FD6D672D91146B596643A54D185DEA1B` |
 | 3 | `migrations/20260920010200_pay-private-executor.sql` | `448A6A37BCB13372BEAA9CEE59EF01E5B9D4F4436DE2C6F7208030233E511CF7` |
 | 4 | `migrations/20260920010250_release-c-org-scope-hardening.sql` | `A0757E88DC351F361E89AD0048158E8F89D064D5A9B1FC0BA953E2A587DB7D8E` |
-| 5 | `migrations/20260920010275_full-flow-financial-controls-pre-c.sql` | `E3A63E271CC9DD3DBAB4430DA497F0938EED01FF6182556D3EFA558553B78939` |
+| 5 | `migrations/20260920010275_full-flow-financial-controls-pre-c.sql` | `FEED1EEFE48DCA46CCA530FDE25590FE29D87EED16F32920774F75122CD66A35` |
 | 6 | `migrations/20260920010300_release-c-privileges.sql` | `4120E34C2CD7B590DFD4FF671FD9AF57DBD5601B45441B8920751AC9220F0593` |
 | 7 | `migrations/20260920010400_d7-qc-reopen-prerequisite.sql` | `7D250449DF315AA100F929AC5499333DA3719D5AEFADC616A88981B1EBD463C1` |
 | 8 | `migrations/20260920010500_release-d7-privileges.sql` | `403D71930043C356BB0A61CD6ABF704EF247C5FD4CE1F70F7A8262C95D17D309` |
@@ -48,11 +50,18 @@ Apply only in this order after separate Staging authorization and identity/sched
 | 13 | `migrations/20260920011000_release-d9-privileges.sql` | `A032E91BA8734345C9AD02FD3D11E113B9B43625214C106015576F1CA090D0FF` |
 | 14 | `migrations/20260920011100_release-d10-privileges.sql` | `2B687DEF1689F317D9090E0B139F219E2A54CF916DC28D6AD111149F5F941451` |
 | 15 | `migrations/20260920011200_full-flow-sourcing-scope-hardening.sql` | `F5754D8BC1A9BDDD9A11E8C48F4203CCF99564B32E73908062EA14760B74CD7F` |
-| 16 | `migrations/20260920011300_full-flow-financial-controls.sql` | `8B1C2AD186958A1E80249ADDA9AA6BF03F9C7815690E42977FF80CC131084D69` |
+| 16 | `migrations/20260920011300_full-flow-financial-controls.sql` | `7B4A870ADDED04C5D9A51D5B7439A6DBAB980B8CF633D7EF4C7074270C699476` |
 
 Packaged copies live under `release-candidates/full-flow-go-live-01/migrations/`.
 Contract tests compare normalized packaged content to the canonical migrations.
-The pre-C safeguard is deliberately installed before `20260920010300_release-c-privileges.sql`; the post-D hold/reconciliation migration is installed only after all Release D table/function dependencies. Never use `up --all` for this package.
+The pre-C safeguard is deliberately installed before `20260920010300_release-c-privileges.sql`. It installs the verified-transfer wrapper, adjustment request/review, Deposit/Balance recalculation, dual-control hold confirmation and hold triggers for the Release C tables (`order_items`, `supplier_orders`, `purchase_orders`, `supplier_payments`) without referencing any Release D object. The post-D migration runs only after every Release D dependency and extends the same functions/triggers for Production/QC/Logistics/Freight. Never use `up --all` for this package.
+
+## Standalone Staging bootstrap and recovery package
+
+- `production-b-baseline/` contains the 26-file LF-normalized schema/runtime baseline fetched read-only from Production-B migration history. Its head is `20260908170000_release-b-member-pilot.sql`; `production-b-baseline/MANIFEST.md` records every file hash. It contains no cloned Production row set, PII export or secret and does not authorize apply.
+- Baseline manifest canonical-LF/trimmed SHA-256: `4A9E3AC84EEA1A826897D27667572D42D3A37FCB70131C92099FDDB4C2EFBE55`.
+- `emergency/` is the exact-candidate stop/resume/reconcile package. `emergency/README.md` records all 12 SQL hashes. Stop C closes every new project-admin financial executor; Resume C restores exact pre-C bodies/ACL and Resume D8 restores exact post-D Freight-aware bodies. Reconciliation is SELECT-only and covers `payment_adjustments` and `payment_workflow_holds`.
+- Emergency manifest canonical-LF/trimmed SHA-256: `758CD3486E68BBAEBF9B20163820D6911BBAE78AEB3EC415BDE268E780C8628C`.
 
 ## Explicit non-actions
 
@@ -63,9 +72,10 @@ The pre-C safeguard is deliberately installed before `20260920010300_release-c-p
 
 ## Local verification status
 
-- Independent QA: `PASS` for the exact Local candidate; Blocker/Major/Minor `0/0/0`.
-- Full regression: `109 files / 592 tests` PASS; typecheck and optimized Next.js `16.3.5` build PASS.
-- Dependency audit: `0 vulnerabilities`; evidence is recorded in `DEPENDENCY-SECURITY-EVIDENCE.md`.
-- All 16 migration hashes remain unchanged and match this manifest.
+- The previous sealed Local candidate at `7eb97436074132ca9c21d7935ea8389f98677062` had Independent QA `PASS`, `109 files / 592 tests`, typecheck/build PASS and dependency audit `0 vulnerabilities`.
+- This corrective candidate changes the Release C route boundary, two financial-control migrations, and recovery/bootstrap packaging. Builder verification passed: focused recovery/regression `7 files / 48 tests`, full regression `111 files / 600 tests`, typecheck, lint (`0` errors / `7` pre-existing warnings), and optimized Next.js `16.3.5` build (`128/128` pages). A final hash/newline-only adjustment then passed the affected migration/package tests (`2 files / 13 tests`) and `git diff --check`.
+- Independent QA re-verified the exact corrective candidate and returned `PASS` with `0 Blocker / 0 Major / 0 Minor`: focused recovery/package/gate `7 files / 48 tests`, full regression `111 files / 600 tests`, typecheck PASS, lint `0 errors / 7 pre-existing warnings`, and optimized Next.js `16.3.5` build `128/128 pages`.
+- Independent QA also verified the 26-file Production-B baseline package, all 16 candidate migration copies/hashes, the 12-file exact-candidate emergency package, the 60-routine snapshot, SELECT-only reconciliation, Release C route boundary and Release D fail-closed behavior.
+- All 16 packaged migration hashes must match this manifest; the allow-list filenames/order remain unchanged.
 - Isolated Staging migration/UAT/recovery rehearsal remains separately authorized work; this manifest does not authorize Apply, Deploy or Production.
-- The immutable seal is the Git commit/tree created after this manifest update; use `git rev-parse HEAD` and `git rev-parse HEAD^{tree}` when preparing the Staging approval record.
+- Create a new Git commit/tree seal and record that immutable identity in the Staging approval package before requesting owner authorization.
