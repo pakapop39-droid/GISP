@@ -32,10 +32,10 @@ describe("Release C/D progressive gate", () => {
   });
 
   it("opens C transactions but blocks every D slice even with the staff rehearsal flag", () => {
-    for (const route of ["/member/orders/123", "/api/member/payment-transfers", "/admin/orders/123", "/api/admin/payment-transfers/123/evidence", "/api/admin/payment-adjustments/123/review", "/api/admin/payment-workflow-holds/123/confirm", "/api/admin/supplier-disclosures/123/revoke", "/api/admin/dashboard"]) {
+    for (const route of ["/member/orders/123", "/api/member/payment-transfers", "/admin/orders/123", "/api/admin/payment-transfers/123/evidence", "/api/admin/supplier-disclosures/123/revoke", "/api/admin/dashboard"]) {
       expect(isReleaseStagePathAllowed(route, "C", true)).toBe(true);
     }
-    for (const route of ["/api/admin/qc-inspections", "/api/admin/production-updates", "/api/admin/logistics/actions", "/api/admin/shipments", "/api/member/claims", "/admin/reports", "/member/reports"]) {
+    for (const route of ["/api/admin/supplier-payments", "/api/admin/payment-transfers/123/adjustments", "/api/admin/payment-adjustments/123/review", "/api/admin/payment-workflow-holds/123/confirm", "/api/admin/qc-inspections", "/api/admin/production-updates", "/api/admin/logistics/actions", "/api/admin/shipments", "/api/member/claims", "/admin/reports", "/member/reports"]) {
       expect(isReleaseStagePathAllowed(route, "C", true)).toBe(false);
     }
   });
@@ -49,12 +49,7 @@ describe("Release C/D progressive gate", () => {
       process.env.RELEASE_D_ENABLED_SLICES = "7,8";
       expect(isReleaseStagePathAllowed("/api/admin/logistics/actions", "D", true)).toBe(true);
       expect(isReleaseStagePathAllowed("/member/claims", "D", true)).toBe(false);
-      process.env.RELEASE_D_ENABLED_SLICES = "7,8,9";
-      expect(isReleaseStagePathAllowed("/member/claims", "D", true)).toBe(true);
-      expect(isReleaseStagePathAllowed("/member/reports", "D", true)).toBe(false);
-      process.env.RELEASE_D_ENABLED_SLICES = "7,8,9,10";
-      expect(isReleaseStagePathAllowed("/member/reports", "D", true)).toBe(true);
-      for (const invalid of ["", "8", "7,9", "7,8,8", "7,8,9,10,11"]) {
+      for (const invalid of ["", "8", "7,9", "7,8,8", "7,8,9", "7,8,9,10"]) {
         expect(enabledReleaseDSlices(invalid)).toEqual([]);
       }
     } finally {

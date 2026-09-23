@@ -175,15 +175,21 @@ const RELEASE_C_API_PREFIXES = [
   "/api/member/custom-requests", "/api/member/custom-quotations",
   "/api/member/orders", "/api/member/payment-transfers", "/api/payment-evidence",
   "/api/admin/custom-requests", "/api/admin/custom-quotations",
-  "/api/admin/orders", "/api/admin/supplier-payments",
-  "/api/admin/payment-transfers", "/api/admin/payment-adjustments",
-  "/api/admin/payment-workflow-holds", "/api/admin/cancellations",
+  "/api/admin/orders", "/api/admin/payment-transfers",
+  "/api/admin/cancellations",
   "/api/admin/supplier-disclosures", "/api/admin/dashboard",
   "/api/custom-quotations",
+];
+const RELEASE_C_DEFERRED_API_PREFIXES = [
+  "/api/admin/supplier-payments",
+  "/api/admin/payment-adjustments",
+  "/api/admin/payment-workflow-holds",
 ];
 
 export function isReleaseCPathAllowed(pathname: string) {
   if (isReleaseBPathAllowed(pathname, false)) return true;
+  if (RELEASE_C_DEFERRED_API_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) return false;
+  if (/^\/api\/admin\/payment-transfers\/[^/]+\/adjustments(?:\/|$)/.test(pathname)) return false;
   const prefixes = pathname.startsWith("/api/") ? RELEASE_C_API_PREFIXES : RELEASE_C_PAGE_PREFIXES;
   return prefixes.some((prefix) => matchesPrefix(pathname, prefix));
 }
@@ -191,8 +197,6 @@ export function isReleaseCPathAllowed(pathname: string) {
 const RELEASE_D_SLICE_PREFIXES: Record<number, { pages: string[]; apis: string[] }> = {
   7: { pages: [], apis: ["/api/admin/production-updates", "/api/admin/qc-inspections", "/api/admin/operations-media", "/api/member/order-items"] },
   8: { pages: [], apis: ["/api/admin/logistics", "/api/admin/deliveries", "/api/admin/shipments", "/api/member/logistics"] },
-  9: { pages: ["/member/claims", "/admin/claims"], apis: ["/api/member/claims", "/api/claims/evidence", "/api/admin/claims"] },
-  10: { pages: ["/member/reports", "/admin/reports", "/admin/executive"], apis: ["/api/member/reports", "/api/admin/reports", "/api/admin/executive"] },
 };
 
 // D is released slice-by-slice under DEC-049. Invalid or missing configuration
@@ -200,7 +204,7 @@ const RELEASE_D_SLICE_PREFIXES: Record<number, { pages: string[]; apis: string[]
 export function enabledReleaseDSlices(raw = process.env.RELEASE_D_ENABLED_SLICES): number[] {
   if (!raw) return [];
   const values = raw.split(",").map((value) => Number(value.trim()));
-  if (!values.length || values.length > 4 || values.some((value, index) => value !== index + 7)) return [];
+  if (!values.length || values.length > 2 || values.some((value, index) => value !== index + 7)) return [];
   return values;
 }
 

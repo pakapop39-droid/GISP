@@ -23,16 +23,12 @@ import type {
   OrderListRow,
   PaymentSchedule,
   PaymentTransfer,
-  PaymentAdjustment,
-  PaymentWorkflowHold,
   ProductionUpdate,
   QcInspection,
   DispatchGate,
   LogisticsDetail,
   StatusEvent,
   SupplierOrder,
-  SupplierPayment,
-  SupplierPaymentSchedule,
 } from "@/lib/orders/types";
 
 type DbError = { message: string } | null;
@@ -47,8 +43,6 @@ const orderColumns = "id,organization_id,member_profile_id,project_id,order_numb
 const itemColumns = "id,order_id,item_type,item_name_snapshot,specification_snapshot,options_snapshot,quantity,unit,unit_price_snapshot,line_subtotal,vat_rate_snapshot,vat_amount,line_total,qc_status,custom_member_approved_at";
 const scheduleColumns = "id,order_id,schedule_type,due_amount,verified_amount,status,due_at,verified_at,created_at,updated_at";
 const transferColumns = "id,payment_schedule_id,transfer_number,amount,transferred_at,evidence_file_id,status,finance_verified_at,finance_note,created_at";
-const adjustmentColumns = "id,payment_transfer_id,payment_schedule_id,adjustment_type,amount_delta,reason,status,requested_by,requested_at,approved_by,approved_at,decision_note";
-const paymentHoldColumns = "id,customer_order_id,payment_adjustment_id,hold_code,status,reason,created_at,finance_confirmed_by,finance_confirmed_at,finance_note,order_admin_confirmed_by,order_admin_confirmed_at,order_admin_note,resolved_at,resolution_note";
 const cancellationColumns = "id,order_id,status,reason,deposit_verified_amount_snapshot,approved_refund_amount,approved_deduction_amount,requested_at,decided_at,decision_note";
 const eventColumns = "id,entity_id,from_status,to_status,reason,created_at";
 
@@ -179,22 +173,10 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   const transfersResult = scheduleIds.length && (
     mode === "member"
     || capabilities?.manageCustomerPayments
-    || capabilities?.managePaymentAdjustments
   )
     ? await database.from("payment_transfers").select(transferColumns).in("payment_schedule_id", scheduleIds).order("created_at").limit(200)
     : { data: [], error: null };
   const transfers = (take(transfersResult, "load payment transfers") ?? []) as unknown as PaymentTransfer[];
-  const [adjustmentsResult, paymentHoldsResult] = mode === "admin"
-    && (capabilities?.viewCustomerPaymentStatus || capabilities?.managePaymentAdjustments)
-    ? await Promise.all([
-      scheduleIds.length
-        ? database.from("payment_adjustments").select(adjustmentColumns)
-          .in("payment_schedule_id", scheduleIds).order("created_at").limit(200)
-        : Promise.resolve({ data: [], error: null }),
-      database.from("payment_workflow_holds").select(paymentHoldColumns)
-        .eq("customer_order_id", id).order("created_at").limit(20),
-    ])
-    : [{ data: [], error: null }, { data: [], error: null }];
   const schedulesWithTransfers = schedules.map((schedule) => ({
     ...schedule,
     transfers: transfers.filter((transfer) => transfer.payment_schedule_id === schedule.id),
@@ -208,8 +190,6 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
     order: orderWithRefs,
     items: (take(itemsResult, "load order items") ?? []) as unknown as OrderItem[],
     schedules: schedulesWithTransfers,
-    paymentAdjustments: (take(adjustmentsResult, "load payment adjustments") ?? []) as unknown as PaymentAdjustment[],
-    paymentWorkflowHolds: (take(paymentHoldsResult, "load payment workflow holds") ?? []) as unknown as PaymentWorkflowHold[],
     cancellations: (take(cancellationsResult, "load cancellation requests") ?? []) as unknown as CancellationRequest[],
     events: (take(eventsResult, "load order events") ?? []) as unknown as StatusEvent[],
     productionUpdates: [],
@@ -245,8 +225,7 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   const authenticatedOperations = await createInsForgeServerClient();
   const itemIds = detail.items.map((item) => item.id);
   const needsSupplierOperations = mode === "member" || Boolean(
-    capabilities?.requestSupplierPayment || capabilities?.manageSupplierPayments
-      || capabilities?.manageProduction || canManageQcForOrder,
+    capabilities?.manageOrder || capabilities?.manageProduction || canManageQcForOrder,
   );
   const needsLogisticsPrerequisites = mode === "admin" && Boolean(capabilities?.manageWarehouseAndShipment);
   const supplierLinksResult = itemIds.length && (needsSupplierOperations || needsLogisticsPrerequisites)
@@ -457,25 +436,18 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   if (mode === "admin" && needsSupplierOperations) {
     const admin = createInsForgeAdminClient();
     const supplierOrdersResult = await admin.database.from("supplier_orders")
-      .select("id,customer_order_id,supplier_id,supplier_order_number,po_number,status,supplier_currency,total_factory_cost,paid_factory_amount,po_issued_at")
+      .select("id,customer_order_id,supplier_id,supplier_order_number,po_number,status,supplier_currency,total_factory_cost,po_issued_at")
       .eq("customer_order_id", id).order("created_at").limit(50);
     const supplierOrders = take(supplierOrdersResult, "load supplier orders") ?? [];
-    const supplierOrderIds = supplierOrders.map((row) => row.id);
     const supplierIds = [...new Set(supplierOrders.map((row) => row.supplier_id))];
-    const [suppliersResult, supplierSchedulesResult, supplierPaymentsResult] = await Promise.all([
-      supplierIds.length ? admin.database.from("suppliers").select("id,code,name").in("id", supplierIds).limit(50) : Promise.resolve({ data: [], error: null }),
-      supplierOrderIds.length ? admin.database.from("supplier_payment_schedules").select("id,supplier_order_id,schedule_type,due_amount,paid_amount,status").in("supplier_order_id", supplierOrderIds).limit(100) : Promise.resolve({ data: [], error: null }),
-      supplierOrderIds.length ? admin.database.from("supplier_payments").select("id,supplier_order_id,payment_schedule_id,payment_reference,payment_type,amount,currency,status,rejection_reason,note,requested_by,approved_by,paid_by,reviewed_at,paid_at,created_at").in("supplier_order_id", supplierOrderIds).order("created_at").limit(200) : Promise.resolve({ data: [], error: null }),
-    ]);
+    const suppliersResult = supplierIds.length
+      ? await admin.database.from("suppliers").select("id,code,name").in("id", supplierIds).limit(50)
+      : { data: [], error: null };
     const suppliers = take(suppliersResult, "load suppliers") ?? [];
-    const supplierSchedules = (take(supplierSchedulesResult, "load supplier schedules") ?? []) as unknown as SupplierPaymentSchedule[];
-    const supplierPayments = (take(supplierPaymentsResult, "load supplier payments") ?? []) as unknown as SupplierPayment[];
     const supplierMap = new Map(suppliers.map((row) => [row.id, row]));
     detail.supplierOrders = supplierOrders.map((row) => ({
       ...row,
       supplier: supplierMap.get(row.supplier_id) ?? null,
-      schedules: supplierSchedules.filter((schedule) => schedule.supplier_order_id === row.id),
-      payments: supplierPayments.filter((payment) => payment.supplier_order_id === row.id),
       orderItemIds: supplierLinks.filter((link) => link.supplier_order_id === row.id).map((link) => link.order_item_id),
       productionUpdates: detail.productionUpdates.filter((update) => update.supplier_order_id === row.id),
     })) as unknown as SupplierOrder[];

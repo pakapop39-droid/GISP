@@ -6,7 +6,6 @@ import { requireAppAccess } from "@/lib/auth/session";
 import { loadBoundCustomerPaymentEvidence } from "@/lib/payments/bound-evidence";
 import { currentFinanceSessionHash, loadAuthorizedFinanceTransfer } from "@/lib/payments/finance-access";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
-import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { isOrderOperationSliceVisible } from "@/lib/release-stage";
 
 const schema = z.object({
@@ -80,26 +79,7 @@ export async function POST(
     }
     if (!result.data) return apiError(new Error("PAYMENT_VERIFICATION_FAILED"));
 
-    let notificationWarning: string | undefined;
-    try {
-      const userClient = await createInsForgeServerClient();
-      const auth = await userClient.auth.getCurrentUser();
-      if (auth.error) {
-        notificationWarning = "ธุรกรรมสำเร็จ แต่ตรวจข้อมูลแจ้งเตือนไม่สำเร็จ ระบบต้องตรวจ Log";
-      } else if (auth.data?.user?.email) {
-        const notification = await userClient.database.rpc("queue_current_user_notification", {
-          type_input: "VERIFY_PAYMENT_TRANSFER_PRIVATE",
-          title_input: "บันทึกผลการตรวจเงินแล้ว",
-          body_input: "บันทึกผลการตรวจเงินแล้ว",
-          recipient_email_input: auth.data.user.email,
-          action_url_input: null,
-        });
-        if (notification.error) notificationWarning = "ธุรกรรมสำเร็จ แต่สร้าง Email Job ไม่สำเร็จ ระบบต้องตรวจ Log";
-      }
-    } catch {
-      notificationWarning = "ธุรกรรมสำเร็จ แต่สร้าง Email Job ไม่สำเร็จ ระบบต้องตรวจ Log";
-    }
-    return NextResponse.json({ data: result.data, message: "บันทึกผลการตรวจเงินแล้ว", notificationWarning });
+    return NextResponse.json({ data: result.data, message: "บันทึกผลการตรวจเงินแล้ว" });
   } catch (error) {
     return apiError(error);
   }

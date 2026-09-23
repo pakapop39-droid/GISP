@@ -23,7 +23,7 @@ function configuredEnvironment() {
   process.env.NEXT_PUBLIC_INSFORGE_URL = "https://child-key.ap-southeast.insforge.app";
   process.env.NEXT_PUBLIC_APP_URL = "https://child-rehearsal.insforge.site";
   process.env.RELEASE_STAGE = "D";
-  process.env.RELEASE_D_ENABLED_SLICES = "7,8,9,10";
+  process.env.RELEASE_D_ENABLED_SLICES = "7,8";
   process.env.INSFORGE_API_KEY = "must-never-appear";
   process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY = "must-never-appear-either";
 }
@@ -57,7 +57,7 @@ describe("hosted release attestation", () => {
         appHost: "child-rehearsal.insforge.site",
         requestHost: "child-rehearsal.insforge.site",
       },
-      release: { stage: "D", enabledDSlices: [7, 8, 9, 10] },
+      release: { stage: "D", enabledDSlices: [7, 8] },
       serverAdminProbeOk: true,
     });
     expect(mocks.select).toHaveBeenCalledWith("id", { head: true });
@@ -119,6 +119,12 @@ describe("hosted release attestation", () => {
     expect((await GET(request())).status).toBe(200);
     process.env.RELEASE_D_ENABLED_SLICES = "7";
     expect((await GET(request())).status).toBe(503);
+  });
+
+  it.each(["7,8,9", "7,8,10", "7,7", "8,7", "7,,8", "x"])("rejects unsupported or malformed D slices: %s", async (value) => {
+    process.env.RELEASE_D_ENABLED_SLICES = value;
+    expect((await GET(request())).status).toBe(503);
+    expect(mocks.from).not.toHaveBeenCalled();
   });
 
   it("fails closed when the request host is not the configured hosted app", async () => {

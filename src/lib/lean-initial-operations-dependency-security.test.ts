@@ -1,0 +1,2 @@
+import { readFileSync } from "node:fs";import { resolve } from "node:path";import { describe,expect,it } from "vitest";
+describe("Lean dependency boundary",()=>{it("adds no dependency and references only C/D7/D8 objects",()=>{const sql=readFileSync(resolve(process.cwd(),"migrations/20260923090000_startup_initial_operations_guard.sql"),"utf8");expect(sql).not.toMatch(/claims\s+(WHERE|JOIN|FROM)|report_exports|payment_adjustments|payment_workflow_holds\s+(WHERE|JOIN|FROM)/i);expect(sql).not.toMatch(/CREATE\s+(TABLE|ROLE|SCHEMA|EXTENSION)/i);});});

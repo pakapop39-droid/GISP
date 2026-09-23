@@ -54,7 +54,8 @@ function GateChecklist({ gate, itemName, itemType }: { gate?: DispatchGate; item
     ["QC ผ่านแล้ว", gate?.qc_passed],
     [itemType === "CUSTOM" ? "Member อนุมัติสินค้า Custom" : "ไม่ต้องรอ Member อนุมัติ", itemType === "CUSTOM" ? gate?.member_approved : true],
     ["Finance ตรวจยอดคงเหลือลูกค้า", gate?.customer_balance_verified],
-    ["ชำระยอดคงเหลือ Supplier", gate?.supplier_balance_paid],
+    ["ออก PO ให้ Supplier ครบ", gate?.all_supplier_pos_issued],
+    ["มีจำนวนที่ Release/Allocate พร้อมส่ง", gate?.quantity_ready],
   ] as const;
   return <div className="dispatch-gate"><header><span className="dispatch-gate__identity"><ShieldCheck size={18}/><span><b>Dispatch Gate</b><small>ของสินค้า: {itemName}</small></span></span><strong className={gate?.can_dispatch ? "gate-ready" : "gate-blocked"}>{gate?.can_dispatch ? "พร้อมจัดส่ง" : "ยังจัดส่งไม่ได้"}</strong></header>{rows.map(([label, passed]) => <div key={label} className={passed ? "passed" : "blocked"}><span>{passed ? "✓" : "○"}</span><b>{label}</b></div>)}</div>;
 }

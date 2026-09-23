@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         code: "DUPLICATE_PROJECT_ITEM",
         message: "แต่ละรายการสินค้าเลือกได้เพียงครั้งเดียว กรุณารวมจำนวนก่อนสร้าง Order",
-      }, { status: 400 });
+      }, { status: 409 });
     }
     const forwarded = new Request(request.url, {
       method: "POST",

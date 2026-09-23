@@ -12,8 +12,14 @@ export function projectOrderDetailForRelease(
   detail: OrderDetail,
   enabled: { productionQc: boolean; logistics: boolean },
 ): OrderDetail {
+  const leanDetail = { ...detail } as OrderDetail & {
+    paymentAdjustments?: unknown;
+    paymentWorkflowHolds?: unknown;
+  };
+  delete leanDetail.paymentAdjustments;
+  delete leanDetail.paymentWorkflowHolds;
   return {
-    ...detail,
+    ...leanDetail,
     items: enabled.productionQc ? detail.items : detail.items.map((item) => {
       const orderItem = { ...item };
       delete (orderItem as Partial<OrderItem>).qc_status;
@@ -29,7 +35,14 @@ export function projectOrderDetailForRelease(
     dispatchGates: enabled.productionQc ? detail.dispatchGates : [],
     logistics: enabled.logistics ? detail.logistics : emptyLogistics(),
     supplierOrders: detail.supplierOrders?.map((supplierOrder) => ({
-      ...supplierOrder,
+      id: supplierOrder.id,
+      supplier_order_number: supplierOrder.supplier_order_number,
+      po_number: supplierOrder.po_number,
+      status: supplierOrder.status,
+      supplier_currency: supplierOrder.supplier_currency,
+      total_factory_cost: supplierOrder.total_factory_cost,
+      supplier: supplierOrder.supplier,
+      orderItemIds: supplierOrder.orderItemIds,
       productionUpdates: enabled.productionQc ? supplierOrder.productionUpdates : [],
     })),
     capabilities: detail.capabilities ? {

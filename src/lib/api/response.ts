@@ -43,6 +43,19 @@ export function apiError(error: unknown) {
       { status: 409 },
     );
   }
+  if (
+    normalizedMessage.includes("duplicate key value violates unique constraint")
+    || normalizedMessage.includes("unique constraint")
+    || normalizedMessage.includes("could not serialize")
+    || normalizedMessage.includes("deadlock detected")
+    || normalizedMessage.includes("project_item_not_orderable")
+    || normalizedMessage.includes("quantity_exceeds_remaining")
+  ) {
+    return NextResponse.json(
+      { code: "CONFLICT_RELOAD_REQUIRED", message: "ข้อมูลมีการเปลี่ยนแปลงหรือมีคำสั่งซื้อซ้ำ กรุณาโหลดหน้าใหม่แล้วตรวจรายการอีกครั้ง" },
+      { status: 409 },
+    );
+  }
   if (normalizedMessage.includes("production must be completed before qc")) {
     return NextResponse.json(
       {

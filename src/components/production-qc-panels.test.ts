@@ -6,6 +6,13 @@ const source = readFileSync(resolve(process.cwd(), "src/components/production-qc
 const loader = readFileSync(resolve(process.cwd(), "src/lib/orders/server.ts"), "utf8");
 
 describe("QC reopen UI integration", () => {
+  it("shows the Lean dispatch gates without Supplier payment", () => {
+    expect(source).toContain("ออก PO ให้ Supplier ครบ");
+    expect(source).toContain("all_supplier_pos_issued");
+    expect(source).toContain("customer_balance_verified");
+    expect(source).toContain("quantity_ready");
+    expect(source).not.toContain("supplier_balance_paid");
+  });
   it("shows a reason-required reopen command after pass", () => {
     expect(source).toContain("เปิดตรวจ QC ใหม่ก่อน Dispatch");
     expect(source).toContain("reopenReason.trim().length < 3");

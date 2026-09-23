@@ -29,8 +29,10 @@ describe("hosted Release C/D proxy gate", () => {
     vi.stubEnv("NEXT_PUBLIC_INSFORGE_URL", "");
     vi.stubEnv("NEXT_PUBLIC_INSFORGE_ANON_KEY", "");
     expect((await proxy(request("/api/admin/payment-transfers/11111111-1111-4111-8111-111111111111/evidence"))).status).toBe(200);
-    expect((await proxy(request("/api/admin/payment-adjustments/11111111-1111-4111-8111-111111111111/review"))).status).toBe(200);
-    expect((await proxy(request("/api/admin/payment-workflow-holds/11111111-1111-4111-8111-111111111111/confirm"))).status).toBe(200);
+    expect((await proxy(request("/api/admin/payment-adjustments/11111111-1111-4111-8111-111111111111/review"))).status).toBe(404);
+    expect((await proxy(request("/api/admin/payment-workflow-holds/11111111-1111-4111-8111-111111111111/confirm"))).status).toBe(404);
+    expect((await proxy(request("/api/admin/supplier-payments"))).status).toBe(404);
+    expect((await proxy(request("/api/admin/payment-transfers/11111111-1111-4111-8111-111111111111/adjustments"))).status).toBe(404);
     expect((await proxy(request("/member/orders"))).status).toBe(200);
     for (const path of ["/api/admin/production-updates", "/api/admin/qc-inspections", "/api/admin/logistics/actions", "/api/admin/shipments"]) {
       const blocked = await proxy(request(path));

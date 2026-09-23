@@ -15,8 +15,6 @@ describe("admin order capabilities", () => {
     expect(result).toMatchObject({
       manageOrder: true,
       viewSalesAmounts: true,
-      requestSupplierPayment: true,
-      manageSupplierPayments: false,
       manageCustomerPayments: false,
       manageLogistics: false,
     });
@@ -32,8 +30,6 @@ describe("admin order capabilities", () => {
       manageOrder: false,
       viewSalesAmounts: true,
       manageCustomerPayments: true,
-      requestSupplierPayment: false,
-      manageSupplierPayments: true,
       manageProduction: false,
       manageQc: false,
       manageFreight: true,
@@ -41,14 +37,12 @@ describe("admin order capabilities", () => {
     });
   });
 
-  it("lets a scoped adjustment role see only the payment context it needs", () => {
+  it("does not project deferred adjustment permissions into Lean orders", () => {
     expect(adminOrderCapabilitiesForPermissions(["payments.adjust"])).toMatchObject({
-      viewSalesAmounts: true,
-      viewCustomerPaymentStatus: true,
+      viewSalesAmounts: false,
+      viewCustomerPaymentStatus: false,
       manageCustomerPayments: false,
-      managePaymentAdjustments: true,
       manageOrder: false,
-      manageSupplierPayments: false,
     });
   });
 
@@ -61,8 +55,6 @@ describe("admin order capabilities", () => {
       viewSalesAmounts: false,
       viewCustomerPaymentStatus: false,
       manageCustomerPayments: false,
-      requestSupplierPayment: false,
-      manageSupplierPayments: false,
       manageLogistics: true,
       manageWarehouseAndShipment: true,
       manageFreight: false,

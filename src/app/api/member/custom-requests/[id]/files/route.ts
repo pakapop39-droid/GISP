@@ -5,13 +5,13 @@ import { apiError } from "@/lib/api/response";
 import { requireMember } from "@/lib/custom-rfq/server";
 import { customRequestFileRoles } from "@/lib/custom-rfq/types";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
+import { validateCustomRequestUpload } from "@/lib/files/content-signature";
 
 const roleSchema = z.enum(customRequestFileRoles);
 const maxBytes = 25 * 1024 * 1024;
-const extensions = new Set(["pdf", "jpg", "jpeg", "png", "dwg", "dxf"]);
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  let uploadedKey = "";
+  let storageKey = "";
   let metadataId = "";
   try {
     const context = await requireMember();
@@ -19,9 +19,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const form = await request.formData();
     const file = form.get("file");
     const role = roleSchema.safeParse(form.get("fileRole"));
-    const extension = file instanceof File ? (file.name.split(".").pop() ?? "").toLowerCase() : "";
-    if (!(file instanceof File) || !role.success || file.size <= 0 || file.size > maxBytes || !extensions.has(extension)) {
-      return NextResponse.json({ code: "INVALID_FILE", message: "รองรับ PDF, JPG, PNG, DWG และ DXF ขนาดไม่เกิน 25 MB" }, { status: 400 });
+    const extension = file instanceof File && file.size > 0 && file.size <= maxBytes
+      ? await validateCustomRequestUpload(file) : null;
+    if (!(file instanceof File) || !role.success || !extension) {
+      return NextResponse.json({ code: "INVALID_FILE", message: "รองรับเฉพาะ PDF, JPG และ PNG ที่ชนิดไฟล์ตรงกับเนื้อหา ขนาดไม่เกิน 25 MB" }, { status: 400 });
     }
     const admin = createInsForgeAdminClient();
     const requestResult = await admin.database.from("custom_requests").select("id,member_profile_id,status").eq("id", id).maybeSingle();
@@ -33,16 +34,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ code: "REQUEST_LOCKED", message: "เพิ่มหรือลบไฟล์ได้เฉพาะร่างหรือช่วงรอข้อมูลเพิ่ม" }, { status: 409 });
     }
     const count = await admin.database.from("custom_request_files").select("file_id", { count: "exact", head: true }).eq("custom_request_id", id);
+    if (count.error) throw count.error;
     if ((count.count ?? 0) >= 10) return NextResponse.json({ code: "FILE_LIMIT_REACHED", message: "แนบไฟล์ได้สูงสุด 10 ไฟล์" }, { status: 409 });
-    uploadedKey = `custom-requests/${context.memberProfileId}/${id}/${randomUUID()}.${extension}`;
-    const uploaded = await admin.storage.from("gisp-member-private").upload(uploadedKey, file);
+    const requestedKey = `custom-requests/${context.memberProfileId}/${id}/${randomUUID()}.${extension}`;
+    const uploaded = await admin.storage.from("gisp-member-private").upload(requestedKey, file);
     if (uploaded.error || !uploaded.data) throw uploaded.error ?? new Error("UPLOAD_FAILED");
     const storageData = uploaded.data as unknown as { url?: string; key?: string };
+    storageKey = storageData.key ?? requestedKey;
     const metadata = await admin.database.from("file_metadata").insert([{
       organization_id: context.organizationId,
       member_profile_id: context.memberProfileId,
       bucket: "gisp-member-private",
-      object_key: storageData.key ?? uploadedKey,
+      object_key: storageKey,
       url: storageData.url ?? null,
       original_name: file.name,
       mime_type: file.type || "application/octet-stream",
@@ -65,7 +68,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const admin = createInsForgeAdminClient();
       await admin.database.from("file_metadata").delete().eq("id", metadataId);
     }
-    if (uploadedKey) await createInsForgeAdminClient().storage.from("gisp-member-private").remove(uploadedKey);
+    if (storageKey) await createInsForgeAdminClient().storage.from("gisp-member-private").remove(storageKey);
     return apiError(error);
   }
 }

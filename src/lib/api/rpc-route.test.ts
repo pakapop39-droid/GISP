@@ -1,0 +1,10 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
+import { z } from "zod";
+const mocks=vi.hoisted(()=>({access:vi.fn(),rpc:vi.fn()}));
+vi.mock("server-only",()=>({}));
+vi.mock("@/lib/auth/session",()=>({requireAppAccess:mocks.access}));
+vi.mock("@/lib/insforge/server",()=>({createInsForgeServerClient:async()=>({database:{rpc:mocks.rpc}})}));
+vi.mock("@/lib/api/response",()=>({apiError:()=>new Response(null,{status:500})}));
+import { runRpcRoute } from "./rpc-route";
+describe("shared RPC route Lean notification closure",()=>{beforeEach(()=>{vi.clearAllMocks();mocks.rpc.mockResolvedValue({data:"ok",error:null});});it("calls only the requested business RPC",async()=>{const request=new NextRequest("https://test/api",{method:"POST",body:JSON.stringify({id:"x"})});const response=await runRpcRoute(request,z.object({id:z.string()}),"business_rpc",input=>input,"done");expect(response.status).toBe(200);expect(mocks.rpc).toHaveBeenCalledTimes(1);expect(mocks.rpc).toHaveBeenCalledWith("business_rpc",{id:"x"});expect(JSON.stringify(await response.json())).not.toContain("notificationWarning");});});

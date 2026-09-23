@@ -35,15 +35,6 @@ export async function runRpcRoute<TSchema extends z.ZodType>(
   try {
     await requireAppAccess({ active: true });
     const insforge = await createInsForgeServerClient();
-    const { data: authData, error: authError } =
-      await insforge.auth.getCurrentUser();
-    if (authError || !authData?.user) {
-      return NextResponse.json(
-        { message: "กรุณาเข้าสู่ระบบอีกครั้ง" },
-        { status: 401 },
-      );
-    }
-
     const { data, error } = await insforge.database.rpc(
       rpcName,
       toArguments(parsed.data),
@@ -52,26 +43,8 @@ export async function runRpcRoute<TSchema extends z.ZodType>(
       return apiError(error);
     }
 
-    let notificationWarning: string | undefined;
-    if (authData.user.email) {
-      const { error: notificationError } = await insforge.database.rpc(
-        "queue_current_user_notification",
-        {
-          type_input: rpcName.toUpperCase(),
-          title_input: successMessage,
-          body_input: successMessage,
-          recipient_email_input: authData.user.email,
-          action_url_input: null,
-        },
-      );
-      if (notificationError) {
-        notificationWarning =
-          "ธุรกรรมสำเร็จ แต่สร้าง Email Job ไม่สำเร็จ ระบบต้องตรวจ Log";
-      }
-    }
-
     return NextResponse.json(
-      { data, message: successMessage, notificationWarning },
+      { data, message: successMessage },
       { status: successStatus },
     );
   } catch (error) {

@@ -20,9 +20,11 @@ const detail = {
     costs: [], invoice: { invoice_number: "FREIGHT_INVOICE_SECRET" },
   },
   supplierOrders: [{ id: "po-1", productionUpdates: [{ note: "NESTED_PRODUCTION_SECRET" }] }],
+  paymentAdjustments: [{ id: "DEFERRED_ADJUSTMENT_SECRET" }],
+  paymentWorkflowHolds: [{ id: "DEFERRED_HOLD_SECRET" }],
   capabilities: {
     manageOrder: true, viewSalesAmounts: true, viewCustomerPaymentStatus: true,
-    manageCustomerPayments: true, requestSupplierPayment: true, manageSupplierPayments: true,
+    manageCustomerPayments: true,
     manageProduction: true, manageQc: true, manageLogistics: true,
     manageWarehouseAndShipment: true, manageFreight: true,
   },
@@ -42,6 +44,8 @@ describe("shared Member/Admin Order release projection", () => {
     expect(c.capabilities).toMatchObject({ manageProduction: false, manageQc: false, manageLogistics: false, manageFreight: false });
     expect(c.items[0]).not.toHaveProperty("qc_status");
     expect(c.items[0]).not.toHaveProperty("custom_member_approved_at");
+    expect(c).not.toHaveProperty("paymentAdjustments");
+    expect(c).not.toHaveProperty("paymentWorkflowHolds");
     expect(JSON.stringify(c)).not.toMatch(/SECRET/);
     expect(detail.schedules).toHaveLength(2); // projection never mutates loaded data
   });

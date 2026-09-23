@@ -13,6 +13,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { data: file, error } = await admin.database.from("file_metadata").select("*").eq("id", id).maybeSingle();
     if (error) throw error;
     if (!file) return NextResponse.json({ code: "NOT_FOUND", message: "ไม่พบไฟล์" }, { status: 404 });
+    if (file.entity_type === "CUSTOM_REQUEST") {
+      return NextResponse.json({ code: "PERMISSION_DENIED", message: "กรุณาเปิดไฟล์คำขอสินค้าจากหน้าคำขอนั้น" }, { status: 403 });
+    }
     if (typeof file.entity_type === "string" && file.entity_type.startsWith("CATALOG_IMPORT") && file.entity_id) {
       const job = await admin.database.from("catalog_import_jobs").select("source_type,security_status,security_verified_at")
         .eq("id", file.entity_id).maybeSingle();

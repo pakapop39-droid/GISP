@@ -53,7 +53,7 @@ describe("Finance private payment verification", () => {
       transfer_id_input: id, approve_input: true, session_token_hash_input: "server-derived-hash",
       evidence_file_id_input: fileId, sha256_input: "a".repeat(64), size_bytes_input: 5,
     }));
-    expect(mocks.notificationRpc).toHaveBeenCalledOnce();
+    expect(mocks.notificationRpc).not.toHaveBeenCalled();
   });
 
   it("rejects another organization's transfer before opening a file or invoking an admin RPC", async () => {

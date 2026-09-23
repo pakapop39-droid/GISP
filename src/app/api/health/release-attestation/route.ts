@@ -39,7 +39,7 @@ function releaseSlices(value: string | undefined) {
   if (!value) return [];
   const slices = value.split(",").map((item) => Number(item.trim()));
   if (slices.some((item) => !Number.isInteger(item))) return [];
-  const canonical = [7, 8, 9, 10].slice(0, slices.length);
+  const canonical = [7, 8].slice(0, slices.length);
   return slices.length > 0 && slices.every((item, index) => item === canonical[index]) ? slices : [];
 }
 
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
     && appHost
     && appHost === requestHost
     && (stage === "C" || stage === "D")
-    && (stage === "C" ? slices.length === 0 : slices.length > 0),
+    && (stage === "C" ? slices.length === 0 : slices.length === 1 || slices.length === 2),
   );
   // Never construct an admin client until every non-secret identity value binds
   // to the exact authorized Child. A malformed URL must not receive a request

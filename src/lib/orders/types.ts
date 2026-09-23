@@ -85,9 +85,6 @@ export type AdminOrderCapabilities = {
   viewSalesAmounts: boolean;
   viewCustomerPaymentStatus: boolean;
   manageCustomerPayments: boolean;
-  managePaymentAdjustments: boolean;
-  requestSupplierPayment: boolean;
-  manageSupplierPayments: boolean;
   manageProduction: boolean;
   manageQc: boolean;
   manageLogistics: boolean;
@@ -183,7 +180,8 @@ export type DispatchGate = {
   member_approval_required: boolean;
   member_approved: boolean;
   customer_balance_verified: boolean;
-  supplier_balance_paid: boolean;
+  all_supplier_pos_issued: boolean;
+  quantity_ready: boolean;
   can_dispatch: boolean;
 };
 
@@ -200,38 +198,6 @@ export type PaymentTransfer = {
   created_at: string;
 };
 
-export type PaymentAdjustment = {
-  id: string;
-  payment_transfer_id: string;
-  payment_schedule_id: string;
-  adjustment_type: "ADJUSTMENT" | "REVERSAL";
-  amount_delta: number;
-  reason: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  requested_by: string;
-  requested_at: string;
-  approved_by: string | null;
-  approved_at: string | null;
-  decision_note: string | null;
-};
-
-export type PaymentWorkflowHold = {
-  id: string;
-  customer_order_id: string;
-  payment_adjustment_id: string;
-  hold_code: "VERIFIED_PAYMENT_REVERSED";
-  status: "ACTIVE" | "RESOLVED";
-  reason: string;
-  created_at: string;
-  finance_confirmed_by: string | null;
-  finance_confirmed_at: string | null;
-  finance_note: string | null;
-  order_admin_confirmed_by: string | null;
-  order_admin_confirmed_at: string | null;
-  order_admin_note: string | null;
-  resolved_at: string | null;
-  resolution_note: string | null;
-};
 
 export type PaymentSchedule = {
   id: string;
@@ -263,34 +229,6 @@ export type StatusEvent = {
   created_at: string;
 };
 
-export type SupplierPaymentSchedule = {
-  id: string;
-  supplier_order_id: string;
-  schedule_type: "DEPOSIT" | "BALANCE";
-  due_amount: number;
-  paid_amount: number;
-  status: string;
-};
-
-export type SupplierPayment = {
-  id: string;
-  supplier_order_id: string;
-  payment_schedule_id: string;
-  payment_reference: string;
-  payment_type: "DEPOSIT" | "BALANCE";
-  amount: number;
-  currency: string;
-  status: "REQUESTED" | "APPROVED" | "PAID" | "REJECTED";
-  rejection_reason: string | null;
-  note: string | null;
-  requested_by: string;
-  approved_by: string | null;
-  paid_by: string | null;
-  reviewed_at: string | null;
-  paid_at: string | null;
-  created_at: string;
-};
-
 export type SupplierOrder = {
   id: string;
   supplier_order_number: string;
@@ -298,10 +236,7 @@ export type SupplierOrder = {
   status: string;
   supplier_currency: string;
   total_factory_cost: number;
-  paid_factory_amount: number;
   supplier: { id: string; code: string; name: string } | null;
-  schedules: SupplierPaymentSchedule[];
-  payments: SupplierPayment[];
   orderItemIds: string[];
   productionUpdates: ProductionUpdate[];
 };
@@ -467,8 +402,6 @@ export type OrderDetail = {
   order: OrderListRow & { shipping_address_snapshot: { site_address?: string } };
   items: OrderItem[];
   schedules: PaymentSchedule[];
-  paymentAdjustments?: PaymentAdjustment[];
-  paymentWorkflowHolds?: PaymentWorkflowHold[];
   cancellations: CancellationRequest[];
   events: StatusEvent[];
   supplierOrders?: SupplierOrder[];

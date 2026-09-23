@@ -15,11 +15,52 @@ async function authorizedFile(requestId: string, fileId: string, memberProfileId
   return { admin, request: requestResult.data, file: fileResult.data };
 }
 
+async function authorizedDownloadFile(
+  requestId: string,
+  fileId: string,
+  memberProfileId: string | null,
+  organizationId: string | null,
+) {
+  const admin = createInsForgeAdminClient();
+  const [requestResult, linkResult, fileResult] = await Promise.all([
+    admin.database.from("custom_requests").select("id,organization_id,member_profile_id").eq("id", requestId).maybeSingle(),
+    admin.database.from("custom_request_files").select("custom_request_id,file_id").eq("custom_request_id", requestId).eq("file_id", fileId).maybeSingle(),
+    admin.database.from("file_metadata").select("id,organization_id,member_profile_id,entity_type,entity_id,bucket,visibility,object_key,original_name").eq("id", fileId).maybeSingle(),
+  ]);
+  for (const result of [requestResult, linkResult, fileResult]) if (result.error) throw result.error;
+  const customRequest = requestResult.data;
+  const link = linkResult.data;
+  const file = fileResult.data;
+  if (
+    !memberProfileId
+    || !organizationId
+    || customRequest?.id !== requestId
+    || customRequest.organization_id !== organizationId
+    || customRequest.member_profile_id !== memberProfileId
+    || link?.custom_request_id !== requestId
+    || link.file_id !== fileId
+  ) return null;
+  const expectedPrefix = `custom-requests/${memberProfileId}/${requestId}/`;
+  if (
+    file?.id !== fileId
+    || file.entity_type !== "CUSTOM_REQUEST"
+    || file.entity_id !== requestId
+    || file.organization_id !== customRequest.organization_id
+    || file.member_profile_id !== customRequest.member_profile_id
+    || file.bucket !== "gisp-member-private"
+    || file.visibility !== "MEMBER_PRIVATE"
+    || typeof file.object_key !== "string"
+    || file.object_key.length <= expectedPrefix.length
+    || !file.object_key.startsWith(expectedPrefix)
+  ) return null;
+  return { admin, file };
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string; fileId: string }> }) {
   try {
     const context = await requireMember();
     const { id, fileId } = await params;
-    const access = await authorizedFile(id, fileId, context.memberProfileId);
+    const access = await authorizedDownloadFile(id, fileId, context.memberProfileId, context.organizationId);
     if (!access) return NextResponse.json({ message: "ไม่พบไฟล์" }, { status: 404 });
     const signed = await access.admin.storage.from(access.file.bucket).createSignedUrl(access.file.object_key, 300);
     if (signed.error || !signed.data) throw signed.error ?? new Error("SIGNED_URL_FAILED");
