@@ -11,6 +11,7 @@ const databaseCodeMap: Record<string, string> = {
   FILE_LIMIT_REACHED: "FILE_LIMIT_REACHED",
   INVALID_FILE: "INVALID_FILE",
   NOT_FOUND: "NOT_FOUND",
+  PAYMENT_SCHEDULE_NOT_AVAILABLE: "NOT_FOUND",
   QUOTATION_NOT_EDITABLE: "INVALID_TRANSITION",
   QUOTATION_NOT_SENDABLE: "INVALID_TRANSITION",
   QUOTATION_NOT_AVAILABLE: "NOT_FOUND",
@@ -89,6 +90,7 @@ export function apiError(error: unknown) {
       FILE_LIMIT_REACHED: { message: "จำนวนไฟล์ถึงขีดจำกัดแล้ว", status: 409 },
       INVALID_FILE: { message: "ไฟล์ไม่ถูกต้องหรือไม่รองรับ", status: 400 },
       NOT_FOUND: { message: "ไม่พบข้อมูลที่ต้องการ", status: 404 },
+      PAYMENT_SCHEDULE_NOT_AVAILABLE: { message: "ไม่พบข้อมูลที่ต้องการ", status: 404 },
       CONFIDENTIAL_PAYMENT_EVIDENCE_REQUIRED: {
         message: "หลักฐานจ่าย Supplier ไม่ตรงกับองค์กรหรือรายการจ่าย กรุณาแนบใหม่จากรายการที่อนุมัติแล้ว",
         status: 409,

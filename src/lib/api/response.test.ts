@@ -10,3 +10,31 @@ describe("race and duplicate API responses",()=>{
     expect(await response.json()).toMatchObject({code:"ACCOUNT_ALREADY_EXISTS"});
   });
 });
+
+describe("database error privacy mappings",()=>{
+  it("cloaks an unavailable payment schedule as generic NOT_FOUND",async()=>{
+    const response=apiError(new Error("PAYMENT_SCHEDULE_NOT_AVAILABLE"));
+    expect(response.status).toBe(404);
+    const body=await response.json();
+    expect(body).toEqual({code:"NOT_FOUND",message:"ไม่พบข้อมูลที่ต้องการ"});
+    expect(JSON.stringify(body)).not.toContain("PAYMENT_SCHEDULE_NOT_AVAILABLE");
+  });
+
+  it("keeps permission denial at 403",async()=>{
+    const response=apiError(new Error("PERMISSION_DENIED"));
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({code:"PERMISSION_DENIED"});
+  });
+
+  it("keeps unknown database failures at generic 500",async()=>{
+    const response=apiError(new Error("UNRECOGNIZED_DATABASE_FAILURE"));
+    expect(response.status).toBe(500);
+    expect(await response.json()).toMatchObject({code:"SERVER_ERROR"});
+  });
+
+  it("keeps existing NOT_FOUND mapping unchanged",async()=>{
+    const response=apiError(new Error("NOT_FOUND"));
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({code:"NOT_FOUND",message:"ไม่พบข้อมูลที่ต้องการ"});
+  });
+});
