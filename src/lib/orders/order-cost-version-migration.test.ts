@@ -15,6 +15,7 @@ describe("Order cost-version migration", () => {
   });
 
   it("uses the price-bound historical cost, including base fallback for a variant", () => {
+    expect(migration).toMatch(/project_item_record\.variant_id IS NOT NULL AND NOT EXISTS \([\s\S]*?FROM public\.product_variants v[\s\S]*?v\.id = project_item_record\.variant_id[\s\S]*?v\.product_id = project_item_record\.product_id[\s\S]*?RAISE EXCEPTION 'SUPPLIER_COST_REQUIRED'/);
     expect(migration).toMatch(/pp\.id = project_item_record\.current_price_id/);
     expect(migration).toMatch(/pp\.product_id = p\.id/);
     expect(migration).toMatch(/pp\.variant_id IS NULL OR pp\.variant_id = project_item_record\.variant_id/);
