@@ -3,7 +3,12 @@ vi.mock("@/lib/auth/session",()=>({AppAccessError:class AppAccessError extends E
 vi.mock("@/lib/auth/auth-errors",()=>({isExistingAuthUserError:(message:string)=>message.toLowerCase().includes('duplicate key value violates unique constraint "_user_email_key"')}));
 import { apiError } from "./response";
 describe("race and duplicate API responses",()=>{
-  it.each(["duplicate key value violates unique constraint", "could not serialize access", "deadlock detected", "PROJECT_ITEM_NOT_ORDERABLE", "QUANTITY_EXCEEDS_REMAINING"])("maps %s to reloadable 409",async message=>{const response=apiError(new Error(message));expect(response.status).toBe(409);expect(await response.json()).toMatchObject({code:"CONFLICT_RELOAD_REQUIRED"});expect(JSON.stringify(await apiError(new Error(message)).json())).toContain("โหลดหน้าใหม่");});
+  it.each(["duplicate key value violates unique constraint", "could not serialize access", "deadlock detected", "PROJECT_ITEM_NOT_ORDERABLE", "QUANTITY_EXCEEDS_REMAINING", "PROJECT_ITEM_NOT_READY", "INVALID_ORDER_QUANTITY"])("maps %s to reloadable 409",async message=>{const response=apiError(new Error(message));expect(response.status).toBe(409);expect(await response.json()).toMatchObject({code:"CONFLICT_RELOAD_REQUIRED"});expect(JSON.stringify(await apiError(new Error(message)).json())).toContain("โหลดหน้าใหม่");});
+  it("does not classify unrelated errors containing an Order code as a conflict",async()=>{
+    const response=apiError(new Error("UNEXPECTED_PROJECT_ITEM_NOT_READY_SUFFIX"));
+    expect(response.status).toBe(500);
+    expect(await response.json()).toMatchObject({code:"SERVER_ERROR"});
+  });
   it("preserves the dedicated account-already-exists response before generic duplicate handling",async()=>{
     const response=apiError(new Error('duplicate key value violates unique constraint "_user_email_key"'));
     expect(response.status).toBe(409);

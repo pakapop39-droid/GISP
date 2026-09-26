@@ -51,6 +51,8 @@ export function apiError(error: unknown) {
     || normalizedMessage.includes("deadlock detected")
     || normalizedMessage.includes("project_item_not_orderable")
     || normalizedMessage.includes("quantity_exceeds_remaining")
+    || normalizedMessage.trim() === "project_item_not_ready"
+    || normalizedMessage.trim() === "invalid_order_quantity"
   ) {
     return NextResponse.json(
       { code: "CONFLICT_RELOAD_REQUIRED", message: "ข้อมูลมีการเปลี่ยนแปลงหรือมีคำสั่งซื้อซ้ำ กรุณาโหลดหน้าใหม่แล้วตรวจรายการอีกครั้ง" },
