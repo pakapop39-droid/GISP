@@ -4,7 +4,7 @@ Status: **Local candidate only; independent QA and environment-specific authoriz
 
 ## Source and approval boundary
 
-- Implementation commit: `02cf0a257ab2f5e9de0bcd6475de05d55a21813a`; tree: `b9470caafdcf59a7ca0a354ef767dda6fad0cc6b`.
+- Implementation commit: `557399aca610edb5728e7869f1c4b04058a2bc11`; tree: `a110ebeadf9371f632684766c52339f0ea8c9005`.
 - Base app commit: `6280c52d72c1182e40f7963c6255b218559b7615`; tree: `f0e43ab11e639be158f03f10d5777a1109fc6b57`.
 - Original v0.1 manifest SHA-256: `89E51D111698D16467C16C2600218B9E1962468C6A09703152E5585026132ACD`.
 - Scope + Local Implementation request: owner Pakapop Ch. Charoenying's “PLEASE IMPLEMENT THIS PLAN” message on 2026-09-26; recorded at `2026-09-26T13:54:11Z`. Local code/migration creation only. No Backend data write, no Staging Apply, and no Production release is inferred from the original exact 12-file approval.
@@ -28,9 +28,9 @@ Apply only one file at a time in the following order, only if the target's read-
 | 10 | `20260920010800_release-d8-privileges.sql` | `832C2E55B87355BA498758C33E3C410200AADFFC103D892A11F2FF66D02841B7` |
 | 11 | `20260920010900_d8-freight-payment-enable.sql` | `DC2A9008FB506AF84EF1591A1420F632045778FA6907A8EACDC899C3D2FBE00A` |
 | 12 | `20260923090000_startup_initial_operations_guard.sql` | `287292A1D37DC7A31C64A738B9234D3D903EE427F531F6D70CC0ADC4700C1EF0` |
-| 13 | `20260926150000_order-cost-version-snapshot.sql` | `897AF7B1ED8DE52FEF68CBF0DBECD41B0A33EEEF806A17EDFF788828C3514258` |
+| 13 | `20260926150000_order-cost-version-snapshot.sql` | `F35C9192B89FE6DA4A011AEB574BF08C6924C3264E5415DFD51B048E1E5B8DDE` |
 
-The #13 source file under `migrations/` and its package mirror have identical SHA-256. Focused test file `src/lib/orders/order-cost-version-migration.test.ts` SHA-256: `AF5FE893E85BF2786AB28D33D111DA512B14B2887757C77E0549BBC3ED87028D`.
+The #13 source file under `migrations/` and its package mirror have identical SHA-256. Focused test file `src/lib/orders/order-cost-version-migration.test.ts` SHA-256: `4EE273F5F713E48B48B15830EE58F115B1ED640B39150E1EB0587D94F9CB0066`.
 
 ## Gates remaining inside the original two Go Live steps
 

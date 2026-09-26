@@ -107,6 +107,16 @@ BEGIN
     FROM public.project_items WHERE id = selection_record.project_item_id FOR UPDATE;
 
     IF project_item_record.item_type = 'STANDARD' THEN
+      -- Independent foreign keys do not prove that a selected variant belongs
+      -- to this Product; reject a mismatched variant before using a base price.
+      IF project_item_record.variant_id IS NOT NULL AND NOT EXISTS (
+        SELECT 1 FROM public.product_variants v
+        WHERE v.id = project_item_record.variant_id
+          AND v.product_id = project_item_record.product_id
+      ) THEN
+        RAISE EXCEPTION 'SUPPLIER_COST_REQUIRED';
+      END IF;
+
       -- A price may be a base-price fallback for a variant. The bound cost may
       -- likewise be a base-cost fallback for that selected price. Historical
       -- price/cost versions remain valid snapshots after later activation.
