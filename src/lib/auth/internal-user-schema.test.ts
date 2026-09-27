@@ -3,6 +3,7 @@ import {
   internalUserCreateSchema,
   internalUserJobGroupsSchema,
   internalUserLifecycleSchema,
+  internalUserNameSchema,
 } from "./internal-user-schema";
 
 const validInput = {
@@ -39,6 +40,13 @@ describe("internal user create schema", () => {
 });
 
 describe("internal user management schemas", () => {
+  it("trims a display name and rejects invalid or extra fields", () => {
+    expect(internalUserNameSchema.parse({ name: "  ภคภพ ช.เจริญยิ่ง  " })).toEqual({ name: "ภคภพ ช.เจริญยิ่ง" });
+    expect(internalUserNameSchema.safeParse({ name: "ก" }).success).toBe(false);
+    expect(internalUserNameSchema.safeParse({ name: "x".repeat(121) }).success).toBe(false);
+    expect(internalUserNameSchema.safeParse({ name: "ชื่อใหม่", roles: ["SUPER_ADMIN"] }).success).toBe(false);
+  });
+
   it("accepts only the three job groups and rejects raw roles", () => {
     expect(internalUserJobGroupsSchema.parse({ jobGroups: ["FINANCE", "FINANCE"] })).toEqual({ jobGroups: ["FINANCE"] });
     expect(internalUserJobGroupsSchema.safeParse({ jobGroups: [] }).success).toBe(false);

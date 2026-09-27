@@ -11,6 +11,7 @@ describe("admin users workspace contract", () => {
   it("keeps search and password-reset while exposing approved staff actions", () => {
     expect(component).toContain("ค้นหาชื่อหรืออีเมล");
     expect(component).toContain("ส่งลิงก์ตั้งรหัส");
+    expect(component).toContain("แก้ชื่อ");
     expect(component).toContain("แก้กลุ่มงาน");
     expect(component).toContain("ระงับ");
     expect(component).toContain("เปิดใช้งาน");
@@ -29,5 +30,13 @@ describe("admin users workspace contract", () => {
   it("reloads server truth after a successful action", () => {
     expect(component).toContain("await loadUsers()");
     expect(component).toContain('fetch("/api/admin/users", { cache: "no-store" })');
+  });
+
+  it("allows display-name edits for active owner or current accounts without weakening other action guards", () => {
+    expect(component).toContain('openDialog("rename", user)');
+    expect(component).toContain('method = "PATCH"');
+    expect(component).toContain('body = { name: draftName }');
+    expect(component).toContain('user.status !== "ACTIVE" && user.status !== "SUSPENDED"');
+    expect(component).toContain('const commonDisabled = pending || Boolean(blockReason) || !user.email');
   });
 });

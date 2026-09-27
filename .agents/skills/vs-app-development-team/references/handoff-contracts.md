@@ -1,15 +1,29 @@
 # Agent Handoff Contracts
 
-## ข้อมูลอ้างอิงที่ต้องมีในทุก Handoff
+สร้าง Handoff เฉพาะเมื่อมี Agent อื่นรับงานต่อจริง T0 ที่จบในบทบาทเดียวไม่ต้องสร้างเอกสารส่งต่องาน
+
+## Minimal T1 handoff
+
+- เป้าหมาย, Tier และ Acceptance check
+- In scope / Out of scope และไฟล์ที่อนุญาต
+- Approval Record หรืออ้างอิง Lean Task Record
+- Branch/worktree, source snapshot และไฟล์ค้างที่อาจชน
+- สิ่งที่ทำแล้ว, คำสั่งตรวจพร้อมผล, ความเสี่ยงที่เหลือ
+
+ถ้าพบ Sensitive trigger รวม API/Integration contract change หรือ persisted-data behavior/lifecycle ให้หยุด จัดเป็น T3 และใช้ Full handoff ด้านล่าง
+
+## Full T2–T4 handoff
+
+### ข้อมูลอ้างอิงร่วม
 
 - Domain Skill ที่ใช้
-- Master Document และ Version
+- Master Document/Scope Version
 - Requirement/CR/Acceptance Criteria IDs
 - แหล่งที่ตรวจแล้ว แหล่งที่ไม่พบ และสิ่งที่ยังไม่ได้ตรวจ
 - Approval Record ที่เกี่ยวข้อง หรือระบุชัดว่า `Not yet approved`
 - Branch/worktree, source snapshot และเจ้าของไฟล์ที่แก้ค้างซึ่งอาจชนกับงานนี้
 
-## Project Lead → Architect
+### Project Lead → Architect or Builder
 
 - Goal และ Business value
 - Confirmed facts / Assumptions / Needs confirmation
@@ -17,17 +31,18 @@
 - Requirements และ Acceptance Criteria พร้อม ID
 - ข้อขัดแย้งและเรื่องที่ต้องอนุมัติ
 
-## Architect → Builder
+### Architect → Builder
 
 - หลักฐาน Current state พร้อมไฟล์หรือ Component
 - แนวทาง Reuse / Modify / New
 - Interfaces, Data, Permissions และ Migration impact
+- API/Integration contracts และ persisted-data behavior ที่เปลี่ยนหรือยืนยันว่าไม่เปลี่ยน
 - Constraints และสิ่งที่ห้ามเปลี่ยน
 - Tests ที่จำเป็นและ Rollback expectation
 - Focused checks ระหว่าง build และ final candidate gates ที่ต้องผ่าน โดยอิงความเสี่ยงจริง
 - Approval Record ของ Implementation Authorization ที่มีผู้อนุมัติ ขอบเขต เวอร์ชัน Environment สิทธิ์ด้านข้อมูล และ Production allowed
 
-## Builder → QA
+### Builder → QA
 
 - Requirements และ Acceptance Criteria ที่ทำ
 - ไฟล์และพฤติกรรมที่เปลี่ยน
@@ -35,7 +50,7 @@
 - คำสั่งทดสอบและผลจริง
 - Known limitations และความเสี่ยง
 
-## QA → Project Lead
+### QA → Project Lead
 
 - Verdict: PASS / PASS WITH CONDITIONS / FAIL
 - Evidence แยกตาม Acceptance Criterion

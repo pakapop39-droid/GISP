@@ -23,6 +23,10 @@ export const internalUserJobGroupsSchema = z.object({
   jobGroups: [...new Set(input.jobGroups)],
 }));
 
+export const internalUserNameSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+}).strict();
+
 export const internalUserLifecycleSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("suspend"),

@@ -12,7 +12,7 @@ import {
 } from "@/lib/auth/staff-job-groups";
 
 const statuses = { ACTIVE: "ใช้งานได้", PENDING: "รอดำเนินการ", SUSPENDED: "ถูกระงับ", INACTIVE: "ปิดบัญชีแล้ว" };
-type DialogKind = "reset" | "groups" | "suspend" | "reactivate" | "deactivate";
+type DialogKind = "rename" | "reset" | "groups" | "suspend" | "reactivate" | "deactivate";
 type DialogState = { kind: DialogKind; user: InternalUser };
 
 async function fetchUsers(): Promise<{ users: InternalUser[]; currentUserId: string }> {
@@ -38,6 +38,7 @@ export function AdminUsersWorkspace() {
   const [error, setError] = useState("");
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [draftGroups, setDraftGroups] = useState<StaffJobGroup[]>([]);
+  const [draftName, setDraftName] = useState("");
   const [reason, setReason] = useState("");
   const [confirmationEmail, setConfirmationEmail] = useState("");
   const [pending, setPending] = useState(false);
@@ -80,6 +81,7 @@ export function AdminUsersWorkspace() {
   function openDialog(kind: DialogKind, user: InternalUser) {
     setDialog({ kind, user });
     setDraftGroups(staffJobGroupsForRoles(user.roles) ?? []);
+    setDraftName(user.full_name);
     setReason("");
     setConfirmationEmail("");
     setNotice(null);
@@ -92,7 +94,12 @@ export function AdminUsersWorkspace() {
     try {
       let url = `/api/admin/users/${dialog.user.id}/lifecycle`;
       let body: Record<string, unknown> | undefined;
-      if (dialog.kind === "reset") {
+      let method = "POST";
+      if (dialog.kind === "rename") {
+        url = `/api/admin/users/${dialog.user.id}/name`;
+        method = "PATCH";
+        body = { name: draftName };
+      } else if (dialog.kind === "reset") {
         url = `/api/admin/users/${dialog.user.id}/reset-password`;
       } else if (dialog.kind === "groups") {
         url = `/api/admin/users/${dialog.user.id}/roles`;
@@ -103,7 +110,7 @@ export function AdminUsersWorkspace() {
         if (dialog.kind === "deactivate") body.confirmationEmail = confirmationEmail;
       }
       const response = await fetch(url, {
-        method: "POST",
+        method,
         headers: body ? { "Content-Type": "application/json" } : undefined,
         body: body ? JSON.stringify(body) : undefined,
       });
@@ -124,6 +131,7 @@ export function AdminUsersWorkspace() {
   const deactivateReady = dialog?.kind !== "deactivate"
     || (reason.trim().length >= 3 && confirmationEmail.trim().toLocaleLowerCase() === dialog.user.email.trim().toLocaleLowerCase());
   const submitDisabled = pending
+    || (dialog?.kind === "rename" && (draftName.trim().length < 2 || draftName.trim().length > 120 || draftName.trim() === dialog.user.full_name))
     || (dialog?.kind === "groups" && draftGroups.length === 0)
     || (dialog?.kind === "suspend" && reason.trim().length < 3)
     || !deactivateReady;
@@ -132,11 +140,12 @@ export function AdminUsersWorkspace() {
     <AdminUsersForm onCreated={() => void loadUsers()} />
     <section className="v14-panel mt-6" aria-labelledby="staff-list-title">
       <div className="v14-panel__head"><div><p className="v14-eyebrow">Internal accounts</p><h2 id="staff-list-title">รายชื่อพนักงาน</h2></div><button type="button" className="v14-button" disabled={loading} onClick={() => void loadUsers()}>โหลดใหม่</button></div>
-      <p className="mb-4 text-sm text-ink/60">แก้กลุ่มงาน ระงับ หรือปิดบัญชีได้จากคอลัมน์จัดการ ระบบไม่อนุญาตให้จัดการบัญชีตนเองและบัญชีเจ้าของระบบ</p>
+      <p className="mb-4 text-sm text-ink/60">แก้ชื่อที่แสดงได้สำหรับบัญชีภายในที่ยังใช้งานอยู่ ส่วนการแก้กลุ่มงาน ระงับ หรือปิดบัญชีจะไม่อนุญาตให้จัดการบัญชีตนเองและบัญชีเจ้าของระบบ</p>
       {notice && <p role={notice.error ? "alert" : "status"} className={`my-4 rounded-xl p-4 ${notice.error ? "bg-lacquer/10 text-lacquer" : "bg-jade/10 text-jade"}`}>{notice.text}</p>}
       {dialog && <div role="dialog" aria-modal="true" aria-labelledby="staff-dialog-title" className="my-4 rounded-xl border border-ink/15 bg-white p-5 shadow-sm">
-        <h3 id="staff-dialog-title" className="text-lg font-bold">{dialog.kind === "groups" ? "แก้ไขกลุ่มงาน" : dialog.kind === "suspend" ? "ระงับบัญชี" : dialog.kind === "reactivate" ? "เปิดใช้งานบัญชี" : dialog.kind === "deactivate" ? "ปิดบัญชีถาวร" : "ส่งลิงก์ตั้งรหัสใหม่"}</h3>
+        <h3 id="staff-dialog-title" className="text-lg font-bold">{dialog.kind === "rename" ? "แก้ชื่อที่แสดง" : dialog.kind === "groups" ? "แก้ไขกลุ่มงาน" : dialog.kind === "suspend" ? "ระงับบัญชี" : dialog.kind === "reactivate" ? "เปิดใช้งานบัญชี" : dialog.kind === "deactivate" ? "ปิดบัญชีถาวร" : "ส่งลิงก์ตั้งรหัสใหม่"}</h3>
         <p className="mt-1 text-sm"><b>{dialog.user.full_name}</b> · {dialog.user.email}</p>
+        {dialog.kind === "rename" && <label className="mt-4 block">ชื่อที่แสดง<input type="text" value={draftName} onChange={(event) => setDraftName(event.target.value)} minLength={2} maxLength={120} required autoComplete="name" /></label>}
         {dialog.kind === "groups" && <fieldset className="mt-4"><legend className="text-sm font-bold">เลือกอย่างน้อย 1 กลุ่ม</legend><div className="mt-2 grid gap-2 lg:grid-cols-3">{staffJobGroups.map((group) => <label key={group} className="flex items-start gap-2 rounded-lg border border-ink/10 p-3"><input className="!mt-1 !w-auto" type="checkbox" checked={draftGroups.includes(group)} onChange={(event) => setDraftGroups((current) => event.target.checked ? [...current, group] : current.filter((item) => item !== group))}/><span><b className="block text-sm">{staffJobGroupDefinitions[group].label}</b><small>{staffJobGroupDefinitions[group].description}</small></span></label>)}</div></fieldset>}
         {(dialog.kind === "suspend" || dialog.kind === "deactivate") && <label className="mt-4 block">เหตุผล<textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} required placeholder="ระบุเหตุผลอย่างน้อย 3 ตัวอักษร"/></label>}
         {dialog.kind === "deactivate" && <div className="mt-4 rounded-xl border border-lacquer/20 bg-lacquer/5 p-4"><p className="font-bold text-lacquer">คำสั่งนี้เปิดกลับไม่ได้จากหน้านี้</p><p className="mt-1 text-sm">ระบบจะตั้งเป็น INACTIVE ถอนสิทธิ์ทั้งหมด และยกเลิก Session แต่ยังเก็บบัญชีและประวัติงานไว้</p><label className="mt-3 block">พิมพ์อีเมลพนักงานเพื่อยืนยัน<input type="email" value={confirmationEmail} onChange={(event) => setConfirmationEmail(event.target.value)} autoComplete="off" placeholder={dialog.user.email}/></label></div>}
@@ -154,10 +163,12 @@ export function AdminUsersWorkspace() {
             const blockReason = managementBlockReason(user, currentUserId);
             const managedGroups = staffJobGroupsForRoles(user.roles);
             const commonDisabled = pending || Boolean(blockReason) || !user.email;
+            const renameDisabled = pending || (user.status !== "ACTIVE" && user.status !== "SUSPENDED");
             return <tr key={user.id}>
               <td className="border-b border-ink/10 p-3">{user.full_name}</td><td className="border-b border-ink/10 p-3">{user.email || "ไม่พบอีเมล"}</td>
               <td className="border-b border-ink/10 p-3">{staffJobGroupLabelsForRoles(user.roles).join(", ")}</td><td className="border-b border-ink/10 p-3">{statuses[user.status]}</td>
               <td className="border-b border-ink/10 p-3"><div className="flex min-w-[430px] flex-wrap gap-2">
+                <button type="button" className="v14-button v14-button--small" disabled={renameDisabled} onClick={() => openDialog("rename", user)}>แก้ชื่อ</button>
                 <button type="button" className="v14-button v14-button--small" disabled={commonDisabled || managedGroups === null} onClick={() => openDialog("groups", user)}>แก้กลุ่มงาน</button>
                 {user.status === "ACTIVE" && <button type="button" className="v14-button v14-button--small v14-button--outline" disabled={commonDisabled} onClick={() => openDialog("suspend", user)}>ระงับ</button>}
                 {user.status === "SUSPENDED" && <button type="button" className="v14-button v14-button--small v14-button--outline" disabled={commonDisabled} onClick={() => openDialog("reactivate", user)}>เปิดใช้งาน</button>}

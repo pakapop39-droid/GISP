@@ -1,49 +1,55 @@
 # Delivery Workflow
 
-## 1. Intake and baseline
+## 1. Classify and choose the shortest safe path
 
-Project Lead สรุปเป้าหมาย ตรวจ Source of Truth และแยกสถานะข้อมูล หากเป็นแอปเดิมให้บันทึก Current behavior, Tech stack, Test commands, Environments และ Working tree ก่อน
+ตรวจเป้าหมาย Source of Truth ระบบเดิม Tests และ Git state เท่าที่จำเป็น แล้วจัด Tier:
 
-เมื่อหลายแชตทำงานใน repo เดียวกัน ให้ระบุ branch/worktree และเจ้าของไฟล์ที่แก้ค้าง งานอ่านทำคู่ขนานได้; งานเขียนอิสระต้องแยก worktree ก่อนเริ่ม และห้ามทิ้งหรือทับงานค้าง การรวมงานทำทีละ change set พร้อมตรวจ diff
+- `T0`: Primary/Lead วิเคราะห์และรายงาน
+- `T1`: Lean Task Record → Builder → QA แบบเบาหรือรวมตรวจบน candidate
+- `T2`: Lead scope → Builder → QA เฉพาะจุด; ใช้ Architect เมื่อมี material impact
+- `T3`: Lead → Architect → Builder → QA เต็มรูปแบบ สำหรับ Auth/RLS/Privacy/Audit, เงิน/สูตร, Schema/Migration/ข้อมูล, API/Integration contract, persisted-data behavior/lifecycle, External write/ค่าใช้จ่าย/Secret
+- `T4`: Release readiness → explicit Production Release Authorization → Primary thread executes
 
-## 2. Scope
+ก่อนเขียนให้ระบุ branch/worktree, snapshot, file scope และเจ้าของไฟล์ค้าง ใช้ worktree แยกเฉพาะเมื่อมีผู้เขียนพร้อมกันหรือไฟล์ชนกัน ห้ามทิ้งหรือทับงานอื่น
 
-จัดทำ Requirements, Acceptance Criteria, In scope, Out of scope, Dependencies และ Risks แล้วรอ `Scope Approved`
+## 2. Define the smallest usable slice
 
-## 3. Architecture and impact
+ระบุผู้ใช้หลักหนึ่งกลุ่ม งานหลักหนึ่งอย่าง In/Out scope และ Acceptance Criteria เท่าที่พิสูจน์ผลลัพธ์ได้ แบ่ง `Go Live Now`, `After Evidence`, `Future` และแยก Go Live blocker ออกจาก Backlog
 
-Architect ตรวจเส้นทางโค้ดจริง จัดทำ Reuse/Modify/New และประเมิน Data, Permission, Integration, Migration, Compatibility, Security และ Rollback
+T1 ใช้ Lean Task Record แบบย่อได้ T2–T4 ใช้ Requirements/Risks ที่เหมาะกับผลกระทบ Scope และ Implementation อาจอนุมัติพร้อมกันใน Record เดียวสำหรับ bounded non-Production slice
 
-## 4. Implementation authorization
+## 3. Design only as much as risk requires
 
-ระบุขอบเขตไฟล์/Component สภาพแวดล้อม Migration และการทดสอบให้ชัด แล้วรอ `Implementation Authorized`
+เลือก `Reuse → Configure → Modify → New` และ Vertical Slice ที่เล็กที่สุด ใช้ managed monolith และ manual-first จนมีปริมาณใช้งาน ความล่าช้า ค่าใช้จ่าย หรือความเสี่ยงที่วัดได้เป็น trigger ให้ขยาย
 
-## 5. Incremental build
+Architect ใช้เส้นทาง FAST สำหรับ impact เล็กและย้อนกลับง่ายที่ไม่เปลี่ยน Contract หรือ persisted data; ใช้ ARCHITECTURE review เมื่อกระทบหลาย Component, API/Integration contract, persisted-data behavior/lifecycle, Permission, Integration, Compatibility, Scale trigger หรือ Rollback
+
+## 4. Build and verify proportionately
 
 Builder ทำเป็น Vertical Slice ที่ใช้งานได้ครบตั้งแต่ UI/Service/Data/Permission/Error handling/Test โดยไม่แตะงานนอกขอบเขต
 
-ระหว่างแก้ให้รัน focused checks ที่ตรวจพฤติกรรมที่เปลี่ยนจริง บันทึกคำสั่ง ผล และข้อจำกัด QA เตรียมแผนตรวจจาก AC ระหว่างนั้นได้ แต่ต้องตรวจรับ candidate สุดท้ายอย่างอิสระหลัง Builder ส่งงาน
+ระหว่างแก้ให้รัน focused checks ที่ตรวจพฤติกรรมที่เปลี่ยนจริง เพิ่ม Test เมื่อพฤติกรรม Validation, Permission หรือ Regression risk เปลี่ยน ไม่สร้าง Test เชิงพิธีการสำหรับ Copy/CSS/Docs ที่ตรวจตรงได้
 
-## 6. Independent QA
+ตรวจ integrated release candidate หนึ่งครั้งตามความเสี่ยงและส่ง QA อิสระตาม Tier ผล gate เดิมใช้ซ้ำได้เมื่อ candidate และ risk ไม่เปลี่ยน หลังแก้ Finding ให้ตรวจเฉพาะส่วนที่เปลี่ยนและ gate ที่อาจล้าสมัย
 
-QA ตรวจ Acceptance Criteria, Boundary, Regression, Permission, Security และ Data integrity ด้วยหลักฐานจริง หากไม่ผ่าน ส่งกลับ Builder เฉพาะ Findings ที่ต้องแก้
+## 5. Lean Go Live gate
 
-สำหรับ release candidate ที่รวมงานแล้ว ให้รัน typecheck, regression tests ที่เกี่ยวข้อง, build และ smoke/user-flow ตามความเสี่ยงบน source snapshot เดียวกัน บันทึก commit/diff และ environment ที่ตรวจ ผลเดิมใช้ซ้ำได้เมื่อ candidate ไม่เปลี่ยนและความเสี่ยงเดิมถูกครอบคลุม; เมื่อแก้หลัง QA ให้ทดสอบส่วนที่เปลี่ยนและ gate ที่ผลอาจล้าสมัยอีกครั้ง
+พร้อมให้เจ้าของตัดสินใจ Go Live เมื่อมี:
 
-## 7. Owner UAT
+- `Value`: ผู้ใช้ทำ Core flow สำเร็จ
+- `Safety`: ขอบเขตข้อมูล สิทธิ์ เงิน และ Input สำคัญปลอดภัย
+- `Operable`: เจ้าของดูสถานะ ช่วยผู้ใช้ และเห็น Error ได้
+- `Reversible`: ปิด feature, rollback หรือ restore ได้เหมาะกับความเสี่ยง
+- `Evidence`: exact candidate ผ่าน Tests/QA ที่เหมาะสม
 
-นำเสนอสิ่งที่เปลี่ยน วิธีทดสอบ ข้อจำกัด และผล QA ให้เจ้าของทดสอบหรืออนุมัติผล
+ห้ามเลื่อนเมื่อเกี่ยวข้องกับ Auth/tenant isolation, server validation, ราคา/Order/Payment, Migration/Backup/Rollback, Secret, Upload safety, Webhook integrity หรือ Production monitoring/recovery ส่วน Cosmetic polish, advanced report, speculative performance และ automation ที่มี manual fallback ปลอดภัยอาจอยู่ Backlog ได้
 
-## 8. Release readiness
+## 6. Release and learn
 
-ยืนยัน Backup, Migration, Rollback, Monitoring, Owner, Release window และ Known risks แล้วรอ Approval Record ระดับ `Release Authorized` ที่ระบุ Production โดยตรง
+Project Lead สรุปหน้าเดียว: scope/version, candidate/environment, Value/Safety/Operable/Reversible/Evidence, blocker/open risk, data/migration, rollback/monitoring และ owner decisions การสรุปนี้ไม่ใช่ Release Authorization
 
-Project Lead จัดทำสรุป Go Live หน้าเดียว: scope/version, candidate, environment, ผล QA/UAT ต่อ AC, blocker/open risk, data/migration status, backup/rollback, monitoring และเรื่องที่เจ้าของต้องตัดสินใจ รวมคำถามที่เกี่ยวข้องเป็นชุดเดียว และระบุชัดว่า `Ready for owner decision` หรือ `Not ready` สรุปนี้ไม่ใช่ Release Authorization
-
-## 9. Release and verify
-
-Primary Codex Thread เป็น Release Executor และ Deploy ได้เฉพาะเมื่อ Approval Record ครบ ตรวจ Smoke test/Monitoring และรายงานผล หากผิดปกติให้ใช้แผน Rollback ที่อนุมัติ Agent ผู้เชี่ยวชาญทั้งสี่ไม่มีสิทธิ์อนุมัติหรือขยายขอบเขต Release
+ใช้ controlled canary หรือ invite-only เมื่อทำได้ Primary thread Deploy เฉพาะเมื่อมี Approval Record ระดับ `Release Authorized` ที่ระบุ Production โดยตรง แล้วตรวจ Smoke/Monitoring/Rollback readiness เก็บหลักฐานใช้งานจริงก่อนขยาย Scale หรือ Backlog
 
 ## Definition of Done
 
-งานเสร็จเมื่อขอบเขตและ Acceptance Criteria ผ่าน, Test ที่เกี่ยวข้องผ่าน, QA ให้ PASS หรือเจ้าของโครงการยอมรับเงื่อนไขตามระดับความเสี่ยงเป็นลายลักษณ์อักษร, เอกสารและ Change log สอดคล้อง, ไม่มี Blocker และระบุสถานะ Release อย่างชัดเจน `PASS WITH CONDITIONS` ไม่อนุญาตให้ Release โดยอัตโนมัติ
+Slice เสร็จเมื่อขอบเขตและ Acceptance Criteria ผ่าน, หลักฐานตาม Tier ผ่าน, ไม่มี Blocker ที่เกี่ยวข้อง และระบุสถานะ Release ชัดเจน `PASS WITH CONDITIONS` ไม่อนุญาตให้ Release โดยอัตโนมัติ
