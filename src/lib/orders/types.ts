@@ -85,6 +85,8 @@ export type AdminOrderCapabilities = {
   viewSalesAmounts: boolean;
   viewCustomerPaymentStatus: boolean;
   manageCustomerPayments: boolean;
+  requestSupplierPayment: boolean;
+  manageSupplierPayments: boolean;
   manageProduction: boolean;
   manageQc: boolean;
   manageLogistics: boolean;
@@ -229,6 +231,30 @@ export type StatusEvent = {
   created_at: string;
 };
 
+export type SupplierPaymentSchedule = {
+  id: string;
+  supplier_order_id: string;
+  schedule_type: "DEPOSIT" | "BALANCE";
+  due_amount: number;
+  paid_amount: number;
+  status: string;
+};
+
+export type SupplierPayment = {
+  id: string;
+  supplier_order_id: string;
+  payment_schedule_id: string;
+  payment_reference: string;
+  payment_type: "DEPOSIT" | "BALANCE";
+  amount: number;
+  currency: string;
+  status: "REQUESTED" | "APPROVED" | "PAID" | "REJECTED";
+  rejection_reason: string | null;
+  note: string | null;
+  paid_at: string | null;
+  created_at: string;
+};
+
 export type SupplierOrder = {
   id: string;
   supplier_order_number: string;
@@ -236,7 +262,10 @@ export type SupplierOrder = {
   status: string;
   supplier_currency: string;
   total_factory_cost: number;
+  paid_factory_amount: number;
   supplier: { id: string; code: string; name: string } | null;
+  schedules: SupplierPaymentSchedule[];
+  payments: SupplierPayment[];
   orderItemIds: string[];
   productionUpdates: ProductionUpdate[];
 };

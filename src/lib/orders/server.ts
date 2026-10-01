@@ -14,7 +14,7 @@ import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { projectQcReopenEvents, type QcReopenAuditRow } from "@/lib/orders/qc-reopen-history";
 import { projectOrderDetailForRelease } from "@/lib/orders/release-projection";
-import { isOrderOperationSliceVisible } from "@/lib/release-stage";
+import { isCoreParityEnabled, isOrderOperationSliceVisible } from "@/lib/release-stage";
 import type {
   CancellationRequest,
   AdminOrderListData,
@@ -29,6 +29,8 @@ import type {
   LogisticsDetail,
   StatusEvent,
   SupplierOrder,
+  SupplierPayment,
+  SupplierPaymentSchedule,
 } from "@/lib/orders/types";
 
 type DbError = { message: string } | null;
@@ -225,7 +227,9 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   const authenticatedOperations = await createInsForgeServerClient();
   const itemIds = detail.items.map((item) => item.id);
   const needsSupplierOperations = mode === "member" || Boolean(
-    capabilities?.manageOrder || capabilities?.manageProduction || canManageQcForOrder,
+    capabilities?.manageOrder || capabilities?.requestSupplierPayment
+      || capabilities?.manageSupplierPayments || capabilities?.manageProduction
+      || canManageQcForOrder,
   );
   const needsLogisticsPrerequisites = mode === "admin" && Boolean(capabilities?.manageWarehouseAndShipment);
   const supplierLinksResult = itemIds.length && (needsSupplierOperations || needsLogisticsPrerequisites)
@@ -436,23 +440,41 @@ async function loadOrderDetailBase(id: string, mode: "member" | "admin"): Promis
   if (mode === "admin" && needsSupplierOperations) {
     const admin = createInsForgeAdminClient();
     const supplierOrdersResult = await admin.database.from("supplier_orders")
-      .select("id,customer_order_id,supplier_id,supplier_order_number,po_number,status,supplier_currency,total_factory_cost,po_issued_at")
+      .select("id,customer_order_id,supplier_id,supplier_order_number,po_number,status,supplier_currency,total_factory_cost,paid_factory_amount,po_issued_at")
       .eq("customer_order_id", id).order("created_at").limit(50);
     const supplierOrders = take(supplierOrdersResult, "load supplier orders") ?? [];
+    const supplierOrderIds = supplierOrders.map((row) => row.id);
     const supplierIds = [...new Set(supplierOrders.map((row) => row.supplier_id))];
-    const suppliersResult = supplierIds.length
-      ? await admin.database.from("suppliers").select("id,code,name").in("id", supplierIds).limit(50)
-      : { data: [], error: null };
+    const [suppliersResult, supplierSchedulesResult, supplierPaymentsResult] = await Promise.all([
+      supplierIds.length
+        ? admin.database.from("suppliers").select("id,code,name").in("id", supplierIds).limit(50)
+        : Promise.resolve({ data: [], error: null }),
+      supplierOrderIds.length
+        ? admin.database.from("supplier_payment_schedules")
+          .select("id,supplier_order_id,schedule_type,due_amount,paid_amount,status")
+          .in("supplier_order_id", supplierOrderIds).limit(100)
+        : Promise.resolve({ data: [], error: null }),
+      supplierOrderIds.length
+        ? admin.database.from("supplier_payments")
+          .select("id,supplier_order_id,payment_schedule_id,payment_reference,payment_type,amount,currency,status,rejection_reason,note,paid_at,created_at")
+          .in("supplier_order_id", supplierOrderIds).order("created_at").limit(200)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
     const suppliers = take(suppliersResult, "load suppliers") ?? [];
+    const supplierSchedules = (take(supplierSchedulesResult, "load supplier schedules") ?? []) as unknown as SupplierPaymentSchedule[];
+    const supplierPayments = (take(supplierPaymentsResult, "load supplier payments") ?? []) as unknown as SupplierPayment[];
     const supplierMap = new Map(suppliers.map((row) => [row.id, row]));
     detail.supplierOrders = supplierOrders.map((row) => ({
       ...row,
       supplier: supplierMap.get(row.supplier_id) ?? null,
+      schedules: supplierSchedules.filter((schedule) => schedule.supplier_order_id === row.id),
+      payments: supplierPayments.filter((payment) => payment.supplier_order_id === row.id),
       orderItemIds: supplierLinks.filter((link) => link.supplier_order_id === row.id).map((link) => link.order_item_id),
       productionUpdates: detail.productionUpdates.filter((update) => update.supplier_order_id === row.id),
     })) as unknown as SupplierOrder[];
   }
   return projectOrderDetailForRelease(detail, {
+    supplierPayments: isCoreParityEnabled(),
     productionQc: isOrderOperationSliceVisible(7),
     logistics: isOrderOperationSliceVisible(8),
   });

@@ -46,6 +46,14 @@ const RELEASE_A_AUTH_PATHS = new Set([
   "/api/auth/refresh",
 ]);
 
+const CORE_PARITY_STAFF_PREFIXES = [
+  "/api/admin/supplier-payments", "/api/admin/supplier-orders",
+  "/api/admin/production-updates", "/api/admin/qc-inspections", "/api/admin/operations-media",
+  "/api/admin/logistics", "/api/admin/deliveries", "/api/admin/shipments",
+  "/api/admin/claims", "/api/admin/reports", "/api/admin/executive",
+  "/admin/claims", "/admin/reports", "/admin/executive",
+];
+
 function matchesPrefix(pathname: string, prefix: string) {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
@@ -57,6 +65,13 @@ export function isReleaseAEnabled() {
 export function isStagedReleaseEnabled() {
   return ["A", "B", "C", "D"].includes(process.env.RELEASE_STAGE ?? "") ||
     process.env.VERCEL_ENV === "production" || process.env.APP_ENV === "production";
+}
+
+// One fail-closed switch exposes the already accepted core flow. Removing or
+// setting it to anything except the literal string "true" hides the added
+// routes immediately without changing data or rolling back a deployment.
+export function isCoreParityEnabled(raw = process.env.PRODUCTION_CORE_PARITY_ENABLED) {
+  return raw === "true";
 }
 
 // A hidden menu alone must not expose features whose database release is pending.
@@ -96,6 +111,7 @@ export function isReleaseAPathAllowed(pathname: string, staffOperations = false)
   // Internal staff rehearsal opens only staff routes. Authentication and each
   // endpoint's permissions still apply; member signup and transactions stay gated.
   if (staffOperations && (matchesPrefix(pathname, "/admin") || matchesPrefix(pathname, "/api/admin"))) {
+    if (!isCoreParityEnabled() && CORE_PARITY_STAFF_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) return false;
     return !POST_GO_LIVE_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
   }
   if (RELEASE_A_PUBLIC_PATHS.has(pathname) || RELEASE_A_AUTH_PATHS.has(pathname)) {
@@ -197,6 +213,8 @@ export function isReleaseCPathAllowed(pathname: string) {
 const RELEASE_D_SLICE_PREFIXES: Record<number, { pages: string[]; apis: string[] }> = {
   7: { pages: [], apis: ["/api/admin/production-updates", "/api/admin/qc-inspections", "/api/admin/operations-media", "/api/member/order-items"] },
   8: { pages: [], apis: ["/api/admin/logistics", "/api/admin/deliveries", "/api/admin/shipments", "/api/member/logistics"] },
+  9: { pages: ["/member/claims", "/admin/claims"], apis: ["/api/member/claims", "/api/admin/claims", "/api/claims/evidence"] },
+  10: { pages: ["/member/reports", "/admin/reports", "/admin/executive"], apis: ["/api/member/reports", "/api/admin/reports", "/api/admin/executive"] },
 };
 
 // D is released slice-by-slice under DEC-049. Invalid or missing configuration
@@ -204,11 +222,12 @@ const RELEASE_D_SLICE_PREFIXES: Record<number, { pages: string[]; apis: string[]
 export function enabledReleaseDSlices(raw = process.env.RELEASE_D_ENABLED_SLICES): number[] {
   if (!raw) return [];
   const values = raw.split(",").map((value) => Number(value.trim()));
-  if (!values.length || values.length > 2 || values.some((value, index) => value !== index + 7)) return [];
+  if (!values.length || values.length > 4 || values.some((value, index) => value !== index + 7)) return [];
   return values;
 }
 
 export function isOrderOperationSliceVisible(slice: 7 | 8) {
+  if (isCoreParityEnabled()) return true;
   const stage = process.env.RELEASE_STAGE;
   if (stage === "D") return enabledReleaseDSlices().includes(slice);
   if (stage === "C") return false;
@@ -216,9 +235,9 @@ export function isOrderOperationSliceVisible(slice: 7 | 8) {
   return process.env.VERCEL_ENV !== "production" && process.env.APP_ENV !== "production";
 }
 
-export function isReleaseDPathAllowed(pathname: string) {
+export function isReleaseDPathAllowed(pathname: string, rawSlices = process.env.RELEASE_D_ENABLED_SLICES) {
   if (isReleaseCPathAllowed(pathname)) return true;
-  return enabledReleaseDSlices().some((slice) => {
+  return enabledReleaseDSlices(rawSlices).some((slice) => {
     const prefixes = pathname.startsWith("/api/")
       ? RELEASE_D_SLICE_PREFIXES[slice].apis : RELEASE_D_SLICE_PREFIXES[slice].pages;
     return prefixes.some((prefix) => matchesPrefix(pathname, prefix));
@@ -230,6 +249,12 @@ export function isReleaseStagePathAllowed(
   stage = process.env.RELEASE_STAGE,
   staffOperations = process.env.ENABLE_STAFF_OPERATIONS === "true",
 ) {
+  if (isCoreParityEnabled()) {
+    if (RELEASE_C_DEFERRED_API_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) return true;
+    if (matchesPrefix(pathname, "/api/admin/supplier-orders")) return true;
+    if (/^\/api\/admin\/payment-transfers\/[^/]+\/adjustments(?:\/|$)/.test(pathname)) return true;
+    return isReleaseDPathAllowed(pathname, "7,8,9,10");
+  }
   if (stage === "A") return isReleaseAPathAllowed(pathname, staffOperations);
   if (stage === "B") return isReleaseBPathAllowed(pathname, staffOperations);
   if (stage === "C") return isReleaseCPathAllowed(pathname);

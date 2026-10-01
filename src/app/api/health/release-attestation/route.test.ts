@@ -57,7 +57,7 @@ describe("hosted release attestation", () => {
         appHost: "child-rehearsal.insforge.site",
         requestHost: "child-rehearsal.insforge.site",
       },
-      release: { stage: "D", enabledDSlices: [7, 8] },
+      release: { stage: "D", enabledDSlices: [7, 8], coreParityEnabled: false },
       serverAdminProbeOk: true,
     });
     expect(mocks.select).toHaveBeenCalledWith("id", { head: true });
@@ -121,10 +121,20 @@ describe("hosted release attestation", () => {
     expect((await GET(request())).status).toBe(503);
   });
 
-  it.each(["7,8,9", "7,8,10", "7,7", "8,7", "7,,8", "x"])("rejects unsupported or malformed D slices: %s", async (value) => {
+  it.each(["7,8,10", "7,7", "8,7", "7,,8", "x"])("rejects unsupported or malformed D slices: %s", async (value) => {
     process.env.RELEASE_D_ENABLED_SLICES = value;
     expect((await GET(request())).status).toBe(503);
     expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("attests full core parity only with D7-D10 and the explicit switch", async () => {
+    process.env.PRODUCTION_CORE_PARITY_ENABLED = "true";
+    process.env.RELEASE_D_ENABLED_SLICES = "7,8,9,10";
+    const response = await GET(request());
+    expect(response.status).toBe(200);
+    expect((await response.json()).release).toEqual({ stage: "D", enabledDSlices: [7, 8, 9, 10], coreParityEnabled: true });
+    process.env.RELEASE_D_ENABLED_SLICES = "7,8,9";
+    expect((await GET(request())).status).toBe(503);
   });
 
   it("fails closed when the request host is not the configured hosted app", async () => {

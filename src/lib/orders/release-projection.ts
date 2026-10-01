@@ -10,7 +10,7 @@ function emptyLogistics(): LogisticsDetail {
 /** Final serialization boundary shared by Member and Admin Order APIs. */
 export function projectOrderDetailForRelease(
   detail: OrderDetail,
-  enabled: { productionQc: boolean; logistics: boolean },
+  enabled: { supplierPayments: boolean; productionQc: boolean; logistics: boolean },
 ): OrderDetail {
   const leanDetail = { ...detail } as OrderDetail & {
     paymentAdjustments?: unknown;
@@ -41,12 +41,17 @@ export function projectOrderDetailForRelease(
       status: supplierOrder.status,
       supplier_currency: supplierOrder.supplier_currency,
       total_factory_cost: supplierOrder.total_factory_cost,
+      paid_factory_amount: enabled.supplierPayments ? supplierOrder.paid_factory_amount : 0,
       supplier: supplierOrder.supplier,
+      schedules: enabled.supplierPayments ? supplierOrder.schedules : [],
+      payments: enabled.supplierPayments ? supplierOrder.payments : [],
       orderItemIds: supplierOrder.orderItemIds,
       productionUpdates: enabled.productionQc ? supplierOrder.productionUpdates : [],
     })),
     capabilities: detail.capabilities ? {
       ...detail.capabilities,
+      requestSupplierPayment: enabled.supplierPayments && detail.capabilities.requestSupplierPayment,
+      manageSupplierPayments: enabled.supplierPayments && detail.capabilities.manageSupplierPayments,
       manageProduction: enabled.productionQc && detail.capabilities.manageProduction,
       manageQc: enabled.productionQc && detail.capabilities.manageQc,
       manageLogistics: enabled.logistics && detail.capabilities.manageLogistics,

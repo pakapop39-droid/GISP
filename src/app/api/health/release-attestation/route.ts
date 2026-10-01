@@ -39,8 +39,8 @@ function releaseSlices(value: string | undefined) {
   if (!value) return [];
   const slices = value.split(",").map((item) => Number(item.trim()));
   if (slices.some((item) => !Number.isInteger(item))) return [];
-  const canonical = [7, 8].slice(0, slices.length);
-  return slices.length > 0 && slices.every((item, index) => item === canonical[index]) ? slices : [];
+  const canonical = [7, 8, 9, 10].slice(0, slices.length);
+  return slices.length > 0 && slices.length <= 4 && slices.every((item, index) => item === canonical[index]) ? slices : [];
 }
 
 async function probeServerAdmin() {
@@ -69,6 +69,11 @@ export async function GET(request: Request) {
   const requestHost = hostname(request.url);
   const stage = process.env.RELEASE_STAGE ?? null;
   const slices = releaseSlices(process.env.RELEASE_D_ENABLED_SLICES);
+  const coreParityEnabled = process.env.PRODUCTION_CORE_PARITY_ENABLED === "true";
+  const releaseConfigurationComplete = coreParityEnabled
+    ? stage === "D" && slices.length === 4
+    : (stage === "C" || stage === "D")
+      && (stage === "C" ? slices.length === 0 : slices.length === 1 || slices.length === 2);
   const identityBindingComplete = Boolean(
     commit && shaPattern.test(commit)
     && tree && shaPattern.test(tree)
@@ -80,8 +85,7 @@ export async function GET(request: Request) {
     && publicBackendHost === targetBackendHost
     && appHost
     && appHost === requestHost
-    && (stage === "C" || stage === "D")
-    && (stage === "C" ? slices.length === 0 : slices.length === 1 || slices.length === 2),
+    && releaseConfigurationComplete,
   );
   // Never construct an admin client until every non-secret identity value binds
   // to the exact authorized Child. A malformed URL must not receive a request
@@ -100,7 +104,7 @@ export async function GET(request: Request) {
       appHost,
       requestHost,
     },
-    release: { stage, enabledDSlices: slices },
+    release: { stage, enabledDSlices: slices, coreParityEnabled },
     serverAdminProbeOk: adminProbeOk,
   }, {
     status: bindingComplete ? 200 : 503,

@@ -24,7 +24,7 @@ const detail = {
   paymentWorkflowHolds: [{ id: "DEFERRED_HOLD_SECRET" }],
   capabilities: {
     manageOrder: true, viewSalesAmounts: true, viewCustomerPaymentStatus: true,
-    manageCustomerPayments: true,
+    manageCustomerPayments: true, requestSupplierPayment: true, manageSupplierPayments: true,
     manageProduction: true, manageQc: true, manageLogistics: true,
     manageWarehouseAndShipment: true, manageFreight: true,
   },
@@ -32,7 +32,7 @@ const detail = {
 
 describe("shared Member/Admin Order release projection", () => {
   it("exposes only C Order/Payment and hides D7/D8 data and Freight schedule", () => {
-    const c = projectOrderDetailForRelease(detail, { productionQc: false, logistics: false });
+    const c = projectOrderDetailForRelease(detail, { supplierPayments: false, productionQc: false, logistics: false });
     expect(c.schedules.map((schedule) => schedule.schedule_type)).toEqual(["DEPOSIT"]);
     expect(c.productionUpdates).toEqual([]);
     expect(c.qcInspections).toEqual([]);
@@ -51,7 +51,7 @@ describe("shared Member/Admin Order release projection", () => {
   });
 
   it("shows D7 QC while keeping D8 Shipment/Freight closed", () => {
-    const d7 = projectOrderDetailForRelease(detail, { productionQc: true, logistics: false });
+    const d7 = projectOrderDetailForRelease(detail, { supplierPayments: true, productionQc: true, logistics: false });
     expect(d7.productionUpdates).toHaveLength(1);
     expect(d7.qcInspections).toHaveLength(1);
     expect(d7.schedules.map((schedule) => schedule.schedule_type)).toEqual(["DEPOSIT"]);
@@ -60,7 +60,7 @@ describe("shared Member/Admin Order release projection", () => {
   });
 
   it("shows D8 logistics and Freight only after D8", () => {
-    const d8 = projectOrderDetailForRelease(detail, { productionQc: true, logistics: true });
+    const d8 = projectOrderDetailForRelease(detail, { supplierPayments: true, productionQc: true, logistics: true });
     expect(d8.schedules.map((schedule) => schedule.schedule_type)).toEqual(["DEPOSIT", "FREIGHT"]);
     expect(d8.logistics.shipments).toHaveLength(1);
     expect(d8.logistics.invoice?.invoice_number).toBe("FREIGHT_INVOICE_SECRET");
