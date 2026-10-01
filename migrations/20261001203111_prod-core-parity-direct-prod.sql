@@ -23,12 +23,29 @@ BEGIN
 END
 $prerequisites$;
 
+-- The prior lean guard intentionally removed EXECUTE from the function owner.
+-- Some managed migration paths validate owner access before CREATE OR REPLACE,
+-- so restore only the owner first. Client roles remain unable to call these
+-- wrappers until the final grants at the end of this section.
+GRANT EXECUTE ON FUNCTION public.create_supplier_payment(UUID,TEXT,NUMERIC,TEXT)
+  TO project_admin;
+GRANT EXECUTE ON FUNCTION public.review_supplier_payment(UUID,BOOLEAN,TEXT)
+  TO project_admin;
+GRANT EXECUTE ON FUNCTION public.mark_supplier_payment_paid(UUID,UUID)
+  TO project_admin;
+
 REVOKE ALL ON FUNCTION public.create_supplier_payment_rlc_impl(UUID,TEXT,NUMERIC,TEXT)
-  FROM PUBLIC, anon, authenticated, project_admin;
+  FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.review_supplier_payment_rlc_impl(UUID,BOOLEAN,TEXT)
-  FROM PUBLIC, anon, authenticated, project_admin;
+  FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.mark_supplier_payment_paid_rlc_impl(UUID,UUID)
-  FROM PUBLIC, anon, authenticated, project_admin;
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_supplier_payment_rlc_impl(UUID,TEXT,NUMERIC,TEXT)
+  TO project_admin;
+GRANT EXECUTE ON FUNCTION public.review_supplier_payment_rlc_impl(UUID,BOOLEAN,TEXT)
+  TO project_admin;
+GRANT EXECUTE ON FUNCTION public.mark_supplier_payment_paid_rlc_impl(UUID,UUID)
+  TO project_admin;
 
 CREATE OR REPLACE FUNCTION public.create_supplier_payment(
   supplier_order_id_input UUID,
@@ -119,14 +136,68 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.create_supplier_payment(UUID,TEXT,NUMERIC,TEXT)
-  FROM PUBLIC, anon, authenticated, project_admin;
+  FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.review_supplier_payment(UUID,BOOLEAN,TEXT)
-  FROM PUBLIC, anon, authenticated, project_admin;
+  FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.mark_supplier_payment_paid(UUID,UUID)
-  FROM PUBLIC, anon, authenticated, project_admin;
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_supplier_payment(UUID,TEXT,NUMERIC,TEXT) TO project_admin;
+GRANT EXECUTE ON FUNCTION public.review_supplier_payment(UUID,BOOLEAN,TEXT) TO project_admin;
+GRANT EXECUTE ON FUNCTION public.mark_supplier_payment_paid(UUID,UUID) TO project_admin;
 GRANT EXECUTE ON FUNCTION public.create_supplier_payment(UUID,TEXT,NUMERIC,TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.review_supplier_payment(UUID,BOOLEAN,TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.mark_supplier_payment_paid(UUID,UUID) TO authenticated;
+
+DO $acl_assertions$
+DECLARE
+  signature TEXT;
+  public_can_execute BOOLEAN;
+BEGIN
+  FOREACH signature IN ARRAY ARRAY[
+    'public.create_supplier_payment_rlc_impl(uuid,text,numeric,text)',
+    'public.review_supplier_payment_rlc_impl(uuid,boolean,text)',
+    'public.mark_supplier_payment_paid_rlc_impl(uuid,uuid)'
+  ] LOOP
+    SELECT EXISTS (
+      SELECT 1
+      FROM pg_catalog.pg_proc p
+      CROSS JOIN LATERAL pg_catalog.aclexplode(
+        COALESCE(p.proacl, pg_catalog.acldefault('f', p.proowner))) acl
+      WHERE p.oid = pg_catalog.to_regprocedure(signature)
+        AND acl.grantee = 0
+        AND acl.privilege_type = 'EXECUTE'
+    ) INTO public_can_execute;
+    IF public_can_execute
+      OR pg_catalog.has_function_privilege('anon', signature, 'EXECUTE')
+      OR pg_catalog.has_function_privilege('authenticated', signature, 'EXECUTE')
+      OR NOT pg_catalog.has_function_privilege('project_admin', signature, 'EXECUTE') THEN
+      RAISE EXCEPTION 'CORE_PARITY_PRIVATE_ACL_INVALID: %', signature;
+    END IF;
+  END LOOP;
+
+  FOREACH signature IN ARRAY ARRAY[
+    'public.create_supplier_payment(uuid,text,numeric,text)',
+    'public.review_supplier_payment(uuid,boolean,text)',
+    'public.mark_supplier_payment_paid(uuid,uuid)'
+  ] LOOP
+    SELECT EXISTS (
+      SELECT 1
+      FROM pg_catalog.pg_proc p
+      CROSS JOIN LATERAL pg_catalog.aclexplode(
+        COALESCE(p.proacl, pg_catalog.acldefault('f', p.proowner))) acl
+      WHERE p.oid = pg_catalog.to_regprocedure(signature)
+        AND acl.grantee = 0
+        AND acl.privilege_type = 'EXECUTE'
+    ) INTO public_can_execute;
+    IF public_can_execute
+      OR pg_catalog.has_function_privilege('anon', signature, 'EXECUTE')
+      OR NOT pg_catalog.has_function_privilege('authenticated', signature, 'EXECUTE')
+      OR NOT pg_catalog.has_function_privilege('project_admin', signature, 'EXECUTE') THEN
+      RAISE EXCEPTION 'CORE_PARITY_WRAPPER_ACL_INVALID: %', signature;
+    END IF;
+  END LOOP;
+END
+$acl_assertions$;
 
 -- Restore the UAT-accepted Production/QC, Logistics, Claims and Reports RPCs.
 GRANT EXECUTE ON FUNCTION public.add_production_update(UUID,TEXT,TEXT,TIMESTAMPTZ,NUMERIC,TIMESTAMPTZ,TIMESTAMPTZ,TEXT,JSONB) TO authenticated;

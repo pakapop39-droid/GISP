@@ -1,8 +1,48 @@
 -- Emergency database kill switch for PROD-CORE-PARITY-DIRECT-PROD v0.2.
 -- No business rows are changed. Apply only under an authorized incident action.
-REVOKE ALL ON FUNCTION public.create_supplier_payment(UUID,TEXT,NUMERIC,TEXT) FROM PUBLIC,anon,authenticated,project_admin;
-REVOKE ALL ON FUNCTION public.review_supplier_payment(UUID,BOOLEAN,TEXT) FROM PUBLIC,anon,authenticated,project_admin;
-REVOKE ALL ON FUNCTION public.mark_supplier_payment_paid(UUID,UUID) FROM PUBLIC,anon,authenticated,project_admin;
+REVOKE ALL ON FUNCTION public.create_supplier_payment(UUID,TEXT,NUMERIC,TEXT) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.review_supplier_payment(UUID,BOOLEAN,TEXT) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.mark_supplier_payment_paid(UUID,UUID) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.create_supplier_payment(UUID,TEXT,NUMERIC,TEXT) TO project_admin;
+GRANT EXECUTE ON FUNCTION public.review_supplier_payment(UUID,BOOLEAN,TEXT) TO project_admin;
+GRANT EXECUTE ON FUNCTION public.mark_supplier_payment_paid(UUID,UUID) TO project_admin;
+REVOKE ALL ON FUNCTION public.create_supplier_payment_rlc_impl(UUID,TEXT,NUMERIC,TEXT) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.review_supplier_payment_rlc_impl(UUID,BOOLEAN,TEXT) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.mark_supplier_payment_paid_rlc_impl(UUID,UUID) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.create_supplier_payment_rlc_impl(UUID,TEXT,NUMERIC,TEXT) TO project_admin;
+GRANT EXECUTE ON FUNCTION public.review_supplier_payment_rlc_impl(UUID,BOOLEAN,TEXT) TO project_admin;
+GRANT EXECUTE ON FUNCTION public.mark_supplier_payment_paid_rlc_impl(UUID,UUID) TO project_admin;
+DO $acl_assertions$
+DECLARE
+  signature TEXT;
+  public_can_execute BOOLEAN;
+BEGIN
+  FOREACH signature IN ARRAY ARRAY[
+    'public.create_supplier_payment(uuid,text,numeric,text)',
+    'public.review_supplier_payment(uuid,boolean,text)',
+    'public.mark_supplier_payment_paid(uuid,uuid)',
+    'public.create_supplier_payment_rlc_impl(uuid,text,numeric,text)',
+    'public.review_supplier_payment_rlc_impl(uuid,boolean,text)',
+    'public.mark_supplier_payment_paid_rlc_impl(uuid,uuid)'
+  ] LOOP
+    SELECT EXISTS (
+      SELECT 1
+      FROM pg_catalog.pg_proc p
+      CROSS JOIN LATERAL pg_catalog.aclexplode(
+        COALESCE(p.proacl, pg_catalog.acldefault('f', p.proowner))) acl
+      WHERE p.oid = pg_catalog.to_regprocedure(signature)
+        AND acl.grantee = 0
+        AND acl.privilege_type = 'EXECUTE'
+    ) INTO public_can_execute;
+    IF public_can_execute
+      OR pg_catalog.has_function_privilege('anon', signature, 'EXECUTE')
+      OR pg_catalog.has_function_privilege('authenticated', signature, 'EXECUTE')
+      OR NOT pg_catalog.has_function_privilege('project_admin', signature, 'EXECUTE') THEN
+      RAISE EXCEPTION 'CORE_PARITY_STOP_ACL_INVALID: %', signature;
+    END IF;
+  END LOOP;
+END
+$acl_assertions$;
 REVOKE ALL ON FUNCTION public.add_production_update(UUID,TEXT,TEXT,TIMESTAMPTZ,NUMERIC,TIMESTAMPTZ,TIMESTAMPTZ,TEXT,JSONB) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.record_qc_inspection(UUID,TEXT,JSONB,TEXT,TEXT,TEXT,TEXT,UUID,JSONB) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.respond_custom_qc(UUID,TEXT,TEXT) FROM PUBLIC,anon,authenticated;
