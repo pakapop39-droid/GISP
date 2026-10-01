@@ -7,7 +7,7 @@ const manifest = readFileSync(new URL("../../release-candidates/full-flow-go-liv
 
 describe("FULL-FLOW-DEP-SEC-01 dependency contract", () => {
   it("pins only the approved direct dependency and override versions", () => {
-    expect(packageJson.dependencies.next).toBe("16.3.5");
+    expect(packageJson.dependencies.next).toBe("16.3.8");
     expect(packageJson.devDependencies["eslint-config-next"]).toBe("16.3.5");
     expect(packageJson.dependencies.sharp).toBe("0.35.4");
     expect(packageJson.overrides.sharp).toBe("0.35.4");
@@ -16,7 +16,7 @@ describe("FULL-FLOW-DEP-SEC-01 dependency contract", () => {
 
   it("resolves the exact approved lockfile versions", () => {
     const packages = packageLock.packages;
-    expect(packages["node_modules/next"].version).toBe("16.3.5");
+    expect(packages["node_modules/next"].version).toBe("16.3.8");
     expect(packages["node_modules/eslint-config-next"].version).toBe("16.3.5");
     expect(packages["node_modules/sharp"].version).toBe("0.35.4");
     expect(packages["node_modules/vitest"].version).toBe("4.1.11");

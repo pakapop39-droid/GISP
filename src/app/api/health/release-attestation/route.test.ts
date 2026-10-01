@@ -23,7 +23,8 @@ function configuredEnvironment() {
   process.env.NEXT_PUBLIC_INSFORGE_URL = "https://child-key.ap-southeast.insforge.app";
   process.env.NEXT_PUBLIC_APP_URL = "https://child-rehearsal.insforge.site";
   process.env.RELEASE_STAGE = "D";
-  process.env.RELEASE_D_ENABLED_SLICES = "7,8";
+  process.env.RELEASE_D_ENABLED_SLICES = "7,8,9,10";
+  process.env.PRODUCTION_CORE_PARITY_ENABLED = "true";
   process.env.INSFORGE_API_KEY = "must-never-appear";
   process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY = "must-never-appear-either";
 }
@@ -57,7 +58,7 @@ describe("hosted release attestation", () => {
         appHost: "child-rehearsal.insforge.site",
         requestHost: "child-rehearsal.insforge.site",
       },
-      release: { stage: "D", enabledDSlices: [7, 8], coreParityEnabled: false },
+      release: { stage: "D", enabledDSlices: [7, 8, 9, 10], coreParityEnabled: true },
       serverAdminProbeOk: true,
     });
     expect(mocks.select).toHaveBeenCalledWith("id", { head: true });
@@ -113,12 +114,13 @@ describe("hosted release attestation", () => {
     expect(mocks.from).toHaveBeenCalledWith("file_metadata");
   });
 
-  it("accepts Release C only when every D slice is disabled", async () => {
+  it("rejects Release C even when every D slice is disabled", async () => {
     process.env.RELEASE_STAGE = "C";
     delete process.env.RELEASE_D_ENABLED_SLICES;
-    expect((await GET(request())).status).toBe(200);
+    expect((await GET(request())).status).toBe(503);
     process.env.RELEASE_D_ENABLED_SLICES = "7";
     expect((await GET(request())).status).toBe(503);
+    expect(mocks.from).not.toHaveBeenCalled();
   });
 
   it.each(["7,8,10", "7,7", "8,7", "7,,8", "x"])("rejects unsupported or malformed D slices: %s", async (value) => {
@@ -128,12 +130,13 @@ describe("hosted release attestation", () => {
   });
 
   it("attests full core parity only with D7-D10 and the explicit switch", async () => {
-    process.env.PRODUCTION_CORE_PARITY_ENABLED = "true";
-    process.env.RELEASE_D_ENABLED_SLICES = "7,8,9,10";
     const response = await GET(request());
     expect(response.status).toBe(200);
     expect((await response.json()).release).toEqual({ stage: "D", enabledDSlices: [7, 8, 9, 10], coreParityEnabled: true });
     process.env.RELEASE_D_ENABLED_SLICES = "7,8,9";
+    expect((await GET(request())).status).toBe(503);
+    process.env.RELEASE_D_ENABLED_SLICES = "7,8,9,10";
+    process.env.PRODUCTION_CORE_PARITY_ENABLED = "false";
     expect((await GET(request())).status).toBe(503);
   });
 

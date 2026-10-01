@@ -46,14 +46,6 @@ const RELEASE_A_AUTH_PATHS = new Set([
   "/api/auth/refresh",
 ]);
 
-const CORE_PARITY_STAFF_PREFIXES = [
-  "/api/admin/supplier-payments", "/api/admin/supplier-orders",
-  "/api/admin/production-updates", "/api/admin/qc-inspections", "/api/admin/operations-media",
-  "/api/admin/logistics", "/api/admin/deliveries", "/api/admin/shipments",
-  "/api/admin/claims", "/api/admin/reports", "/api/admin/executive",
-  "/admin/claims", "/admin/reports", "/admin/executive",
-];
-
 function matchesPrefix(pathname: string, prefix: string) {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
@@ -70,8 +62,12 @@ export function isStagedReleaseEnabled() {
 // One fail-closed switch exposes the already accepted core flow. Removing or
 // setting it to anything except the literal string "true" hides the added
 // routes immediately without changing data or rolling back a deployment.
-export function isCoreParityEnabled(raw = process.env.PRODUCTION_CORE_PARITY_ENABLED) {
-  return raw === "true";
+export function isCoreParityEnabled(
+  raw = process.env.PRODUCTION_CORE_PARITY_ENABLED,
+  stage = process.env.RELEASE_STAGE,
+  rawSlices = process.env.RELEASE_D_ENABLED_SLICES,
+) {
+  return raw === "true" && stage === "D" && enabledReleaseDSlices(rawSlices).join(",") === "7,8,9,10";
 }
 
 // A hidden menu alone must not expose features whose database release is pending.
@@ -111,7 +107,7 @@ export function isReleaseAPathAllowed(pathname: string, staffOperations = false)
   // Internal staff rehearsal opens only staff routes. Authentication and each
   // endpoint's permissions still apply; member signup and transactions stay gated.
   if (staffOperations && (matchesPrefix(pathname, "/admin") || matchesPrefix(pathname, "/api/admin"))) {
-    if (!isCoreParityEnabled() && CORE_PARITY_STAFF_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) return false;
+    if (!isCoreParityEnabled() && isCoreParityPath(pathname)) return false;
     return !POST_GO_LIVE_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
   }
   if (RELEASE_A_PUBLIC_PATHS.has(pathname) || RELEASE_A_AUTH_PATHS.has(pathname)) {
@@ -227,12 +223,7 @@ export function enabledReleaseDSlices(raw = process.env.RELEASE_D_ENABLED_SLICES
 }
 
 export function isOrderOperationSliceVisible(slice: 7 | 8) {
-  if (isCoreParityEnabled()) return true;
-  const stage = process.env.RELEASE_STAGE;
-  if (stage === "D") return enabledReleaseDSlices().includes(slice);
-  if (stage === "C") return false;
-  if (stage === "A" || stage === "B") return process.env.ENABLE_STAFF_OPERATIONS === "true";
-  return process.env.VERCEL_ENV !== "production" && process.env.APP_ENV !== "production";
+  return (slice === 7 || slice === 8) && isCoreParityEnabled();
 }
 
 export function isReleaseDPathAllowed(pathname: string, rawSlices = process.env.RELEASE_D_ENABLED_SLICES) {
@@ -249,16 +240,36 @@ export function isReleaseStagePathAllowed(
   stage = process.env.RELEASE_STAGE,
   staffOperations = process.env.ENABLE_STAFF_OPERATIONS === "true",
 ) {
-  if (isCoreParityEnabled()) {
+  const coreParityEnabled = isCoreParityEnabled(
+    process.env.PRODUCTION_CORE_PARITY_ENABLED,
+    stage,
+    process.env.RELEASE_D_ENABLED_SLICES,
+  );
+  if (coreParityEnabled) {
     if (RELEASE_C_DEFERRED_API_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) return true;
     if (matchesPrefix(pathname, "/api/admin/supplier-orders")) return true;
     if (/^\/api\/admin\/payment-transfers\/[^/]+\/adjustments(?:\/|$)/.test(pathname)) return true;
     return isReleaseDPathAllowed(pathname, "7,8,9,10");
   }
+  // The parity switch is the emergency brake for the complete C/D transaction
+  // and operations surface. An incomplete combination must not fall back to a
+  // progressive C/D release, even when staff rehearsal is enabled.
+  if (isCoreParityPath(pathname)) return false;
   if (stage === "A") return isReleaseAPathAllowed(pathname, staffOperations);
   if (stage === "B") return isReleaseBPathAllowed(pathname, staffOperations);
-  if (stage === "C") return isReleaseCPathAllowed(pathname);
-  if (stage === "D") return isReleaseDPathAllowed(pathname);
+  if (stage === "C" || stage === "D") return isReleaseBPathAllowed(pathname, false);
   // Local Development remains unstaged, but hosted Production must fail closed.
   return process.env.VERCEL_ENV !== "production" && process.env.APP_ENV !== "production";
+}
+
+function isCoreParityPath(pathname: string) {
+  if (/^\/api\/admin\/payment-transfers\/[^/]+\/adjustments(?:\/|$)/.test(pathname)) return true;
+  if (matchesPrefix(pathname, "/api/admin/supplier-orders")) return true;
+  const prefixes = [
+    ...RELEASE_C_PAGE_PREFIXES,
+    ...RELEASE_C_API_PREFIXES,
+    ...RELEASE_C_DEFERRED_API_PREFIXES,
+    ...Object.values(RELEASE_D_SLICE_PREFIXES).flatMap(({ pages, apis }) => [...pages, ...apis]),
+  ];
+  return prefixes.some((prefix) => matchesPrefix(pathname, prefix));
 }

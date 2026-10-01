@@ -1,27 +1,25 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const sql = readFileSync(
+const readNormalized = (url: URL) => readFileSync(url, "utf8").replace(/\r\n/g, "\n");
+
+const sql = readNormalized(
   new URL("../../migrations/20260918133857_release-c-org-scope-hardening.sql", import.meta.url),
-  "utf8",
 );
-const packagedSql = readFileSync(
+const packagedSql = readNormalized(
   new URL(
     "../../release-candidates/rlc-harden-01/migrations/20260920010250_release-c-org-scope-hardening.sql",
     import.meta.url,
   ),
-  "utf8",
 );
-const fullFlowPackagedSql = readFileSync(
+const fullFlowPackagedSql = readNormalized(
   new URL(
     "../../release-candidates/full-flow-go-live-01/migrations/20260920010250_release-c-org-scope-hardening.sql",
     import.meta.url,
   ),
-  "utf8",
 );
-const migration = (name: string) => readFileSync(
+const migration = (name: string) => readNormalized(
   new URL(`../../migrations/${name}`, import.meta.url),
-  "utf8",
 );
 
 function body(functionName: string) {

@@ -56,19 +56,31 @@ export async function buildBusinessDocumentPdf(document: BusinessDocument) {
   const markerFont = await pdf.embedFont(StandardFonts.Helvetica);
   let page!: PDFPage;
   let y = 0;
-  const newPage = () => {
+  const newPage = (continuationTitle?: string) => {
     page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     y = PAGE_HEIGHT - MARGIN;
+    const pageMarker = `PAGE-${String(pdf.getPageCount()).padStart(3, "0")}`;
+    const pageMarkerWidth = markerFont.widthOfTextAtSize(pageMarker, 6.5);
+    page.drawText(pageMarker, { x: PAGE_WIDTH - MARGIN - pageMarkerWidth, y: y + 5, size: 6.5, font: markerFont, color: rgb(0.45, 0.47, 0.49) });
     page.drawText(document.title, { x: MARGIN, y, size: 16, font, color: rgb(0.06, 0.12, 0.16) });
     page.drawText(document.reference, { x: MARGIN, y: y - 21, size: 9, font, color: rgb(0.25, 0.3, 0.33) });
     y -= 44;
+    if (continuationTitle) {
+      page.drawText(`${continuationTitle} (ต่อ)`, { x: MARGIN, y, size: 10, font, color: rgb(0.08, 0.08, 0.08) });
+      const continuationMarker = "CONTINUED";
+      const continuationWidth = markerFont.widthOfTextAtSize(continuationMarker, 6.5);
+      page.drawText(continuationMarker, { x: PAGE_WIDTH - MARGIN - continuationWidth, y: y + 1, size: 6.5, font: markerFont, color: rgb(0.45, 0.47, 0.49) });
+      y -= LINE_HEIGHT + 2;
+    }
   };
-  const ensureSpace = (height: number) => { if (y - height < MARGIN + FOOTER_HEIGHT) newPage(); };
-  const drawLines = (lines: string[], options: { heading?: boolean; gapAfter?: number } = {}) => {
+  const ensureSpace = (height: number, continuationTitle?: string) => {
+    if (y - height < MARGIN + FOOTER_HEIGHT) newPage(continuationTitle);
+  };
+  const drawLines = (lines: string[], options: { heading?: boolean; gapAfter?: number; continuationTitle?: string } = {}) => {
     const size = options.heading ? 10 : TEXT_SIZE;
     for (const source of lines) {
       for (const line of wrapText(source, font, size, PAGE_WIDTH - MARGIN * 2)) {
-        ensureSpace(LINE_HEIGHT);
+        ensureSpace(LINE_HEIGHT, options.continuationTitle);
         page.drawText(line, { x: MARGIN, y, size, font, color: rgb(0.08, 0.08, 0.08) });
         y -= LINE_HEIGHT;
       }
@@ -88,7 +100,7 @@ export async function buildBusinessDocumentPdf(document: BusinessDocument) {
         page.drawText(section.marker, { x: PAGE_WIDTH - MARGIN - markerWidth, y: y + LINE_HEIGHT + 2, size: 6.5, font: markerFont, color: rgb(0.45, 0.47, 0.49) });
       }
     }
-    drawLines(section.lines, { gapAfter: 8 });
+    drawLines(section.lines, { gapAfter: 8, continuationTitle: section.title ?? "รายการ" });
     ensureSpace(5);
     page.drawLine({ start: { x: MARGIN, y: y + 4 }, end: { x: PAGE_WIDTH - MARGIN, y: y + 4 }, thickness: 0.5, color: rgb(0.8, 0.82, 0.84) });
   }

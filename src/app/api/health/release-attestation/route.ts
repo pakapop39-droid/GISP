@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createInsForgeAdminClient } from "@/lib/insforge/admin";
+import { enabledReleaseDSlices, isCoreParityEnabled } from "../../../../lib/release-stage";
 
 export const dynamic = "force-dynamic";
 
@@ -35,14 +36,6 @@ function configuredBackendHost(value: string | undefined) {
   return backendHostPattern.test(host) ? host : null;
 }
 
-function releaseSlices(value: string | undefined) {
-  if (!value) return [];
-  const slices = value.split(",").map((item) => Number(item.trim()));
-  if (slices.some((item) => !Number.isInteger(item))) return [];
-  const canonical = [7, 8, 9, 10].slice(0, slices.length);
-  return slices.length > 0 && slices.length <= 4 && slices.every((item, index) => item === canonical[index]) ? slices : [];
-}
-
 async function probeServerAdmin() {
   try {
     // head:true proves the server credential can reach the bound backend without
@@ -68,12 +61,13 @@ export async function GET(request: Request) {
   const appHost = hostname(process.env.NEXT_PUBLIC_APP_URL);
   const requestHost = hostname(request.url);
   const stage = process.env.RELEASE_STAGE ?? null;
-  const slices = releaseSlices(process.env.RELEASE_D_ENABLED_SLICES);
-  const coreParityEnabled = process.env.PRODUCTION_CORE_PARITY_ENABLED === "true";
-  const releaseConfigurationComplete = coreParityEnabled
-    ? stage === "D" && slices.length === 4
-    : (stage === "C" || stage === "D")
-      && (stage === "C" ? slices.length === 0 : slices.length === 1 || slices.length === 2);
+  const slices = enabledReleaseDSlices(process.env.RELEASE_D_ENABLED_SLICES);
+  const coreParityEnabled = isCoreParityEnabled(
+    process.env.PRODUCTION_CORE_PARITY_ENABLED,
+    process.env.RELEASE_STAGE,
+    process.env.RELEASE_D_ENABLED_SLICES,
+  );
+  const releaseConfigurationComplete = coreParityEnabled;
   const identityBindingComplete = Boolean(
     commit && shaPattern.test(commit)
     && tree && shaPattern.test(tree)

@@ -23,7 +23,7 @@ describe("Release A route gate", () => {
   });
 });
 
-describe("Release C/D progressive gate", () => {
+describe("Production core parity release gate", () => {
   it("allows only the exact release attestation health route at every staged gate", () => {
     for (const stage of ["A", "B", "C", "D"]) {
       expect(isReleaseStagePathAllowed("/api/health/release-attestation", stage, false)).toBe(true);
@@ -31,61 +31,59 @@ describe("Release C/D progressive gate", () => {
     }
   });
 
-  it("opens C transactions but blocks every D slice even with the staff rehearsal flag", () => {
-    for (const route of ["/member/orders/123", "/api/member/payment-transfers", "/admin/orders/123", "/api/admin/payment-transfers/123/evidence", "/api/admin/supplier-disclosures/123/revoke", "/api/admin/dashboard"]) {
-      expect(isReleaseStagePathAllowed(route, "C", true)).toBe(true);
-    }
-    for (const route of ["/api/admin/supplier-payments", "/api/admin/payment-transfers/123/adjustments", "/api/admin/payment-adjustments/123/review", "/api/admin/payment-workflow-holds/123/confirm", "/api/admin/qc-inspections", "/api/admin/production-updates", "/api/admin/logistics/actions", "/api/admin/shipments", "/api/member/claims", "/admin/reports", "/member/reports"]) {
+  it("fails closed for every C/D transaction and operations route when the emergency switch is off", () => {
+    for (const route of ["/member/orders/123", "/api/member/payment-transfers", "/admin/orders/123", "/api/admin/payment-transfers/123/evidence", "/api/admin/supplier-disclosures/123/revoke", "/api/admin/dashboard", "/api/admin/supplier-payments", "/api/admin/payment-transfers/123/adjustments", "/api/admin/payment-adjustments/123/review", "/api/admin/payment-workflow-holds/123/confirm", "/api/admin/qc-inspections", "/api/admin/production-updates", "/api/admin/logistics/actions", "/api/admin/shipments", "/api/member/claims", "/admin/reports", "/member/reports"]) {
       expect(isReleaseStagePathAllowed(route, "C", true)).toBe(false);
+      expect(isReleaseStagePathAllowed(route, "D", true)).toBe(false);
+    }
+    expect(isReleaseStagePathAllowed("/member/projects", "D", true)).toBe(true);
+  });
+
+  it("parses only contiguous D slice declarations", () => {
+    expect(enabledReleaseDSlices("7")).toEqual([7]);
+    expect(enabledReleaseDSlices("7,8,9,10")).toEqual([7, 8, 9, 10]);
+    for (const invalid of ["", "8", "7,9", "7,8,8", "7,8,9,11", "7,8,9,10,11"]) {
+      expect(enabledReleaseDSlices(invalid)).toEqual([]);
     }
   });
 
-  it("only enables contiguous owner-authorized D slices", () => {
-    const previous = process.env.RELEASE_D_ENABLED_SLICES;
+  it("opens accepted core routes only for the exact D + 7-10 + true combination", () => {
+    const previous = { stage: process.env.RELEASE_STAGE, slices: process.env.RELEASE_D_ENABLED_SLICES, enabled: process.env.PRODUCTION_CORE_PARITY_ENABLED };
     try {
-      process.env.RELEASE_D_ENABLED_SLICES = "7";
-      expect(isReleaseStagePathAllowed("/api/admin/qc-inspections", "D", true)).toBe(true);
-      expect(isReleaseStagePathAllowed("/api/admin/logistics/actions", "D", true)).toBe(false);
-      process.env.RELEASE_D_ENABLED_SLICES = "7,8";
-      expect(isReleaseStagePathAllowed("/api/admin/logistics/actions", "D", true)).toBe(true);
-      expect(isReleaseStagePathAllowed("/member/claims", "D", true)).toBe(false);
-      process.env.RELEASE_D_ENABLED_SLICES = "7,8,9";
-      expect(isReleaseStagePathAllowed("/member/claims", "D", true)).toBe(true);
-      expect(isReleaseStagePathAllowed("/member/reports", "D", true)).toBe(false);
+      process.env.RELEASE_STAGE = "D";
       process.env.RELEASE_D_ENABLED_SLICES = "7,8,9,10";
-      expect(isReleaseStagePathAllowed("/member/reports", "D", true)).toBe(true);
-      for (const invalid of ["", "8", "7,9", "7,8,8", "7,8,9,11", "7,8,9,10,11"]) {
-        expect(enabledReleaseDSlices(invalid)).toEqual([]);
-      }
-    } finally {
-      if (previous === undefined) delete process.env.RELEASE_D_ENABLED_SLICES;
-      else process.env.RELEASE_D_ENABLED_SLICES = previous;
-    }
-  });
-
-  it("opens the accepted core routes only with the explicit fail-closed parity switch", () => {
-    const previous = process.env.PRODUCTION_CORE_PARITY_ENABLED;
-    try {
-      delete process.env.PRODUCTION_CORE_PARITY_ENABLED;
+      process.env.PRODUCTION_CORE_PARITY_ENABLED = "false";
       expect(isCoreParityEnabled()).toBe(false);
-      expect(isReleaseStagePathAllowed("/api/admin/supplier-payments", "A", true)).toBe(false);
       process.env.PRODUCTION_CORE_PARITY_ENABLED = "true";
       expect(isCoreParityEnabled()).toBe(true);
       for (const route of ["/api/admin/supplier-payments", "/api/admin/supplier-orders/id/po/pdf", "/api/admin/production-updates", "/api/admin/logistics/actions", "/member/claims", "/admin/reports"]) {
-        expect(isReleaseStagePathAllowed(route, "A", true)).toBe(true);
+        expect(isReleaseStagePathAllowed(route, "D", true)).toBe(true);
       }
       expect(isOrderOperationSliceVisible(7)).toBe(true);
       expect(isOrderOperationSliceVisible(8)).toBe(true);
+      for (const invalid of [
+        { stage: "C", slices: "7,8,9,10", enabled: "true" },
+        { stage: "D", slices: "7,8,9", enabled: "true" },
+        { stage: "D", slices: "7,8,9,10", enabled: "false" },
+      ]) {
+        process.env.RELEASE_STAGE = invalid.stage;
+        process.env.RELEASE_D_ENABLED_SLICES = invalid.slices;
+        process.env.PRODUCTION_CORE_PARITY_ENABLED = invalid.enabled;
+        expect(isCoreParityEnabled()).toBe(false);
+        expect(isReleaseStagePathAllowed("/api/admin/supplier-payments", invalid.stage, true)).toBe(false);
+      }
     } finally {
-      if (previous === undefined) delete process.env.PRODUCTION_CORE_PARITY_ENABLED;
-      else process.env.PRODUCTION_CORE_PARITY_ENABLED = previous;
+      if (previous.stage === undefined) delete process.env.RELEASE_STAGE; else process.env.RELEASE_STAGE = previous.stage;
+      if (previous.slices === undefined) delete process.env.RELEASE_D_ENABLED_SLICES; else process.env.RELEASE_D_ENABLED_SLICES = previous.slices;
+      if (previous.enabled === undefined) delete process.env.PRODUCTION_CORE_PARITY_ENABLED; else process.env.PRODUCTION_CORE_PARITY_ENABLED = previous.enabled;
     }
   });
 
-  it("hides D order controls in C and fails closed for invalid hosted Production stages", () => {
+  it("hides D order controls for incomplete combinations and fails closed for invalid hosted Production stages", () => {
     const previousStage = process.env.RELEASE_STAGE;
     const previousVercel = process.env.VERCEL_ENV;
     const previousSlices = process.env.RELEASE_D_ENABLED_SLICES;
+    const previousEnabled = process.env.PRODUCTION_CORE_PARITY_ENABLED;
     try {
       process.env.VERCEL_ENV = "production";
       process.env.RELEASE_STAGE = "C";
@@ -93,7 +91,8 @@ describe("Release C/D progressive gate", () => {
       expect(isOrderOperationSliceVisible(8)).toBe(false);
       process.env.RELEASE_STAGE = "D";
       process.env.RELEASE_D_ENABLED_SLICES = "7";
-      expect(isOrderOperationSliceVisible(7)).toBe(true);
+      process.env.PRODUCTION_CORE_PARITY_ENABLED = "true";
+      expect(isOrderOperationSliceVisible(7)).toBe(false);
       expect(isOrderOperationSliceVisible(8)).toBe(false);
       process.env.RELEASE_STAGE = "INVALID";
       expect(isStagedReleaseEnabled()).toBe(true);
@@ -102,6 +101,7 @@ describe("Release C/D progressive gate", () => {
       if (previousStage === undefined) delete process.env.RELEASE_STAGE; else process.env.RELEASE_STAGE = previousStage;
       if (previousVercel === undefined) delete process.env.VERCEL_ENV; else process.env.VERCEL_ENV = previousVercel;
       if (previousSlices === undefined) delete process.env.RELEASE_D_ENABLED_SLICES; else process.env.RELEASE_D_ENABLED_SLICES = previousSlices;
+      if (previousEnabled === undefined) delete process.env.PRODUCTION_CORE_PARITY_ENABLED; else process.env.PRODUCTION_CORE_PARITY_ENABLED = previousEnabled;
     }
   });
 });
@@ -109,7 +109,7 @@ describe("Release C/D progressive gate", () => {
 describe("Production MVP publication boundary", () => {
   it("opens approved staff operations without opening member or pending routes", () => {
     for (const route of ["/admin/orders", "/api/admin/orders/123", "/api/admin/payment-transfers/123/verify"]) {
-      expect(isReleaseAPathAllowed(route, true)).toBe(true);
+      expect(isReleaseAPathAllowed(route, true)).toBe(false);
       expect(isReleaseAPathAllowed(route, false)).toBe(false);
     }
     for (const route of ["/api/admin/shipments", "/admin/claims", "/api/admin/supplier-payments"]) {
