@@ -1,0 +1,4 @@
+GISP Hosted Rehearsal storage sentinel
+Reference: REH-RCD-CD-001
+Environment: pay-seq-02-rehearsal-20260918
+Purpose: backup and restore verification only

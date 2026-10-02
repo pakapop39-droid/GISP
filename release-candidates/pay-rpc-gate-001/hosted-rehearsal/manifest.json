@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Local hash-only manifest for RCD-HR-CD-001; not an apply or deploy instruction.",
+  "sourceCommit": "55de0c854e8dc51e9dd547385a7ecd2ee418823a",
+  "sourceTree": "0100f6078d9cffdc3f69bdcc20886e1faa060258",
+  "canonicalHash": "sha256(utf8(text.replace(/\\r\\n?/g, '\\n')))",
+  "reconcile": {
+    "source": "release-candidates/pay-rpc-gate-001/emergency/reconcile.sql",
+    "canonicalSha256": "45e93f9c9ffe6c17b38a1994c53c72b08ec1c0e7a0d8df50c1bb30db172994e6"
+  },
+  "migrations": [
+    {
+      "sequence": 1,
+      "phase": "STOP",
+      "source": "release-candidates/pay-rpc-gate-001/emergency/stop-d10.sql",
+      "target": "migrations/20260920011200_rcd-hr-stop-d10.sql",
+      "canonicalSha256": "05cb2193dbc716877505b143ac44e90047f21a12600ac24b8ac8947094bbe046"
+    },
+    {
+      "sequence": 2,
+      "phase": "STOP",
+      "source": "release-candidates/pay-rpc-gate-001/emergency/stop-d9.sql",
+      "target": "migrations/20260920011300_rcd-hr-stop-d9.sql",
+      "canonicalSha256": "c62282d803f7c5012d9bd7cbe0a3eec105792b5578368f83a8994981f3e5448f"
+    },
+    {
+      "sequence": 3,
+      "phase": "STOP",
+      "source": "release-candidates/pay-rpc-gate-001/emergency/stop-d8.sql",
+      "target": "migrations/20260920011400_rcd-hr-stop-d8.sql",
+      "canonicalSha256": "b53cec899c96fb71199b3709282e63e0fd1d14138472150286493f31ea692088"
+    },
+    {
+      "sequence": 4,
+      "phase": "STOP",
+      "source": "release-candidates/pay-rpc-gate-001/emergency/stop-d7.sql",
+      "target": "migrations/20260920011500_rcd-hr-stop-d7.sql",
+      "canonicalSha256": "d7cb496a0487e031a3ae859256fb11c0377e8466d4fd81b43db9f6f1090377c5"
+    },
+    {
+      "sequence": 5,
+      "phase": "STOP",
+      "source": "release-candidates/pay-rpc-gate-001/emergency/stop-c.sql",
+      "target": "migrations/20260920011600_rcd-hr-stop-c.sql",
+      "canonicalSha256": "f98316e9fd18ea9498f2f583663e401181b5de6adae90b208fef0d67ca0726d5"
+    },
+    {
+      "sequence": 6,
+      "phase": "RESUME",
+      "source": "release-candidates/pay-rpc-gate-001/emergency/resume-c.sql",
+      "target": "migrations/20260920011700_rcd-hr-resume-c.sql",
+      "canonicalSha256": "de8ff177001b8641911f4561f5f8acc57885bf302523b5bd578a8bbee60c41e5"
+    },
+    {
+      "sequence": 7,
+      "phase": "RESUME",
+      "source": "release-candidates/pay-rpc-gate-001/emergency/resume-d7.sql",
+      "target": "migrations/20260920011800_rcd-hr-resume-d7.sql",
+      "canonicalSha256": "e5fcac83f327dfbb5d1e9e7426982859cab99dd1c0cd59110d995c56bd96c0aa"
+    },
+    {
+      "sequence": 8,
+      "phase": "RESUME",
+      "source": "release-candidates/pay-rpc-gate-001/emergency/resume-d8.sql",
+      "target": "migrations/20260920011900_rcd-hr-resume-d8.sql",
+      "canonicalSha256": "4d73842375caad1c5abf666fd95d575c8a0ad71b027205847cd0f80b96506cd0"
+    },
+    {
+      "sequence": 9,
+      "phase": "RESUME",
+      "source": "release-candidates/pay-rpc-gate-001/emergency/resume-d9.sql",
+      "target": "migrations/20260920012000_rcd-hr-resume-d9.sql",
+      "canonicalSha256": "5a0a2711da5840fdfb1125bbe174c3c3dff351457033caa35482576aa1ac29a0"
+    },
+    {
+      "sequence": 10,
+      "phase": "RESUME",
+      "source": "release-candidates/pay-rpc-gate-001/emergency/resume-d10.sql",
+      "target": "migrations/20260920012100_rcd-hr-resume-d10.sql",
+      "canonicalSha256": "0e996da640f1904ca23bcd9a5aa10dffbbeb8de7ec709d2d3447382a48ce5956"
+    }
+  ]
+}
